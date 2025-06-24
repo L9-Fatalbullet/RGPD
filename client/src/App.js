@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
-import { HomeIcon, ChartBarIcon, ClipboardDocumentListIcon, BookOpenIcon, DocumentTextIcon, SparklesIcon, ArrowLeftOnRectangleIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, ChartBarIcon, ClipboardDocumentListIcon, BookOpenIcon, DocumentTextIcon, SparklesIcon, ArrowLeftOnRectangleIcon, DocumentCheckIcon } from '@heroicons/react/24/outline';
 import Dashboard from './pages/Dashboard';
 import Assessment from './pages/Assessment';
 import Guide from './pages/Guide';
 import Documents from './pages/Documents';
 import BestPractices from './pages/BestPractices';
 import Login from './pages/Login';
+import Register from './pages/Register';
 
 // AuthContext
 const AuthContext = createContext();
@@ -59,6 +60,7 @@ function Sidebar({ token, logout }) {
   const nav = [
     { to: '/dashboard', label: 'Accueil', icon: <HomeIcon className="w-6 h-6" /> },
     { to: '/assessment', label: 'Auto-évaluation', icon: <ChartBarIcon className="w-6 h-6" /> },
+    { to: '/register', label: 'Registre', icon: <DocumentCheckIcon className="w-6 h-6" /> },
     { to: '/guide', label: 'Guide', icon: <BookOpenIcon className="w-6 h-6" /> },
     { to: '/documents', label: 'Documents', icon: <ClipboardDocumentListIcon className="w-6 h-6" /> },
     { to: '/best-practices', label: 'Bonnes pratiques', icon: <SparklesIcon className="w-6 h-6" /> },
@@ -111,6 +113,7 @@ function App() {
               <Routes>
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
+                <Route path="/register" element={<ProtectedRoute><Register /></ProtectedRoute>} />
                 <Route path="/guide" element={<Guide />} />
                 <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
                 <Route path="/best-practices" element={<BestPractices />} />

@@ -11,6 +11,7 @@ const PORT = process.env.PORT || 4000;
 const DATA_PATH = path.resolve('./data/assessments.json');
 const USERS_PATH = path.resolve('./data/users.json');
 const SECRET = process.env.JWT_SECRET || 'secret_cndp';
+const REGISTERS_PATH = path.resolve('./data/registers.json');
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -94,6 +95,47 @@ app.get('/api/assessments/:id', auth, (req, res) => {
   const found = data.find(a => a.id === Number(req.params.id) && a.userId === req.user.id);
   if (!found) return res.status(404).json({ error: 'Not found' });
   res.json(found);
+});
+
+// CRUD Registre des traitements (protected)
+app.get('/api/registers', auth, (req, res) => {
+  if (!fs.existsSync(REGISTERS_PATH)) return res.json([]);
+  const data = JSON.parse(fs.readFileSync(REGISTERS_PATH, 'utf-8'));
+  res.json(data.filter(r => r.userId === req.user.id));
+});
+
+app.post('/api/registers', auth, (req, res) => {
+  const reg = req.body;
+  let data = [];
+  if (fs.existsSync(REGISTERS_PATH)) {
+    data = JSON.parse(fs.readFileSync(REGISTERS_PATH, 'utf-8'));
+  }
+  reg.id = Date.now();
+  reg.userId = req.user.id;
+  reg.date = new Date().toISOString();
+  data.push(reg);
+  fs.writeFileSync(REGISTERS_PATH, JSON.stringify(data, null, 2));
+  res.json({ success: true, id: reg.id });
+});
+
+app.put('/api/registers/:id', auth, (req, res) => {
+  if (!fs.existsSync(REGISTERS_PATH)) return res.status(404).json({ error: 'Not found' });
+  let data = JSON.parse(fs.readFileSync(REGISTERS_PATH, 'utf-8'));
+  const idx = data.findIndex(r => r.id === Number(req.params.id) && r.userId === req.user.id);
+  if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  data[idx] = { ...data[idx], ...req.body };
+  fs.writeFileSync(REGISTERS_PATH, JSON.stringify(data, null, 2));
+  res.json({ success: true });
+});
+
+app.delete('/api/registers/:id', auth, (req, res) => {
+  if (!fs.existsSync(REGISTERS_PATH)) return res.status(404).json({ error: 'Not found' });
+  let data = JSON.parse(fs.readFileSync(REGISTERS_PATH, 'utf-8'));
+  const idx = data.findIndex(r => r.id === Number(req.params.id) && r.userId === req.user.id);
+  if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  data.splice(idx, 1);
+  fs.writeFileSync(REGISTERS_PATH, JSON.stringify(data, null, 2));
+  res.json({ success: true });
 });
 
 // (Optionnel) Endpoints pour documents à ajouter ici
