@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { SparklesIcon, ChartBarIcon, ExclamationTriangleIcon, CheckCircleIcon, DocumentCheckIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { SparklesIcon, ChartBarIcon, ExclamationTriangleIcon, CheckCircleIcon, DocumentCheckIcon, ShieldCheckIcon, ArrowRightCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
 
 const API_ASSESS = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/assessments';
@@ -160,8 +160,85 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-      {/* REMOVE: Recommendations section */}
-      {/* REMOVE: Placeholder for future charts/visualizations */}
+      {/* Prochaines étapes (Next Steps) */}
+      <div className="mb-10 animate-fade-in">
+        <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><ArrowRightCircleIcon className="w-7 h-7 text-blue-700" /> Prochaines étapes</h2>
+        {loading ? <div className="text-blue-700">Chargement...</div> : (
+          <ul className="space-y-4">
+            {/* Assessment step */}
+            {!assessment && (
+              <li className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-4 flex items-center gap-4 border-l-4 border-blue-700 animate-fade-in">
+                <ChartBarIcon className="w-6 h-6 text-blue-700" />
+                <span className="flex-1 text-blue-900 font-semibold">Commencez par l'auto-évaluation pour connaître votre niveau de conformité.</span>
+                <Link to="/assessment" className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-4 py-2 rounded font-semibold shadow">Faire l'auto-évaluation</Link>
+              </li>
+            )}
+            {/* Complete assessment if not all answered 'Oui' */}
+            {assessment && Object.values(assessment.answers || {}).some(v => v < 2) && (
+              <li className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-4 flex items-center gap-4 border-l-4 border-yellow-400 animate-fade-in">
+                <ExclamationTriangleIcon className="w-6 h-6 text-yellow-400" />
+                <span className="flex-1 text-blue-900 font-semibold">Complétez votre auto-évaluation pour obtenir un score optimal.</span>
+                <Link to="/assessment" className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-4 py-2 rounded font-semibold shadow">Compléter</Link>
+              </li>
+            )}
+            {/* Register step */}
+            {(!registers || registers.length === 0) && (
+              <li className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-4 flex items-center gap-4 border-l-4 border-blue-700 animate-fade-in">
+                <DocumentCheckIcon className="w-6 h-6 text-blue-700" />
+                <span className="flex-1 text-blue-900 font-semibold">Créez votre registre des traitements pour documenter vos activités de données.</span>
+                <Link to="/register" className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-4 py-2 rounded font-semibold shadow">Créer un registre</Link>
+              </li>
+            )}
+            {/* DPIA step if needed */}
+            {assessment && assessment.answers && assessment.answers.dpia === 2 && (!dpias || dpias.length === 0) && (
+              <li className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-4 flex items-center gap-4 border-l-4 border-yellow-400 animate-fade-in">
+                <ShieldCheckIcon className="w-6 h-6 text-yellow-400" />
+                <span className="flex-1 text-blue-900 font-semibold">Réalisez une DPIA pour les traitements à risque élevé.</span>
+                <Link to="/dpia" className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-4 py-2 rounded font-semibold shadow">Faire une DPIA</Link>
+              </li>
+            )}
+            {/* All main steps done */}
+            {assessment && Object.values(assessment.answers || {}).every(v => v === 2) && registers && registers.length > 0 && (assessment.answers.dpia !== 2 || (dpias && dpias.length > 0)) && (
+              <li className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-4 flex items-center gap-4 border-l-4 border-green-500 animate-fade-in">
+                <CheckCircleIcon className="w-6 h-6 text-green-500" />
+                <span className="flex-1 text-blue-900 font-semibold">Bravo ! Vous avez complété les principales étapes de conformité. Pensez à mettre à jour régulièrement.</span>
+              </li>
+            )}
+          </ul>
+        )}
+      </div>
+      {/* Progress Bar / Checklist */}
+      <div className="mb-10 animate-fade-in">
+        <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><ArrowPathIcon className="w-7 h-7 text-blue-700" /> Progression</h2>
+        <div className="w-full bg-blue-100 rounded-full h-4 mb-4">
+          <div className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 h-4 rounded-full transition-all" style={{ width: `${(() => {
+            let steps = 3;
+            let done = 0;
+            if (assessment) done++;
+            if (registers && registers.length > 0) done++;
+            if (assessment && assessment.answers && assessment.answers.dpia === 2) {
+              if (dpias && dpias.length > 0) done++;
+            } else {
+              steps--;
+            }
+            return Math.round((done / steps) * 100);
+          })()}%` }}></div>
+        </div>
+        <ul className="flex flex-col md:flex-row gap-4 md:gap-8">
+          <li className="flex items-center gap-2">
+            <ChartBarIcon className={`w-6 h-6 ${assessment ? 'text-green-500' : 'text-gray-400'}`} />
+            <span className={assessment ? 'text-green-700 font-semibold' : 'text-gray-500'}>Auto-évaluation</span>
+          </li>
+          <li className="flex items-center gap-2">
+            <DocumentCheckIcon className={`w-6 h-6 ${registers && registers.length > 0 ? 'text-green-500' : 'text-gray-400'}`} />
+            <span className={registers && registers.length > 0 ? 'text-green-700 font-semibold' : 'text-gray-500'}>Registre</span>
+          </li>
+          <li className="flex items-center gap-2">
+            <ShieldCheckIcon className={`w-6 h-6 ${(assessment && assessment.answers && assessment.answers.dpia === 2 && dpias && dpias.length > 0) ? 'text-green-500' : 'text-gray-400'}`} />
+            <span className={(assessment && assessment.answers && assessment.answers.dpia === 2 && dpias && dpias.length > 0) ? 'text-green-700 font-semibold' : 'text-gray-500'}>DPIA</span>
+          </li>
+        </ul>
+      </div>
       <style>{`
         @keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
         .animate-fade-in { animation: fade-in 0.7s cubic-bezier(.4,0,.2,1) both; }
