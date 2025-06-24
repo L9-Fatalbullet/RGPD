@@ -1,10 +1,43 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircleIcon, XCircleIcon, ArrowPathIcon, ArrowRightCircleIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, XCircleIcon, ArrowPathIcon, ArrowRightCircleIcon, SparklesIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../App';
 import { Link } from 'react-router-dom';
 
 const API_ASSESS = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/assessments';
 const API_REG = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/registers';
+
+const CHECKLISTS = {
+  registre: [
+    "Identifier tous les traitements de données personnelles",
+    "Compléter le registre (nom, finalité, données, base légale, responsable, sécurité, durée)",
+    "Mettre à jour le registre en cas de changement",
+  ],
+  declaration: [
+    "Préparer la déclaration CNDP pour chaque traitement",
+    "Envoyer la déclaration à la CNDP",
+    "Archiver l'accusé de réception de la CNDP",
+  ],
+  dpia: [
+    "Identifier les traitements à risque élevé",
+    "Réaliser une DPIA pour chaque traitement à risque",
+    "Documenter les mesures pour réduire les risques",
+  ],
+  securite: [
+    "Restreindre et tracer les accès aux données",
+    "Mettre en place des mesures de sécurité techniques (chiffrement, sauvegardes)",
+    "Élaborer un plan de gestion des incidents",
+  ],
+  droits: [
+    "Informer les personnes concernées de leurs droits",
+    "Permettre l'accès, la rectification et l'opposition",
+    "Mettre en place une procédure pour traiter les demandes d'exercice des droits",
+  ],
+  sensibilisation: [
+    "Former le personnel à la protection des données",
+    "Communiquer sur la politique interne RGPD/Loi 09-08",
+    "Mettre à disposition des ressources et consignes",
+  ],
+};
 
 const STEPS = [
   {
@@ -45,11 +78,24 @@ const STEPS = [
   },
 ];
 
+function getChecklistState(userId) {
+  try {
+    return JSON.parse(localStorage.getItem('cndp_checklists_' + userId)) || {};
+  } catch {
+    return {};
+  }
+}
+function setChecklistState(userId, state) {
+  localStorage.setItem('cndp_checklists_' + userId, JSON.stringify(state));
+}
+
 export default function Progress() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [assessment, setAssessment] = useState(null);
   const [registers, setRegisters] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(null);
+  const [checklists, setChecklists] = useState({});
 
   // Load assessment and registers
   useEffect(() => {
@@ -65,6 +111,13 @@ export default function Progress() {
     }).catch(() => setLoading(false));
   }, [token]);
 
+  // Load checklist state from localStorage
+  useEffect(() => {
+    if (user && user.id) {
+      setChecklists(getChecklistState(user.id));
+    }
+  }, [user]);
+
   // Step completion logic
   const done = {
     registre: registers.length > 0,
@@ -77,6 +130,16 @@ export default function Progress() {
   const total = STEPS.length;
   const completed = STEPS.filter(s => done[s.key]).length;
   const percent = Math.round((completed / total) * 100);
+
+  // Checklist handlers
+  const handleCheck = (stepKey, idx) => {
+    if (!user || !user.id) return;
+    const state = getChecklistState(user.id);
+    state[stepKey] = state[stepKey] || [];
+    state[stepKey][idx] = !state[stepKey][idx];
+    setChecklistState(user.id, state);
+    setChecklists({ ...state });
+  };
 
   return (
     <section>
@@ -108,20 +171,41 @@ export default function Progress() {
           </div>
         </div>
       </div>
-      {/* Checklist */}
+      {/* Checklist with expandable steps */}
       <ol className="space-y-4 animate-fade-in">
-        {STEPS.map((step, i) => (
-          <li key={step.key} className="flex items-center gap-4 bg-white/80 backdrop-blur rounded-xl shadow-lg p-6 border-t-4 border-blue-100 hover:scale-[1.01] transition">
-            <span>
-              {done[step.key] ? <CheckCircleIcon className="w-8 h-8 text-green-600" /> : <XCircleIcon className="w-8 h-8 text-yellow-500" />}
-            </span>
-            <div className="flex-1">
-              <div className="font-bold text-blue-900 text-lg mb-1 flex items-center gap-2">{step.label}</div>
-              <div className="text-gray-700 text-sm mb-2">{step.desc}</div>
-              <Link to={step.link} className="inline-flex items-center text-blue-700 hover:underline text-sm font-semibold"><ArrowRightCircleIcon className="w-5 h-5 mr-1" /> Accéder</Link>
-            </div>
-          </li>
-        ))}
+        {STEPS.map((step, i) => {
+          const checklist = CHECKLISTS[step.key] || [];
+          const checked = checklists[step.key] || [];
+          const checkedCount = checked.filter(Boolean).length;
+          return (
+            <li key={step.key} className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-6 border-t-4 border-blue-100 hover:scale-[1.01] transition">
+              <div className="flex items-center gap-4 cursor-pointer" onClick={() => setExpanded(expanded === step.key ? null : step.key)}>
+                <span>
+                  {done[step.key] ? <CheckCircleIcon className="w-8 h-8 text-green-600" /> : <XCircleIcon className="w-8 h-8 text-yellow-500" />}
+                </span>
+                <div className="flex-1">
+                  <div className="font-bold text-blue-900 text-lg mb-1 flex items-center gap-2">{step.label}</div>
+                  <div className="text-gray-700 text-sm mb-2">{step.desc}</div>
+                  <Link to={step.link} className="inline-flex items-center text-blue-700 hover:underline text-sm font-semibold"><ArrowRightCircleIcon className="w-5 h-5 mr-1" /> Accéder</Link>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-blue-900">{checkedCount}/{checklist.length}</span>
+                  {expanded === step.key ? <ChevronUpIcon className="w-5 h-5 text-blue-700" /> : <ChevronDownIcon className="w-5 h-5 text-blue-700" />}
+                </div>
+              </div>
+              {expanded === step.key && (
+                <ul className="mt-4 space-y-2">
+                  {checklist.map((item, idx) => (
+                    <li key={idx} className="flex items-center gap-2">
+                      <input type="checkbox" checked={!!checked[idx]} onChange={() => handleCheck(step.key, idx)} className="accent-blue-700 w-5 h-5" />
+                      <span className={checked[idx] ? 'line-through text-gray-400' : ''}>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          );
+        })}
       </ol>
       <style>{`
         @keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
