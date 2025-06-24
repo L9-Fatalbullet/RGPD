@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const API_URL = 'http://localhost:4000/api/auth';
+const API_URL = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/auth';
 
 export default function Login() {
   const [tab, setTab] = useState('login');
