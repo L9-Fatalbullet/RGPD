@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { SparklesIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../App';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000/api/assessments';
+const API_URL = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/assessments';
 
 const QUESTIONS = [
   { label: "Registre des traitements à jour", key: "registre" },
