@@ -59,7 +59,7 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
-function Sidebar({ token, logout }) {
+function Sidebar({ token, logout, user }) {
   const nav = [
     { to: '/dashboard', label: 'Accueil', icon: <HomeIcon className="w-6 h-6" /> },
     { to: '/progress', label: 'Progression', icon: <ArrowPathIcon className="w-6 h-6" /> },
@@ -117,7 +117,7 @@ function App() {
   return (
     <Router>
       <div className="font-sans min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex">
-        <Sidebar token={token} logout={logout} />
+        <Sidebar token={token} logout={logout} user={user} />
         <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
           <Topbar user={user} />
           <main className="flex-1 p-4 md:p-8" style={{ minHeight: 'calc(100vh - 56px)' }}>
