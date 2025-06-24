@@ -12,6 +12,7 @@ const DATA_PATH = path.resolve('./data/assessments.json');
 const USERS_PATH = path.resolve('./data/users.json');
 const SECRET = process.env.JWT_SECRET || 'secret_cndp';
 const REGISTERS_PATH = path.resolve('./data/registers.json');
+const DPIAS_PATH = path.resolve('./data/dpias.json');
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -135,6 +136,47 @@ app.delete('/api/registers/:id', auth, (req, res) => {
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
   data.splice(idx, 1);
   fs.writeFileSync(REGISTERS_PATH, JSON.stringify(data, null, 2));
+  res.json({ success: true });
+});
+
+// CRUD DPIA (protected)
+app.get('/api/dpias', auth, (req, res) => {
+  if (!fs.existsSync(DPIAS_PATH)) return res.json([]);
+  const data = JSON.parse(fs.readFileSync(DPIAS_PATH, 'utf-8'));
+  res.json(data.filter(d => d.userId === req.user.id));
+});
+
+app.post('/api/dpias', auth, (req, res) => {
+  const dpia = req.body;
+  let data = [];
+  if (fs.existsSync(DPIAS_PATH)) {
+    data = JSON.parse(fs.readFileSync(DPIAS_PATH, 'utf-8'));
+  }
+  dpia.id = Date.now();
+  dpia.userId = req.user.id;
+  dpia.date = new Date().toISOString();
+  data.push(dpia);
+  fs.writeFileSync(DPIAS_PATH, JSON.stringify(data, null, 2));
+  res.json({ success: true, id: dpia.id });
+});
+
+app.put('/api/dpias/:id', auth, (req, res) => {
+  if (!fs.existsSync(DPIAS_PATH)) return res.status(404).json({ error: 'Not found' });
+  let data = JSON.parse(fs.readFileSync(DPIAS_PATH, 'utf-8'));
+  const idx = data.findIndex(d => d.id === Number(req.params.id) && d.userId === req.user.id);
+  if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  data[idx] = { ...data[idx], ...req.body };
+  fs.writeFileSync(DPIAS_PATH, JSON.stringify(data, null, 2));
+  res.json({ success: true });
+});
+
+app.delete('/api/dpias/:id', auth, (req, res) => {
+  if (!fs.existsSync(DPIAS_PATH)) return res.status(404).json({ error: 'Not found' });
+  let data = JSON.parse(fs.readFileSync(DPIAS_PATH, 'utf-8'));
+  const idx = data.findIndex(d => d.id === Number(req.params.id) && d.userId === req.user.id);
+  if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  data.splice(idx, 1);
+  fs.writeFileSync(DPIAS_PATH, JSON.stringify(data, null, 2));
   res.json({ success: true });
 });
 

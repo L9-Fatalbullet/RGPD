@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
-import { HomeIcon, ChartBarIcon, ClipboardDocumentListIcon, BookOpenIcon, DocumentTextIcon, SparklesIcon, ArrowLeftOnRectangleIcon, DocumentCheckIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, ChartBarIcon, ClipboardDocumentListIcon, BookOpenIcon, DocumentTextIcon, SparklesIcon, ArrowLeftOnRectangleIcon, DocumentCheckIcon, ArrowPathIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import Dashboard from './pages/Dashboard';
 import Assessment from './pages/Assessment';
 import Guide from './pages/Guide';
@@ -9,6 +9,7 @@ import BestPractices from './pages/BestPractices';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Progress from './pages/Progress';
+import DPIA from './pages/DPIA';
 
 // AuthContext
 const AuthContext = createContext();
@@ -63,6 +64,7 @@ function Sidebar({ token, logout }) {
     { to: '/progress', label: 'Progression', icon: <ArrowPathIcon className="w-6 h-6" /> },
     { to: '/assessment', label: 'Auto-évaluation', icon: <ChartBarIcon className="w-6 h-6" /> },
     { to: '/register', label: 'Registre', icon: <DocumentCheckIcon className="w-6 h-6" /> },
+    { to: '/dpia', label: 'DPIA', icon: <ShieldCheckIcon className="w-6 h-6" /> },
     { to: '/guide', label: 'Guide', icon: <BookOpenIcon className="w-6 h-6" /> },
     { to: '/documents', label: 'Documents', icon: <ClipboardDocumentListIcon className="w-6 h-6" /> },
     { to: '/best-practices', label: 'Bonnes pratiques', icon: <SparklesIcon className="w-6 h-6" /> },
@@ -117,6 +119,7 @@ function App() {
                 <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
                 <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
                 <Route path="/register" element={<ProtectedRoute><Register /></ProtectedRoute>} />
+                <Route path="/dpia" element={<ProtectedRoute><DPIA /></ProtectedRoute>} />
                 <Route path="/guide" element={<Guide />} />
                 <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
                 <Route path="/best-practices" element={<BestPractices />} />
