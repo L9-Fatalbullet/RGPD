@@ -1,136 +1,89 @@
-import React, { useState } from 'react';
-import { DocumentTextIcon, ClipboardDocumentListIcon, ShieldCheckIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
-import jsPDF from 'jspdf';
+import React from 'react';
+import { DocumentArrowDownIcon, SparklesIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 
-const TABS = [
-  { key: 'privacy', label: 'Politique de confidentialité', icon: <ShieldCheckIcon className="w-5 h-5 mr-1" /> },
-  { key: 'registre', label: 'Registre des traitements', icon: <ClipboardDocumentListIcon className="w-5 h-5 mr-1" /> },
-  { key: 'dpia', label: 'DPIA', icon: <DocumentTextIcon className="w-5 h-5 mr-1" /> },
+const TEMPLATES = [
+  {
+    name: "Registre des traitements (modèle)",
+    url: "/templates/registre-modele.docx",
+    desc: "Modèle conforme à la Loi 09-08 pour documenter vos traitements de données.",
+  },
+  {
+    name: "Notice d'information (modèle)",
+    url: "/templates/notice-modele.docx",
+    desc: "Notice à remettre aux personnes concernées pour les informer de leurs droits.",
+  },
+  {
+    name: "DPIA (modèle)",
+    url: "/templates/dpia-modele.docx",
+    desc: "Modèle d'analyse d'impact pour les traitements à risque élevé.",
+  },
+];
+
+const GENERATED = [
+  // Example of generated docs, could be dynamic in a real app
+  {
+    name: "Registre 2024",
+    url: "/docs/registre-2024.pdf",
+    desc: "Votre registre généré automatiquement (exemple).",
+  },
 ];
 
 export default function Documents() {
-  const [tab, setTab] = useState('privacy');
-  const [privacy, setPrivacy] = useState({ org: '', contact: '', purpose: '' });
-  const [registre, setRegistre] = useState({ name: '', purpose: '', data: '', legal: '', responsible: '', security: '', duration: '' });
-  const [dpia, setDpia] = useState({ scenario: '', risks: '', measures: '' });
-
-  function handleDownload(type) {
-    const doc = new jsPDF();
-    if (type === 'privacy') {
-      doc.text('Politique de confidentialité', 10, 10);
-      doc.text(`Organisation: ${privacy.org}`, 10, 20);
-      doc.text(`Contact: ${privacy.contact}`, 10, 30);
-      doc.text(`Finalité: ${privacy.purpose}`, 10, 40);
-    } else if (type === 'registre') {
-      doc.text('Registre des traitements', 10, 10);
-      doc.text(`Nom: ${registre.name}`, 10, 20);
-      doc.text(`Finalité: ${registre.purpose}`, 10, 30);
-      doc.text(`Données: ${registre.data}`, 10, 40);
-      doc.text(`Base légale: ${registre.legal}`, 10, 50);
-      doc.text(`Responsable: ${registre.responsible}`, 10, 60);
-      doc.text(`Sécurité: ${registre.security}`, 10, 70);
-      doc.text(`Durée: ${registre.duration}`, 10, 80);
-    } else if (type === 'dpia') {
-      doc.text('DPIA (Analyse d\'impact)', 10, 10);
-      doc.text(`Scénario: ${dpia.scenario}`, 10, 20);
-      doc.text(`Risques: ${dpia.risks}`, 10, 30);
-      doc.text(`Mesures: ${dpia.measures}`, 10, 40);
-    }
-    doc.save(`${type}.pdf`);
-  }
-
   return (
     <section>
-      <h1 className="text-2xl font-bold mb-2">Générateur de documents</h1>
-      <p className="text-gray-700 mb-4">Générez vos documents de conformité (politique de confidentialité, registre, DPIA, etc.).</p>
-      <div className="flex gap-2 mb-6">
-        {TABS.map(t => (
-          <button
-            key={t.key}
-            className={`flex items-center px-4 py-2 rounded-t font-semibold border-b-2 transition-all ${tab === t.key ? 'bg-blue-100 border-blue-700 text-blue-900' : 'bg-gray-100 border-transparent text-gray-500'}`}
-            onClick={() => setTab(t.key)}
-          >
-            {t.icon}{t.label}
-          </button>
-        ))}
+      {/* Hero/Intro Section */}
+      <div className="relative overflow-hidden rounded-2xl mb-10 shadow-lg bg-gradient-to-br from-blue-900 via-blue-700 to-yellow-400 text-white p-8 flex flex-col md:flex-row items-center gap-8 animate-fade-in">
+        <div className="flex-1">
+          <h1 className="text-3xl md:text-4xl font-extrabold mb-2 tracking-tight drop-shadow flex items-center gap-2">
+            <SparklesIcon className="w-10 h-10 text-yellow-300" /> Documents & Modèles
+          </h1>
+          <p className="text-lg md:text-xl font-light mb-4 drop-shadow">Téléchargez des modèles conformes ou vos documents générés pour la conformité à la Loi 09-08.</p>
+        </div>
+        <div className="flex-1 flex justify-center items-center">
+          {/* Moroccan-inspired SVG */}
+          <svg width="140" height="140" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="70" cy="70" r="60" fill="#fff" fillOpacity="0.12" />
+            <circle cx="70" cy="70" r="40" fill="#fff" fillOpacity="0.10" />
+            <path d="M70 30 L90 70 L50 70 Z" fill="#2563eb" fillOpacity="0.7" />
+            <circle cx="70" cy="70" r="14" fill="#facc15" fillOpacity="0.8" />
+            <text x="70" y="77" textAnchor="middle" fontSize="16" fontWeight="bold" fill="#1e293b">CNDP</text>
+          </svg>
+        </div>
       </div>
-      <div className="bg-white rounded shadow p-6">
-        {tab === 'privacy' && (
-          <form className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium">Organisation</label>
-              <input className="input" value={privacy.org} onChange={e => setPrivacy({ ...privacy, org: e.target.value })} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Contact</label>
-              <input className="input" value={privacy.contact} onChange={e => setPrivacy({ ...privacy, contact: e.target.value })} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Finalité</label>
-              <input className="input" value={privacy.purpose} onChange={e => setPrivacy({ ...privacy, purpose: e.target.value })} />
-            </div>
-            <button type="button" className="mt-4 bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded flex items-center" onClick={() => handleDownload('privacy')}>
-              <ArrowDownTrayIcon className="w-5 h-5 mr-2" /> Télécharger PDF
-            </button>
-          </form>
-        )}
-        {tab === 'registre' && (
-          <form className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium">Nom du traitement</label>
-              <input className="input" value={registre.name} onChange={e => setRegistre({ ...registre, name: e.target.value })} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Finalité</label>
-              <input className="input" value={registre.purpose} onChange={e => setRegistre({ ...registre, purpose: e.target.value })} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Données collectées</label>
-              <input className="input" value={registre.data} onChange={e => setRegistre({ ...registre, data: e.target.value })} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Base légale</label>
-              <input className="input" value={registre.legal} onChange={e => setRegistre({ ...registre, legal: e.target.value })} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Responsable de traitement</label>
-              <input className="input" value={registre.responsible} onChange={e => setRegistre({ ...registre, responsible: e.target.value })} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Mesures de sécurité</label>
-              <input className="input" value={registre.security} onChange={e => setRegistre({ ...registre, security: e.target.value })} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Durée de conservation</label>
-              <input className="input" value={registre.duration} onChange={e => setRegistre({ ...registre, duration: e.target.value })} />
-            </div>
-            <button type="button" className="mt-4 bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded flex items-center" onClick={() => handleDownload('registre')}>
-              <ArrowDownTrayIcon className="w-5 h-5 mr-2" /> Télécharger PDF
-            </button>
-          </form>
-        )}
-        {tab === 'dpia' && (
-          <form className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium">Scénario</label>
-              <input className="input" value={dpia.scenario} onChange={e => setDpia({ ...dpia, scenario: e.target.value })} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Risques identifiés</label>
-              <input className="input" value={dpia.risks} onChange={e => setDpia({ ...dpia, risks: e.target.value })} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Mesures proposées</label>
-              <input className="input" value={dpia.measures} onChange={e => setDpia({ ...dpia, measures: e.target.value })} />
-            </div>
-            <button type="button" className="mt-4 bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded flex items-center" onClick={() => handleDownload('dpia')}>
-              <ArrowDownTrayIcon className="w-5 h-5 mr-2" /> Télécharger PDF
-            </button>
-          </form>
-        )}
+      {/* Templates */}
+      <div className="mb-10">
+        <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><DocumentTextIcon className="w-7 h-7 text-blue-700" /> Modèles à télécharger</h2>
+        <div className="grid md:grid-cols-3 gap-6 animate-fade-in">
+          {TEMPLATES.map((tpl, i) => (
+            <a key={i} href={tpl.url} download className="group bg-white/80 backdrop-blur rounded-xl shadow-lg p-6 flex flex-col items-start gap-3 border-t-4 border-blue-100 hover:border-yellow-400 hover:scale-105 transition-all animate-fade-in" style={{ animationDelay: `${i * 0.1}s` }}>
+              <DocumentArrowDownIcon className="w-10 h-10 text-blue-700 group-hover:text-yellow-500 transition-all" />
+              <div className="font-semibold text-blue-900 text-lg group-hover:text-yellow-700 transition-all">{tpl.name}</div>
+              <div className="text-gray-700 text-sm mb-2">{tpl.desc}</div>
+              <div className="text-xs text-gray-500">Télécharger</div>
+            </a>
+          ))}
+        </div>
+      </div>
+      {/* Generated Documents */}
+      <div className="mb-10">
+        <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><DocumentTextIcon className="w-7 h-7 text-blue-700" /> Documents générés</h2>
+        <div className="grid md:grid-cols-3 gap-6 animate-fade-in">
+          {GENERATED.map((doc, i) => (
+            <a key={i} href={doc.url} download className="group bg-white/80 backdrop-blur rounded-xl shadow-lg p-6 flex flex-col items-start gap-3 border-t-4 border-green-100 hover:border-yellow-400 hover:scale-105 transition-all animate-fade-in" style={{ animationDelay: `${i * 0.1}s` }}>
+              <DocumentTextIcon className="w-10 h-10 text-green-700 group-hover:text-yellow-500 transition-all" />
+              <div className="font-semibold text-blue-900 text-lg group-hover:text-yellow-700 transition-all">{doc.name}</div>
+              <div className="text-gray-700 text-sm mb-2">{doc.desc}</div>
+              <div className="text-xs text-gray-500">Télécharger</div>
+            </a>
+          ))}
+        </div>
+      </div>
+      <div className="text-xs text-gray-500 mt-6 animate-fade-in">
+        Pour plus d'informations, consultez le site officiel de la <a href="https://www.cndp.ma/" className="text-blue-700 underline" target="_blank" rel="noopener noreferrer">CNDP</a>.
       </div>
       <style>{`
-        .input { @apply w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400; }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+        .animate-fade-in { animation: fade-in 0.7s cubic-bezier(.4,0,.2,1) both; }
       `}</style>
     </section>
   );

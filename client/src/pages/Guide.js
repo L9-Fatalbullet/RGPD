@@ -1,56 +1,35 @@
 import React from 'react';
-import { CheckCircleIcon, DocumentArrowDownIcon, BookOpenIcon } from '@heroicons/react/24/outline';
+import { SparklesIcon, ArrowRightCircleIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 
 const STEPS = [
   {
-    title: "Planification et gouvernance",
-    description: "Désignez un responsable de traitement et élaborez une politique de protection des données.",
-    template: null,
-  },
-  {
-    title: "Cartographie des traitements",
-    description: "Identifiez et documentez tous les traitements de données personnelles.",
-    template: "Registre des traitements (modèle)",
-    templateUrl: "#modele-registre",
+    title: "Recensement des traitements",
+    desc: "Identifiez tous les traitements de données personnelles réalisés dans votre organisation.",
   },
   {
     title: "Déclaration à la CNDP",
-    description: "Déclarez vos traitements à la CNDP via le portail officiel.",
-    template: null,
+    desc: "Déclarez chaque traitement auprès de la CNDP avant leur mise en œuvre.",
   },
   {
-    title: "Information et consentement",
-    description: "Informez les personnes concernées de leurs droits et recueillez leur consentement si nécessaire.",
-    template: "Notice d'information (modèle)",
-    templateUrl: "#modele-notice",
+    title: "Mise en conformité des contrats",
+    desc: "Adaptez les contrats avec les sous-traitants et partenaires pour intégrer les exigences de la Loi 09-08.",
   },
   {
-    title: "Sécurité et confidentialité",
-    description: "Mettez en place des mesures techniques et organisationnelles pour protéger les données.",
-    template: null,
+    title: "Information des personnes concernées",
+    desc: "Assurez-vous que les personnes sont informées de leurs droits et de l'usage de leurs données.",
+  },
+  {
+    title: "Sécurisation des données",
+    desc: "Mettez en place des mesures techniques et organisationnelles pour protéger les données.",
   },
   {
     title: "Gestion des droits",
-    description: "Permettez l'accès, la rectification, l'opposition et la suppression des données.",
-    template: null,
+    desc: "Permettez l'accès, la rectification et l'opposition aux personnes concernées.",
   },
   {
-    title: "Archivage et suppression",
-    description: "Définissez des durées de conservation et procédez à la destruction sécurisée des données.",
-    template: null,
+    title: "Suivi et actualisation",
+    desc: "Mettez à jour régulièrement vos procédures et registres pour rester conforme.",
   },
-  {
-    title: "Analyse d'impact (DPIA)",
-    description: "Réalisez une DPIA pour les traitements à risque élevé.",
-    template: "DPIA (modèle)",
-    templateUrl: "#modele-dpia",
-  },
-];
-
-const TEMPLATES = [
-  { name: "Registre des traitements (modèle)", url: "/templates/registre-modele.docx" },
-  { name: "Notice d'information (modèle)", url: "/templates/notice-modele.docx" },
-  { name: "DPIA (modèle)", url: "/templates/dpia-modele.docx" },
 ];
 
 export default function Guide() {
@@ -60,9 +39,9 @@ export default function Guide() {
       <div className="relative overflow-hidden rounded-2xl mb-10 shadow-lg bg-gradient-to-br from-blue-900 via-blue-700 to-yellow-400 text-white p-8 flex flex-col md:flex-row items-center gap-8 animate-fade-in">
         <div className="flex-1">
           <h1 className="text-3xl md:text-4xl font-extrabold mb-2 tracking-tight drop-shadow flex items-center gap-2">
-            <BookOpenIcon className="w-10 h-10 text-yellow-300" /> Guide Loi 09-08
+            <SparklesIcon className="w-10 h-10 text-yellow-300" /> Guide Loi 09-08
           </h1>
-          <p className="text-lg md:text-xl font-light mb-4 drop-shadow">Suivez ce guide étape par étape pour vous conformer à la Loi marocaine 09-08 sur la protection des données personnelles.</p>
+          <p className="text-lg md:text-xl font-light mb-4 drop-shadow">Étapes clés pour la conformité à la loi marocaine sur la protection des données personnelles.</p>
         </div>
         <div className="flex-1 flex justify-center items-center">
           {/* Moroccan-inspired SVG */}
@@ -75,38 +54,24 @@ export default function Guide() {
           </svg>
         </div>
       </div>
-      {/* Timeline/Checklist */}
-      <ol className="relative border-l-4 border-blue-200 ml-4 mb-12 animate-fade-in">
-        {STEPS.map((step, idx) => (
-          <li key={idx} className="mb-10 ml-6">
-            <span className="absolute -left-5 flex items-center justify-center w-10 h-10 bg-yellow-100 rounded-full ring-4 ring-white animate-fade-in">
-              <CheckCircleIcon className="w-7 h-7 text-blue-700" />
-            </span>
-            <h3 className="flex items-center text-lg font-semibold text-blue-900">{step.title}
-              {step.template && (
-                <a href={step.templateUrl || '#'} download className="ml-3 inline-flex items-center text-blue-700 hover:underline text-sm">
-                  <DocumentArrowDownIcon className="w-5 h-5 mr-1" />
-                  {step.template}
-                </a>
+      {/* Stepper/Timeline */}
+      <ol className="relative border-l-4 border-blue-200 ml-4 animate-fade-in">
+        {STEPS.map((step, i) => (
+          <li key={i} className="mb-10 ml-6 group">
+            <span className="absolute -left-6 flex items-center justify-center w-10 h-10 bg-white/80 backdrop-blur border-4 border-blue-400 rounded-full shadow-lg group-hover:scale-110 transition">
+              {i === STEPS.length - 1 ? (
+                <CheckCircleIcon className="w-6 h-6 text-green-600" />
+              ) : (
+                <ArrowRightCircleIcon className="w-6 h-6 text-blue-700" />
               )}
-            </h3>
-            <p className="text-gray-700 text-sm mt-1">{step.description}</p>
+            </span>
+            <div className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-6 border-t-4 border-blue-100 hover:shadow-2xl hover:scale-[1.02] transition">
+              <h3 className="font-bold text-blue-900 text-lg mb-1">{step.title}</h3>
+              <p className="text-gray-700 text-sm">{step.desc}</p>
+            </div>
           </li>
         ))}
       </ol>
-      {/* Downloadable Templates */}
-      <div className="grid md:grid-cols-3 gap-6 mb-8 animate-fade-in">
-        {TEMPLATES.map((tpl, i) => (
-          <a key={i} href={tpl.url} download className="group bg-white/80 backdrop-blur rounded-xl shadow-lg p-6 flex flex-col items-center gap-3 border-t-4 border-blue-100 hover:border-yellow-400 hover:scale-105 transition-all">
-            <DocumentArrowDownIcon className="w-10 h-10 text-blue-700 group-hover:text-yellow-500 transition-all" />
-            <div className="font-semibold text-blue-900 text-lg group-hover:text-yellow-700 transition-all">{tpl.name}</div>
-            <div className="text-xs text-gray-500">Télécharger</div>
-          </a>
-        ))}
-      </div>
-      <div className="text-xs text-gray-500 mt-6 animate-fade-in">
-        Pour plus d'informations, consultez le site officiel de la <a href="https://www.cndp.ma/" className="text-blue-700 underline" target="_blank">CNDP</a>.
-      </div>
       <style>{`
         @keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
         .animate-fade-in { animation: fade-in 0.7s cubic-bezier(.4,0,.2,1) both; }
