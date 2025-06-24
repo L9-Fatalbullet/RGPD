@@ -25,7 +25,7 @@ function AuthProvider({ children }) {
       // Decode JWT (simple, not verifying signature)
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
-        setUser({ email: payload.email, id: payload.id });
+        setUser({ email: payload.email, id: payload.id, role: payload.role, organizationId: payload.organizationId });
       } catch {
         setUser(null);
       }
