@@ -13,6 +13,7 @@ const USERS_PATH = path.resolve('./data/users.json');
 const SECRET = process.env.JWT_SECRET || 'secret_cndp';
 const REGISTERS_PATH = path.resolve('./data/registers.json');
 const DPIAS_PATH = path.resolve('./data/dpias.json');
+const AUDIT_PATH = path.resolve('./data/audit.json');
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -31,9 +32,15 @@ function auth(req, res, next) {
   }
 }
 
-// Enregistrement utilisateur
+// Helper: isAdmin middleware
+function isAdmin(req, res, next) {
+  if (req.user && req.user.role === 'admin') return next();
+  return res.status(403).json({ error: 'Accès réservé aux administrateurs' });
+}
+
+// Enregistrement utilisateur (first user is admin, else user)
 app.post('/api/auth/register', (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, organizationId } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis' });
   let users = [];
   if (fs.existsSync(USERS_PATH)) {
@@ -41,10 +48,14 @@ app.post('/api/auth/register', (req, res) => {
   }
   if (users.find(u => u.email === email)) return res.status(400).json({ error: 'Utilisateur déjà existant' });
   const hash = bcrypt.hashSync(password, 10);
-  const user = { id: Date.now(), email, password: hash };
+  let role = 'user';
+  let orgId = organizationId;
+  if (users.length === 0) { role = 'admin'; orgId = Date.now(); } // first user is admin/org creator
+  if (!orgId) orgId = Date.now();
+  const user = { id: Date.now(), email, password: hash, role, organizationId: orgId };
   users.push(user);
   fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
-  const token = jwt.sign({ id: user.id, email: user.email }, SECRET, { expiresIn: '7d' });
+  const token = jwt.sign({ id: user.id, email: user.email, role: user.role, organizationId: user.organizationId }, SECRET, { expiresIn: '7d' });
   res.json({ token });
 });
 
@@ -59,7 +70,7 @@ app.post('/api/auth/login', (req, res) => {
   const user = users.find(u => u.email === email);
   if (!user) return res.status(400).json({ error: 'Utilisateur non trouvé' });
   if (!bcrypt.compareSync(password, user.password)) return res.status(400).json({ error: 'Mot de passe incorrect' });
-  const token = jwt.sign({ id: user.id, email: user.email }, SECRET, { expiresIn: '7d' });
+  const token = jwt.sign({ id: user.id, email: user.email, role: user.role, organizationId: user.organizationId }, SECRET, { expiresIn: '7d' });
   res.json({ token });
 });
 
@@ -86,6 +97,7 @@ app.post('/api/assessments', auth, (req, res) => {
   assessment.userId = req.user.id;
   data.push(assessment);
   fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2));
+  logAudit({ user: req.user, action: 'create', type: 'assessment', itemId: assessment.id, details: assessment });
   res.json({ success: true, id: assessment.id });
 });
 
@@ -105,6 +117,39 @@ app.get('/api/registers', auth, (req, res) => {
   res.json(data.filter(r => r.userId === req.user.id));
 });
 
+function logAudit({ user, action, type, itemId, details }) {
+  let logs = [];
+  if (fs.existsSync(AUDIT_PATH)) {
+    logs = JSON.parse(fs.readFileSync(AUDIT_PATH, 'utf-8'));
+  }
+  logs.push({
+    id: Date.now(),
+    userId: user.id,
+    email: user.email,
+    action, // 'create' | 'update' | 'delete'
+    type,   // 'register' | 'dpia' | 'assessment'
+    itemId,
+    timestamp: new Date().toISOString(),
+    details: details || null
+  });
+  fs.writeFileSync(AUDIT_PATH, JSON.stringify(logs, null, 2));
+}
+
+// --- Audit endpoints ---
+// List all audit logs (admin only)
+app.get('/api/audit', auth, isAdmin, (req, res) => {
+  if (!fs.existsSync(AUDIT_PATH)) return res.json([]);
+  const logs = JSON.parse(fs.readFileSync(AUDIT_PATH, 'utf-8'));
+  res.json(logs);
+});
+// Get audit logs for a specific item (auth)
+app.get('/api/audit/:type/:itemId', auth, (req, res) => {
+  if (!fs.existsSync(AUDIT_PATH)) return res.json([]);
+  const logs = JSON.parse(fs.readFileSync(AUDIT_PATH, 'utf-8'));
+  res.json(logs.filter(l => l.type === req.params.type && String(l.itemId) === String(req.params.itemId)));
+});
+
+// --- Register audit ---
 app.post('/api/registers', auth, (req, res) => {
   const reg = req.body;
   let data = [];
@@ -116,6 +161,7 @@ app.post('/api/registers', auth, (req, res) => {
   reg.date = new Date().toISOString();
   data.push(reg);
   fs.writeFileSync(REGISTERS_PATH, JSON.stringify(data, null, 2));
+  logAudit({ user: req.user, action: 'create', type: 'register', itemId: reg.id, details: reg });
   res.json({ success: true, id: reg.id });
 });
 
@@ -126,6 +172,7 @@ app.put('/api/registers/:id', auth, (req, res) => {
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
   data[idx] = { ...data[idx], ...req.body };
   fs.writeFileSync(REGISTERS_PATH, JSON.stringify(data, null, 2));
+  logAudit({ user: req.user, action: 'update', type: 'register', itemId: req.params.id, details: req.body });
   res.json({ success: true });
 });
 
@@ -134,8 +181,10 @@ app.delete('/api/registers/:id', auth, (req, res) => {
   let data = JSON.parse(fs.readFileSync(REGISTERS_PATH, 'utf-8'));
   const idx = data.findIndex(r => r.id === Number(req.params.id) && r.userId === req.user.id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  const deleted = data[idx];
   data.splice(idx, 1);
   fs.writeFileSync(REGISTERS_PATH, JSON.stringify(data, null, 2));
+  logAudit({ user: req.user, action: 'delete', type: 'register', itemId: req.params.id, details: deleted });
   res.json({ success: true });
 });
 
@@ -157,6 +206,7 @@ app.post('/api/dpias', auth, (req, res) => {
   dpia.date = new Date().toISOString();
   data.push(dpia);
   fs.writeFileSync(DPIAS_PATH, JSON.stringify(data, null, 2));
+  logAudit({ user: req.user, action: 'create', type: 'dpia', itemId: dpia.id, details: dpia });
   res.json({ success: true, id: dpia.id });
 });
 
@@ -167,6 +217,7 @@ app.put('/api/dpias/:id', auth, (req, res) => {
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
   data[idx] = { ...data[idx], ...req.body };
   fs.writeFileSync(DPIAS_PATH, JSON.stringify(data, null, 2));
+  logAudit({ user: req.user, action: 'update', type: 'dpia', itemId: req.params.id, details: req.body });
   res.json({ success: true });
 });
 
@@ -175,8 +226,62 @@ app.delete('/api/dpias/:id', auth, (req, res) => {
   let data = JSON.parse(fs.readFileSync(DPIAS_PATH, 'utf-8'));
   const idx = data.findIndex(d => d.id === Number(req.params.id) && d.userId === req.user.id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  const deleted = data[idx];
   data.splice(idx, 1);
   fs.writeFileSync(DPIAS_PATH, JSON.stringify(data, null, 2));
+  logAudit({ user: req.user, action: 'delete', type: 'dpia', itemId: req.params.id, details: deleted });
+  res.json({ success: true });
+});
+
+// Get current user info
+app.get('/api/users/me', auth, (req, res) => {
+  let users = [];
+  if (fs.existsSync(USERS_PATH)) {
+    users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+  }
+  const user = users.find(u => u.id === req.user.id);
+  if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+  const { password, ...userInfo } = user;
+  res.json(userInfo);
+});
+
+// List all users (admin only)
+app.get('/api/users', auth, isAdmin, (req, res) => {
+  let users = [];
+  if (fs.existsSync(USERS_PATH)) {
+    users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+  }
+  res.json(users.map(u => { const { password, ...info } = u; return info; }));
+});
+
+// Invite/add user to org (admin only)
+app.post('/api/users/invite', auth, isAdmin, (req, res) => {
+  const { email, password, role, organizationId } = req.body;
+  if (!email || !password || !role || !organizationId) return res.status(400).json({ error: 'Champs requis manquants' });
+  let users = [];
+  if (fs.existsSync(USERS_PATH)) {
+    users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+  }
+  if (users.find(u => u.email === email)) return res.status(400).json({ error: 'Utilisateur déjà existant' });
+  const hash = bcrypt.hashSync(password, 10);
+  const user = { id: Date.now(), email, password: hash, role, organizationId };
+  users.push(user);
+  fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
+  res.json({ success: true });
+});
+
+// Change user role (admin only)
+app.put('/api/users/:id/role', auth, isAdmin, (req, res) => {
+  const { role } = req.body;
+  if (!role) return res.status(400).json({ error: 'Role requis' });
+  let users = [];
+  if (fs.existsSync(USERS_PATH)) {
+    users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+  }
+  const idx = users.findIndex(u => u.id === Number(req.params.id));
+  if (idx === -1) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+  users[idx].role = role;
+  fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
   res.json({ success: true });
 });
 

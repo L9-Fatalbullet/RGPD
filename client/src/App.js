@@ -10,6 +10,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Progress from './pages/Progress';
 import DPIA from './pages/DPIA';
+import Admin from './pages/Admin';
 
 // AuthContext
 const AuthContext = createContext();
@@ -81,6 +82,13 @@ function Sidebar({ token, logout }) {
             {item.icon} {item.label}
           </Link>
         ))}
+        {user && user.role === 'admin' && (
+          <li>
+            <Link to="/admin" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-blue-800 transition text-base font-medium">
+              <span className="icon">🛡️</span> Admin
+            </Link>
+          </li>
+        )}
       </nav>
       <div className="px-6 pb-6 mt-auto">
         {token ? (
@@ -124,6 +132,7 @@ function App() {
                 <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
                 <Route path="/best-practices" element={<BestPractices />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
                 <Route path="/" element={<Navigate to="/dashboard" />} />
               </Routes>
             </div>
