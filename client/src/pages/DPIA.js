@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, SparklesIcon, ShieldCheckIcon, ArrowRightCircleIcon, ArrowLeftCircleIcon, CheckCircleIcon, InformationCircleIcon, DocumentArrowDownIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../App';
+import jsPDF from 'jspdf';
 
 const API_URL = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/dpias';
 
@@ -31,60 +32,58 @@ const STEPS = [
   {
     key: 'description',
     label: 'Description du traitement',
-    help: "Décrivez le traitement, l'organisme, le responsable, etc.",
+    help: "Décrivez le traitement, l'organisme, le responsable, etc. (Art. 1, Loi 09-08)",
     fields: [
-      { key: 'nom', label: 'Nom du traitement', required: true },
-      { key: 'responsable', label: 'Responsable', required: true },
-      { key: 'description', label: 'Description', required: true },
+      { key: 'nom', label: 'Nom du traitement', required: true, help: "Exemple : Gestion RH, Vidéosurveillance" },
+      { key: 'responsable', label: 'Responsable', required: true, help: "Personne ou service responsable du traitement." },
+      { key: 'description', label: 'Description', required: true, help: "Résumé du traitement et de ses objectifs." },
     ],
   },
   {
     key: 'finalites',
     label: 'Finalités du traitement',
-    help: "Expliquez pourquoi les données sont traitées.",
+    help: "Expliquez pourquoi les données sont traitées. (Art. 3, Loi 09-08)",
     fields: [
-      { key: 'finalites', label: 'Finalités', required: true },
+      { key: 'finalites', label: 'Finalités', required: true, help: "Exemple : Gestion du personnel, sécurité, marketing." },
     ],
   },
   {
     key: 'donnees',
     label: 'Données & personnes concernées',
-    help: "Listez les catégories de données et de personnes.",
+    help: "Listez les catégories de données et de personnes. (Art. 4, Loi 09-08)",
     fields: [
-      { key: 'categories_donnees', label: 'Catégories de données', required: true },
-      { key: 'personnes_concernees', label: 'Personnes concernées', required: true },
+      { key: 'categories_donnees', label: 'Catégories de données', required: true, help: "Exemple : Données d'identité, santé, biométriques." },
+      { key: 'personnes_concernees', label: 'Personnes concernées', required: true, help: "Exemple : Salariés, clients, visiteurs." },
     ],
   },
   {
     key: 'risques',
     label: 'Analyse des risques',
-    help: "Sélectionnez les risques, évaluez gravité/probabilité, et consultez les mesures recommandées.",
-    fields: [
-      // handled specially below
-    ],
+    help: "Sélectionnez les risques, évaluez gravité/probabilité, et consultez les mesures recommandées. (Art. 23, Loi 09-08)",
+    fields: [],
   },
   {
     key: 'mesures',
     label: 'Mesures de sécurité',
-    help: "Décrivez les mesures pour réduire les risques.",
+    help: "Décrivez les mesures pour réduire les risques. (Art. 23, Loi 09-08)",
     fields: [
-      { key: 'mesures', label: 'Mesures proposées', required: true },
+      { key: 'mesures', label: 'Mesures proposées', required: true, help: "Exemple : Chiffrement, contrôle d'accès, formation." },
     ],
   },
   {
     key: 'necessite',
     label: 'Nécessité & proportionnalité',
-    help: "Justifiez la légitimité du traitement.",
+    help: "Justifiez la légitimité du traitement. (Art. 3, Loi 09-08)",
     fields: [
-      { key: 'necessite', label: 'Nécessité/proportionnalité', required: true },
+      { key: 'necessite', label: 'Nécessité/proportionnalité', required: true, help: "Pourquoi ce traitement est-il justifié et proportionné ?" },
     ],
   },
   {
     key: 'consultation',
     label: 'Consultation CNDP',
-    help: "Avez-vous consulté la CNDP ou d'autres parties prenantes ?",
+    help: "Avez-vous consulté la CNDP ou d'autres parties prenantes ? (Art. 46, Loi 09-08)",
     fields: [
-      { key: 'consultation', label: 'Consultation (oui/non/détails)', required: false },
+      { key: 'consultation', label: 'Consultation (oui/non/détails)', required: false, help: "Exemple : Consultation DPO, CNDP, syndicats." },
     ],
   },
 ];
@@ -106,6 +105,8 @@ export default function DPIA() {
   const [form, setForm] = useState(emptyDPIA());
   const [status, setStatus] = useState('');
   const [review, setReview] = useState(false);
+  const saveTimeout = useRef();
+  const [saveStatus, setSaveStatus] = useState('');
 
   // Load DPIAs
   useEffect(() => {
@@ -149,6 +150,27 @@ export default function DPIA() {
     }
     // eslint-disable-next-line
   }, [step]);
+
+  // Auto-save on form change (debounced)
+  useEffect(() => {
+    if (!token) return;
+    setSaveStatus('Enregistrement...');
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(() => {
+      fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(form)
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) setSaveStatus('Enregistré !');
+          else setSaveStatus("Erreur lors de l'enregistrement.");
+        })
+        .catch(() => setSaveStatus("Erreur réseau ou serveur."));
+    }, 700);
+    return () => clearTimeout(saveTimeout.current);
+  }, [form, token]);
 
   // Save DPIA
   const handleSave = async e => {
@@ -257,16 +279,18 @@ export default function DPIA() {
           </ul>
           <button type="submit" className="w-full bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow mb-2">Enregistrer la DPIA</button>
           <button type="button" className="w-full bg-blue-100 text-blue-900 px-6 py-2 rounded font-semibold shadow flex items-center justify-center gap-2" disabled><DocumentArrowDownIcon className="w-5 h-5" /> Exporter PDF (bientôt)</button>
+          <button type="button" className="w-full bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow flex items-center justify-center gap-2 mb-2" onClick={() => exportDPIAPDF(form)}>Exporter en PDF</button>
           {status && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{status}</div>}
+          {saveStatus && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{saveStatus}</div>}
         </form>
       ) : (
         <form className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-8 max-w-2xl mx-auto animate-fade-in">
           <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><ArrowRightCircleIcon className="w-6 h-6 text-blue-700" /> {STEPS[step].label}</h3>
           <div className="text-gray-700 text-sm mb-4 flex items-center gap-2"><InformationCircleIcon className="w-4 h-4 text-blue-400" /> {STEPS[step].help}</div>
           {/* Special risk matrix step */}
-          {STEPS[step].key === 'risques' ? (
+          {step === 3 && (
             <div className="mb-6">
-              <div className="font-semibold text-blue-900 mb-2">Sélectionnez les risques à analyser :</div>
+              <div className="font-semibold text-blue-900 mb-2 flex items-center gap-2">Sélectionnez les risques à analyser <InformationCircleIcon className="w-4 h-4 text-blue-400" title={STEPS[3].help} /></div>
               <ul className="space-y-2 mb-4">
                 {COMMON_RISKS.map((risk, idx) => (
                   <li key={idx} className="flex items-start gap-2">
@@ -274,35 +298,33 @@ export default function DPIA() {
                     <div>
                       <span className="font-semibold text-yellow-700 flex items-center gap-1"><ExclamationTriangleIcon className="w-5 h-5" /> {risk.label}</span>
                       <div className="text-xs text-blue-700">Mesures recommandées : {risk.mesures}</div>
+                      {/* Risk matrix grid */}
                       {form.risques_selectionnes && form.risques_selectionnes.includes(idx) && (
-                        <div className="flex gap-2 mt-2">
+                        <div className="flex gap-2 mt-2 items-center">
+                          <label className="text-xs">Gravité :</label>
                           <select className="rounded border px-2 py-1 text-xs" value={form.risques_details && form.risques_details[idx]?.gravite || ''} onChange={e => handleRiskDetail(idx, 'gravite', e.target.value)}>
-                            <option value="">Gravité</option>
+                            <option value="">-</option>
                             <option value="faible">Faible</option>
                             <option value="moyenne">Moyenne</option>
                             <option value="élevée">Élevée</option>
                           </select>
+                          <label className="text-xs">Probabilité :</label>
                           <select className="rounded border px-2 py-1 text-xs" value={form.risques_details && form.risques_details[idx]?.probabilite || ''} onChange={e => handleRiskDetail(idx, 'probabilite', e.target.value)}>
-                            <option value="">Probabilité</option>
+                            <option value="">-</option>
                             <option value="faible">Faible</option>
                             <option value="moyenne">Moyenne</option>
                             <option value="élevée">Élevée</option>
                           </select>
+                          {/* Highlight high risk */}
+                          {form.risques_details && form.risques_details[idx]?.gravite === 'élevée' && form.risques_details[idx]?.probabilite === 'élevée' && (
+                            <span className="ml-2 text-red-600 font-bold animate-pulse">Risque élevé !</span>
+                          )}
                         </div>
                       )}
                     </div>
                   </li>
                 ))}
               </ul>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 mb-6">
-              {STEPS[step].fields.map(f => (
-                <div key={f.key}>
-                  <label className="block text-blue-900 font-semibold mb-1">{f.label}{f.required && ' *'}</label>
-                  <input className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400" value={form[f.key]} onChange={e => handleChange(f.key, e.target.value)} required={f.required} />
-                </div>
-              ))}
             </div>
           )}
           <div className="flex gap-4">
@@ -321,4 +343,36 @@ export default function DPIA() {
       `}</style>
     </section>
   );
+}
+
+function exportDPIAPDF(form) {
+  const doc = new jsPDF();
+  doc.setFontSize(18);
+  doc.text('Résumé DPIA', 10, 15);
+  doc.setFontSize(12);
+  let y = 25;
+  STEPS.forEach((step, i) => {
+    doc.text(`${step.label} :`, 10, y);
+    y += 7;
+    step.fields.forEach(f => {
+      doc.text(`- ${f.label}: ${form[f.key] || ''}`, 12, y);
+      y += 7;
+    });
+    if (step.key === 'risques' && form.risques_selectionnes && form.risques_selectionnes.length > 0) {
+      doc.text('Risques analysés :', 12, y);
+      y += 7;
+      form.risques_selectionnes.forEach(idx => {
+        doc.text(`- ${COMMON_RISKS[idx].label}`, 14, y);
+        y += 7;
+        if (form.risques_details && form.risques_details[idx]) {
+          doc.text(`  Gravité: ${form.risques_details[idx].gravite || '-'}, Probabilité: ${form.risques_details[idx].probabilite || '-'}`, 16, y);
+          y += 7;
+        }
+        doc.text(`  Mesures: ${COMMON_RISKS[idx].mesures}`, 16, y);
+        y += 7;
+      });
+    }
+    y += 2;
+  });
+  doc.save('DPIA_loi0908.pdf');
 } 
