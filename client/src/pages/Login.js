@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SparklesIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 
 const API_URL = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/auth';
 
@@ -36,37 +37,42 @@ export default function Login() {
   }
 
   return (
-    <section className="max-w-md mx-auto bg-white rounded shadow p-8 mt-8">
-      <div className="flex gap-2 mb-6">
-        <button
-          className={`px-4 py-2 rounded-t font-semibold border-b-2 transition-all ${tab === 'login' ? 'bg-blue-100 border-blue-700 text-blue-900' : 'bg-gray-100 border-transparent text-gray-500'}`}
-          onClick={() => { setTab('login'); setStatus(''); }}
-        >Connexion</button>
-        <button
-          className={`px-4 py-2 rounded-t font-semibold border-b-2 transition-all ${tab === 'register' ? 'bg-blue-100 border-blue-700 text-blue-900' : 'bg-gray-100 border-transparent text-gray-500'}`}
-          onClick={() => { setTab('register'); setStatus(''); }}
-        >Créer un compte</button>
-      </div>
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        <div>
-          <label className="block text-sm font-medium">Email</label>
-          <input type="email" className="input" value={email} onChange={e => setEmail(e.target.value)} required />
+    <section className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-br from-blue-900 via-blue-700 to-yellow-400 animate-fade-in">
+      {/* Hero/Intro Section */}
+      <div className="w-full max-w-md mx-auto">
+        <div className="relative overflow-hidden rounded-2xl mb-8 shadow-lg bg-gradient-to-br from-blue-900 via-blue-700 to-yellow-400 text-white p-8 flex flex-col items-center animate-fade-in">
+          <h1 className="text-3xl md:text-4xl font-extrabold mb-2 tracking-tight drop-shadow flex items-center gap-2">
+            <SparklesIcon className="w-10 h-10 text-yellow-300" /> Connexion
+          </h1>
+          <p className="text-lg font-light mb-4 drop-shadow">Accédez à votre espace conformité Loi 09-08.</p>
+          {/* Moroccan-inspired SVG */}
+          <svg width="100" height="100" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="70" cy="70" r="60" fill="#fff" fillOpacity="0.12" />
+            <circle cx="70" cy="70" r="40" fill="#fff" fillOpacity="0.10" />
+            <path d="M70 30 L90 70 L50 70 Z" fill="#2563eb" fillOpacity="0.7" />
+            <circle cx="70" cy="70" r="14" fill="#facc15" fillOpacity="0.8" />
+            <text x="70" y="77" textAnchor="middle" fontSize="16" fontWeight="bold" fill="#1e293b">CNDP</text>
+          </svg>
         </div>
-        <div>
-          <label className="block text-sm font-medium">Mot de passe</label>
-          <input type="password" className="input" value={password} onChange={e => setPassword(e.target.value)} required />
-        </div>
-        {tab === 'register' && (
-          <div>
-            <label className="block text-sm font-medium">Confirmer le mot de passe</label>
-            <input type="password" className="input" value={confirm} onChange={e => setConfirm(e.target.value)} required />
+        {/* Login Card */}
+        <form onSubmit={handleSubmit} className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-8 border-t-4 border-blue-100 animate-fade-in">
+          <div className="mb-4">
+            <label className="block text-blue-900 font-semibold mb-1">Email</label>
+            <input type="email" className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400" value={email} onChange={e => setEmail(e.target.value)} required />
           </div>
-        )}
-        <button type="submit" className="w-full bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded font-semibold mt-4">{tab === 'login' ? 'Se connecter' : 'Créer un compte'}</button>
-      </form>
-      {status && <div className="text-xs text-blue-700 mt-4">{status}</div>}
+          <div className="mb-6">
+            <label className="block text-blue-900 font-semibold mb-1">Mot de passe</label>
+            <input type="password" className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400" value={password} onChange={e => setPassword(e.target.value)} required />
+          </div>
+          <button type="submit" className="w-full bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded flex items-center justify-center text-lg font-semibold shadow transition-all animate-fade-in">
+            <LockClosedIcon className="w-5 h-5 mr-2" /> Se connecter
+          </button>
+          {status && <div className="text-xs text-blue-700 mt-4 animate-fade-in">{status}</div>}
+        </form>
+      </div>
       <style>{`
-        .input { @apply w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400; }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+        .animate-fade-in { animation: fade-in 0.7s cubic-bezier(.4,0,.2,1) both; }
       `}</style>
     </section>
   );
