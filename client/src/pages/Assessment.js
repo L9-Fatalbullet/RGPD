@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SparklesIcon, ChartBarIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../App';
 import jsPDF from 'jspdf';
@@ -79,6 +79,7 @@ export default function Assessment() {
   const [loading, setLoading] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
   const [step, setStep] = useState(0); // step = domain index
+  const saveTimeout = useRef();
 
   // Load latest assessment on mount
   useEffect(() => {
@@ -98,29 +99,32 @@ export default function Assessment() {
       .catch(() => setLoading(false));
   }, [token]);
 
-  const handleChange = (key, value) => {
-    setAnswers(a => ({ ...a, [key]: Number(value) }));
-  };
-
-  // Save assessment
-  const handleSave = async () => {
+  // Auto-save on answers change (debounced)
+  useEffect(() => {
     if (!token) return;
     setSaveStatus('Enregistrement...');
-    try {
-      const res = await fetch(API_URL, {
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(() => {
+      fetch(API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({ answers, date: new Date().toISOString() })
-      });
-      const data = await res.json();
-      if (data.success) setSaveStatus('Enregistré !');
-      else setSaveStatus("Erreur lors de l'enregistrement.");
-    } catch {
-      setSaveStatus("Erreur réseau ou serveur.");
-    }
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) setSaveStatus('Enregistré !');
+          else setSaveStatus("Erreur lors de l'enregistrement.");
+        })
+        .catch(() => setSaveStatus("Erreur réseau ou serveur."));
+    }, 700);
+    return () => clearTimeout(saveTimeout.current);
+  }, [answers, token]);
+
+  const handleChange = (key, value) => {
+    setAnswers(a => ({ ...a, [key]: Number(value) }));
   };
 
   // Step-by-step navigation
@@ -205,6 +209,7 @@ export default function Assessment() {
               <button className="bg-green-700 hover:bg-green-800 text-white px-6 py-2 rounded font-semibold shadow" onClick={() => setShow(true)}>Voir le résultat</button>
             )}
           </div>
+          <div className="text-xs text-blue-700 mt-2 animate-fade-in">{saveStatus}</div>
         </div>
       ) : (
         <div className="flex flex-col items-center mb-10 animate-fade-in w-full">
