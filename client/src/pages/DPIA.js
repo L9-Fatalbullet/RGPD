@@ -210,6 +210,35 @@ export default function DPIA() {
   const prev = () => setStep(s => Math.max(s - 1, 0));
   const startWizard = () => { setWizard(true); setStep(0); setForm(emptyDPIA()); setCurrentId(null); setReview(false); setStatus(''); };
 
+  // In DPIA component, add edit/delete logic
+  const handleEdit = dpia => {
+    setForm(dpia);
+    setCurrentId(dpia.id);
+    setWizard(true);
+    setStep(0);
+    setReview(false);
+    setStatus('');
+  };
+  const handleDelete = async id => {
+    if (!window.confirm('Supprimer cette DPIA ?')) return;
+    setStatus('Suppression...');
+    try {
+      const res = await fetch(`${API_URL}/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDPIAs(dpias => dpias.filter(d => d.id !== id));
+        setStatus('');
+      } else {
+        setStatus("Erreur lors de la suppression.");
+      }
+    } catch {
+      setStatus("Erreur réseau ou serveur.");
+    }
+  };
+
   // Render
   return (
     <section>
@@ -247,6 +276,7 @@ export default function DPIA() {
                     <th className="px-4 py-2 text-left text-blue-900 font-semibold">Nom</th>
                     <th className="px-4 py-2 text-left text-blue-900 font-semibold">Responsable</th>
                     <th className="px-4 py-2 text-left text-blue-900 font-semibold">Date</th>
+                    <th className="px-4 py-2"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -255,6 +285,10 @@ export default function DPIA() {
                       <td className="px-4 py-2 text-gray-800">{dpia.nom}</td>
                       <td className="px-4 py-2 text-gray-800">{dpia.responsable}</td>
                       <td className="px-4 py-2 text-gray-500 text-xs">{dpia.date && dpia.date.slice(0,10)}</td>
+                      <td className="px-4 py-2 flex gap-2">
+                        <button className="text-blue-700 hover:text-yellow-500" title="Modifier" onClick={() => handleEdit(dpia)}><PencilIcon className="w-5 h-5" /></button>
+                        <button className="text-red-600 hover:text-red-800" title="Supprimer" onClick={() => handleDelete(dpia.id)}><TrashIcon className="w-5 h-5" /></button>
+                      </td>
                     </tr>
                   ))}
                   {dpias.length === 0 && <tr><td colSpan={3} className="text-center text-gray-500 py-8">Aucune DPIA enregistrée.</td></tr>}
