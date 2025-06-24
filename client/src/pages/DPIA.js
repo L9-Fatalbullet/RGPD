@@ -1,29 +1,86 @@
 import React, { useEffect, useState } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon, SparklesIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, SparklesIcon, ShieldCheckIcon, ArrowRightCircleIcon, ArrowLeftCircleIcon, CheckCircleIcon, InformationCircleIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../App';
 
 const API_URL = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/dpias';
 
-const FIELDS = [
-  { key: 'nom', label: 'Nom du traitement', required: true },
-  { key: 'description', label: 'Description du traitement', required: true },
-  { key: 'risques', label: 'Risques identifiés', required: true },
-  { key: 'mesures', label: 'Mesures proposées', required: true },
-  { key: 'statut', label: 'Statut', required: true, type: 'select', options: ['En cours', 'Validée', 'À revoir'] },
+const STEPS = [
+  {
+    key: 'description',
+    label: 'Description du traitement',
+    help: "Décrivez le traitement, l'organisme, le responsable, etc.",
+    fields: [
+      { key: 'nom', label: 'Nom du traitement', required: true },
+      { key: 'responsable', label: 'Responsable', required: true },
+      { key: 'description', label: 'Description', required: true },
+    ],
+  },
+  {
+    key: 'finalites',
+    label: 'Finalités du traitement',
+    help: "Expliquez pourquoi les données sont traitées.",
+    fields: [
+      { key: 'finalites', label: 'Finalités', required: true },
+    ],
+  },
+  {
+    key: 'donnees',
+    label: 'Données & personnes concernées',
+    help: "Listez les catégories de données et de personnes.",
+    fields: [
+      { key: 'categories_donnees', label: 'Catégories de données', required: true },
+      { key: 'personnes_concernees', label: 'Personnes concernées', required: true },
+    ],
+  },
+  {
+    key: 'risques',
+    label: 'Analyse des risques',
+    help: "Identifiez les risques (ex: accès non autorisé, perte de données).",
+    fields: [
+      { key: 'risques', label: 'Risques identifiés', required: true },
+      { key: 'gravite', label: 'Gravité (faible/moyenne/élevée)', required: true },
+      { key: 'probabilite', label: 'Probabilité (faible/moyenne/élevée)', required: true },
+    ],
+  },
+  {
+    key: 'mesures',
+    label: 'Mesures de sécurité',
+    help: "Décrivez les mesures pour réduire les risques.",
+    fields: [
+      { key: 'mesures', label: 'Mesures proposées', required: true },
+    ],
+  },
+  {
+    key: 'necessite',
+    label: 'Nécessité & proportionnalité',
+    help: "Justifiez la légitimité du traitement.",
+    fields: [
+      { key: 'necessite', label: 'Nécessité/proportionnalité', required: true },
+    ],
+  },
+  {
+    key: 'consultation',
+    label: 'Consultation CNDP',
+    help: "Avez-vous consulté la CNDP ou d'autres parties prenantes ?",
+    fields: [
+      { key: 'consultation', label: 'Consultation (oui/non/détails)', required: false },
+    ],
+  },
 ];
 
 function emptyDPIA() {
-  return Object.fromEntries(FIELDS.map(f => [f.key, '']));
+  return Object.fromEntries(STEPS.flatMap(s => s.fields.map(f => [f.key, ''])));
 }
 
 export default function DPIA() {
   const { token } = useAuth();
   const [dpias, setDPIAs] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [modal, setModal] = useState(false);
-  const [editId, setEditId] = useState(null);
+  const [wizard, setWizard] = useState(false);
+  const [step, setStep] = useState(0);
   const [form, setForm] = useState(emptyDPIA());
   const [status, setStatus] = useState('');
+  const [review, setReview] = useState(false);
 
   // Load DPIAs
   useEffect(() => {
@@ -33,36 +90,25 @@ export default function DPIA() {
       .then(res => res.json())
       .then(data => { setDPIAs(data); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [token, modal]);
-
-  // Open modal for add/edit
-  const openModal = (dpia = null) => {
-    setEditId(dpia ? dpia.id : null);
-    setForm(dpia ? { ...dpia } : emptyDPIA());
-    setModal(true);
-    setStatus('');
-  };
-  const closeModal = () => { setModal(false); setEditId(null); setForm(emptyDPIA()); setStatus(''); };
+  }, [token, wizard]);
 
   // Handle form change
   const handleChange = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  // Save (add or edit)
+  // Save DPIA
   const handleSave = async e => {
     e.preventDefault();
     setStatus('Enregistrement...');
-    const method = editId ? 'PUT' : 'POST';
-    const url = editId ? `${API_URL}/${editId}` : API_URL;
     try {
-      const res = await fetch(url, {
-        method,
+      const res = await fetch(API_URL, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(form)
       });
       const data = await res.json();
       if (data.success) {
         setStatus('Enregistré !');
-        setTimeout(closeModal, 700);
+        setTimeout(() => { setWizard(false); setReview(false); setForm(emptyDPIA()); setStatus(''); }, 1000);
       } else {
         setStatus("Erreur lors de l'enregistrement.");
       }
@@ -71,23 +117,12 @@ export default function DPIA() {
     }
   };
 
-  // Delete
-  const handleDelete = async id => {
-    if (!window.confirm('Supprimer cette DPIA ?')) return;
-    setStatus('Suppression...');
-    try {
-      const res = await fetch(`${API_URL}/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.success) setDPIAs(d => d.filter(x => x.id !== id));
-      setStatus('');
-    } catch {
-      setStatus("Erreur réseau ou serveur.");
-    }
-  };
+  // Wizard navigation
+  const next = () => setStep(s => Math.min(s + 1, STEPS.length - 1));
+  const prev = () => setStep(s => Math.max(s - 1, 0));
+  const startWizard = () => { setWizard(true); setStep(0); setForm(emptyDPIA()); setReview(false); setStatus(''); };
 
+  // Render
   return (
     <section>
       {/* Hero/Intro Section */}
@@ -96,7 +131,7 @@ export default function DPIA() {
           <h1 className="text-3xl md:text-4xl font-extrabold mb-2 tracking-tight drop-shadow flex items-center gap-2">
             <ShieldCheckIcon className="w-10 h-10 text-yellow-300" /> DPIA (Analyse d'impact)
           </h1>
-          <p className="text-lg md:text-xl font-light mb-4 drop-shadow">Gérez vos analyses d'impact pour les traitements à risque conformément à la Loi 09-08.</p>
+          <p className="text-lg md:text-xl font-light mb-4 drop-shadow">Générez une analyse d'impact conforme à la Loi 09-08 grâce à l'assistant pas à pas.</p>
         </div>
         <div className="flex-1 flex justify-center items-center">
           {/* Moroccan-inspired SVG */}
@@ -109,66 +144,70 @@ export default function DPIA() {
           </svg>
         </div>
       </div>
-      {/* List & Add Button */}
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-blue-900 flex items-center gap-2"><SparklesIcon className="w-7 h-7 text-blue-700" /> Mes DPIA</h2>
-        <button className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-4 py-2 rounded flex items-center gap-2 font-semibold shadow" onClick={() => openModal()}><PlusIcon className="w-5 h-5" /> Ajouter</button>
-      </div>
-      {loading ? <div className="text-blue-700">Chargement...</div> : (
-        <div className="overflow-x-auto animate-fade-in">
-          <table className="min-w-full bg-white/80 backdrop-blur rounded-xl shadow-lg">
-            <thead>
-              <tr>
-                {FIELDS.map(f => <th key={f.key} className="px-4 py-2 text-left text-blue-900 font-semibold">{f.label}</th>)}
-                <th className="px-4 py-2 text-left text-blue-900 font-semibold">Date</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {dpias.map(dpia => (
-                <tr key={dpia.id} className="border-b border-blue-100 hover:bg-blue-50/40 transition">
-                  {FIELDS.map(f => (
-                    <td key={f.key} className="px-4 py-2 text-gray-800">
-                      {f.type === 'select' ? dpia[f.key] : dpia[f.key]}
-                    </td>
+      {/* Wizard or List */}
+      {!wizard ? (
+        <>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-blue-900 flex items-center gap-2"><SparklesIcon className="w-7 h-7 text-blue-700" /> Mes DPIA</h2>
+            <button className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-4 py-2 rounded flex items-center gap-2 font-semibold shadow" onClick={startWizard}><PlusIcon className="w-5 h-5" /> Nouvelle DPIA</button>
+          </div>
+          {loading ? <div className="text-blue-700">Chargement...</div> : (
+            <div className="overflow-x-auto animate-fade-in">
+              <table className="min-w-full bg-white/80 backdrop-blur rounded-xl shadow-lg">
+                <thead>
+                  <tr>
+                    <th className="px-4 py-2 text-left text-blue-900 font-semibold">Nom</th>
+                    <th className="px-4 py-2 text-left text-blue-900 font-semibold">Responsable</th>
+                    <th className="px-4 py-2 text-left text-blue-900 font-semibold">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dpias.map(dpia => (
+                    <tr key={dpia.id} className="border-b border-blue-100 hover:bg-blue-50/40 transition">
+                      <td className="px-4 py-2 text-gray-800">{dpia.nom}</td>
+                      <td className="px-4 py-2 text-gray-800">{dpia.responsable}</td>
+                      <td className="px-4 py-2 text-gray-500 text-xs">{dpia.date && dpia.date.slice(0,10)}</td>
+                    </tr>
                   ))}
-                  <td className="px-4 py-2 text-gray-500 text-xs">{dpia.date && dpia.date.slice(0,10)}</td>
-                  <td className="px-4 py-2 flex gap-2">
-                    <button className="text-blue-700 hover:text-yellow-500" onClick={() => openModal(dpia)}><PencilIcon className="w-5 h-5" /></button>
-                    <button className="text-red-600 hover:text-red-800" onClick={() => handleDelete(dpia.id)}><TrashIcon className="w-5 h-5" /></button>
-                  </td>
-                </tr>
-              ))}
-              {dpias.length === 0 && <tr><td colSpan={FIELDS.length+2} className="text-center text-gray-500 py-8">Aucune DPIA enregistrée.</td></tr>}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {/* Modal */}
-      {modal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fade-in">
-          <form className="bg-white rounded-xl shadow-lg p-8 w-full max-w-lg relative" onSubmit={handleSave}>
-            <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-blue-700 text-2xl" onClick={closeModal}>&times;</button>
-            <h3 className="text-xl font-bold text-blue-900 mb-4">{editId ? 'Modifier' : 'Ajouter'} une DPIA</h3>
-            <div className="grid grid-cols-1 gap-4">
-              {FIELDS.map(f => (
-                <div key={f.key}>
-                  <label className="block text-blue-900 font-semibold mb-1">{f.label}{f.required && ' *'}</label>
-                  {f.type === 'select' ? (
-                    <select className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400" value={form[f.key]} onChange={e => handleChange(f.key, e.target.value)} required={f.required}>
-                      <option value="">Choisir...</option>
-                      {f.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                    </select>
-                  ) : (
-                    <input className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400" value={form[f.key]} onChange={e => handleChange(f.key, e.target.value)} required={f.required} />
-                  )}
-                </div>
-              ))}
+                  {dpias.length === 0 && <tr><td colSpan={3} className="text-center text-gray-500 py-8">Aucune DPIA enregistrée.</td></tr>}
+                </tbody>
+              </table>
             </div>
-            <button type="submit" className="mt-6 w-full bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow">{editId ? 'Enregistrer les modifications' : 'Ajouter'}</button>
-            {status && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{status}</div>}
-          </form>
-        </div>
+          )}
+        </>
+      ) : review ? (
+        <form className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-8 max-w-2xl mx-auto animate-fade-in" onSubmit={handleSave}>
+          <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><CheckCircleIcon className="w-6 h-6 text-green-600" /> Revue finale</h3>
+          <ul className="mb-6 space-y-2">
+            {STEPS.map(s => s.fields.map(f => (
+              <li key={f.key} className="flex gap-2"><span className="font-semibold text-blue-900">{f.label}:</span> <span>{form[f.key]}</span></li>
+            )))}
+          </ul>
+          <button type="submit" className="w-full bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow mb-2">Enregistrer la DPIA</button>
+          <button type="button" className="w-full bg-blue-100 text-blue-900 px-6 py-2 rounded font-semibold shadow flex items-center justify-center gap-2" disabled><DocumentArrowDownIcon className="w-5 h-5" /> Exporter PDF (bientôt)</button>
+          {status && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{status}</div>}
+        </form>
+      ) : (
+        <form className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-8 max-w-2xl mx-auto animate-fade-in">
+          <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><ArrowRightCircleIcon className="w-6 h-6 text-blue-700" /> {STEPS[step].label}</h3>
+          <div className="text-gray-700 text-sm mb-4 flex items-center gap-2"><InformationCircleIcon className="w-4 h-4 text-blue-400" /> {STEPS[step].help}</div>
+          <div className="grid grid-cols-1 gap-4 mb-6">
+            {STEPS[step].fields.map(f => (
+              <div key={f.key}>
+                <label className="block text-blue-900 font-semibold mb-1">{f.label}{f.required && ' *'}</label>
+                <input className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400" value={form[f.key]} onChange={e => handleChange(f.key, e.target.value)} required={f.required} />
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-4">
+            <button type="button" className="bg-blue-100 text-blue-900 px-6 py-2 rounded font-semibold shadow flex items-center gap-2" onClick={prev} disabled={step === 0}><ArrowLeftCircleIcon className="w-5 h-5" /> Précédent</button>
+            {step < STEPS.length - 1 ? (
+              <button type="button" className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow flex items-center gap-2" onClick={next}>Suivant <ArrowRightCircleIcon className="w-5 h-5" /></button>
+            ) : (
+              <button type="button" className="bg-green-700 hover:bg-green-800 text-white px-6 py-2 rounded font-semibold shadow flex items-center gap-2" onClick={() => setReview(true)}><CheckCircleIcon className="w-5 h-5" /> Revue finale</button>
+            )}
+          </div>
+        </form>
       )}
       <style>{`
         @keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
