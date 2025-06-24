@@ -107,6 +107,7 @@ export default function DPIA() {
   const [review, setReview] = useState(false);
   const saveTimeout = useRef();
   const [saveStatus, setSaveStatus] = useState('');
+  const [currentId, setCurrentId] = useState(null);
 
   // Load DPIAs
   useEffect(() => {
@@ -153,24 +154,34 @@ export default function DPIA() {
 
   // Auto-save on form change (debounced)
   useEffect(() => {
-    if (!token) return;
+    if (!token || !wizard) return;
     setSaveStatus('Enregistrement...');
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
-    saveTimeout.current = setTimeout(() => {
-      fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(form)
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) setSaveStatus('Enregistré !');
-          else setSaveStatus("Erreur lors de l'enregistrement.");
-        })
-        .catch(() => setSaveStatus("Erreur réseau ou serveur."));
+    saveTimeout.current = setTimeout(async () => {
+      let res, data;
+      if (!currentId) {
+        // Create new DPIA
+        res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(form)
+        });
+        data = await res.json();
+        if (data.success && data.id) setCurrentId(data.id);
+      } else {
+        // Update existing DPIA
+        res = await fetch(`${API_URL}/${currentId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(form)
+        });
+        data = await res.json();
+      }
+      if (data && data.success) setSaveStatus('Enregistré !');
+      else setSaveStatus("Erreur lors de l'enregistrement.");
     }, 700);
     return () => clearTimeout(saveTimeout.current);
-  }, [form, token]);
+  }, [form, token, wizard, currentId]);
 
   // Save DPIA
   const handleSave = async e => {
@@ -197,7 +208,7 @@ export default function DPIA() {
   // Wizard navigation
   const next = () => setStep(s => Math.min(s + 1, STEPS.length - 1));
   const prev = () => setStep(s => Math.max(s - 1, 0));
-  const startWizard = () => { setWizard(true); setStep(0); setForm(emptyDPIA()); setReview(false); setStatus(''); };
+  const startWizard = () => { setWizard(true); setStep(0); setForm(emptyDPIA()); setCurrentId(null); setReview(false); setStatus(''); };
 
   // Render
   return (
@@ -239,7 +250,7 @@ export default function DPIA() {
                   </tr>
                 </thead>
                 <tbody>
-                  {dpias.map(dpia => (
+                  {dpias.filter(dpia => dpia.nom || Object.values(dpia).some(v => typeof v === 'string' && v.trim() !== '' && v !== dpia.id && v !== dpia.userId && v !== dpia.date)).map(dpia => (
                     <tr key={dpia.id} className="border-b border-blue-100 hover:bg-blue-50/40 transition">
                       <td className="px-4 py-2 text-gray-800">{dpia.nom}</td>
                       <td className="px-4 py-2 text-gray-800">{dpia.responsable}</td>
