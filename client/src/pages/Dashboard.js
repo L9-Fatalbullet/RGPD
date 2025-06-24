@@ -118,32 +118,9 @@ export default function Dashboard() {
         )}
       </div>
       {/* Compliance Status Cards */}
-      <div className="grid md:grid-cols-2 gap-6 mb-10 animate-fade-in">
-        {STATUS.map((s, i) => (
-          <div key={i} className={`group ${s.color} border-l-4 rounded-xl shadow-lg p-6 flex items-center gap-4 hover:scale-105 hover:shadow-2xl transition animate-fade-in`} style={{ animationDelay: `${i * 0.1}s` }}>
-            {s.icon}
-            <div>
-              <div className="text-2xl font-bold text-blue-900 group-hover:text-yellow-700 transition">{s.value}</div>
-              <div className="font-semibold text-blue-900">{s.label}</div>
-              <div className="text-gray-700 text-xs">{s.desc}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-      {/* Recommendations */}
-      <div className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-6 mb-10 border-t-4 border-blue-100 animate-fade-in">
-        <div className="font-bold text-blue-900 mb-2 flex items-center gap-2"><ChartBarIcon className="w-6 h-6 text-blue-700" />Recommandations</div>
-        <ul className="list-disc pl-6 text-gray-700">
-          {RECOMMENDATIONS.map((rec, i) => (
-            <li key={i} className="mb-1 hover:text-blue-700 transition animate-fade-in" style={{ animationDelay: `${i * 0.1}s` }}>{rec}</li>
-          ))}
-        </ul>
-      </div>
-      {/* Placeholder for future charts/visualizations */}
-      <div className="bg-gradient-to-r from-blue-100 via-yellow-50 to-blue-50 rounded-xl shadow-inner p-8 flex flex-col items-center animate-fade-in">
-        <div className="font-semibold text-blue-900 mb-2">Visualisation de la conformité (à venir)</div>
-        <div className="w-32 h-32 bg-white/60 rounded-full flex items-center justify-center text-blue-700 font-bold text-2xl shadow-inner">--%</div>
-      </div>
+      {/* REMOVE: <div className="grid md:grid-cols-2 gap-6 mb-10 animate-fade-in"> ... </div> */}
+      {/* REMOVE: Recommendations section */}
+      {/* REMOVE: Placeholder for future charts/visualizations */}
       <style>{`
         @keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
         .animate-fade-in { animation: fade-in 0.7s cubic-bezier(.4,0,.2,1) both; }
