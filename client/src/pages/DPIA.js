@@ -88,6 +88,17 @@ const STEPS = [
   },
 ];
 
+// Dropdown options for select fields
+const CATEGORIES_DONNEES = [
+  "Identité", "Contact", "Adresse", "Date de naissance", "Données bancaires", "Données de santé", "Biométriques", "Professionnelles", "Photos/Vidéos", "Connexion/IT", "Localisation", "Habitudes de vie", "Situation familiale", "Situation économique", "Données judiciaires", "Données scolaires", "Données de navigation", "Autre..."
+];
+const PERSONNES_CONCERNEES = [
+  "Salariés", "Clients", "Prospects", "Fournisseurs", "Visiteurs", "Patients", "Étudiants", "Enfants", "Usagers", "Membres", "Bénéficiaires", "Candidats", "Partenaires", "Population générale", "Autre..."
+];
+const FINALITES = [
+  "Gestion RH", "Gestion de la paie", "Gestion des accès", "Sécurité des locaux", "Vidéosurveillance", "Marketing", "Prospection commerciale", "Gestion des clients", "Gestion des fournisseurs", "Gestion des contrats", "Gestion des formations", "Gestion des candidatures", "Gestion des adhésions", "Gestion des dossiers médicaux", "Gestion des dossiers scolaires", "Gestion des plaintes", "Gestion des événements", "Gestion des newsletters", "Gestion des réseaux sociaux", "Gestion des cookies", "Autre..."
+];
+
 function emptyDPIA() {
   return {
     ...Object.fromEntries(STEPS.flatMap(s => s.fields.map(f => [f.key, '']))),
@@ -374,17 +385,116 @@ export default function DPIA() {
           )}
           {step !== 3 && (
             <div className="grid grid-cols-1 gap-4 mb-6">
-              {STEPS[step].fields.map(f => (
-                <div key={f.key}>
-                  <label className="block text-blue-900 font-semibold mb-1">{f.label}{f.required && ' *'}</label>
-                  <div className="text-xs text-blue-700 mb-1">{f.help}</div>
-                  {f.key === 'description' || f.key === 'mesures' || f.key === 'necessite' ? (
-                    <textarea className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400" value={form[f.key]} onChange={e => handleChange(f.key, e.target.value)} required={f.required} />
-                  ) : (
-                    <input className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400" value={form[f.key]} onChange={e => handleChange(f.key, e.target.value)} required={f.required} />
-                  )}
-                </div>
-              ))}
+              {STEPS[step].fields.map(f => {
+                // Catégories de données
+                if (f.key === 'categories_donnees') return (
+                  <div key={f.key}>
+                    <label className="block text-blue-900 font-semibold mb-1">{f.label}{f.required && ' *'}</label>
+                    <div className="text-xs text-blue-700 mb-1">{f.help}</div>
+                    <select
+                      className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400"
+                      value={CATEGORIES_DONNEES.includes(form.categories_donnees) ? form.categories_donnees : (form.categories_donnees.startsWith('Autre:') ? 'Autre...' : '')}
+                      onChange={e => {
+                        if (e.target.value === 'Autre...') {
+                          setForm(fm => ({ ...fm, categories_donnees: 'Autre:' }));
+                        } else {
+                          setForm(fm => ({ ...fm, categories_donnees: e.target.value }));
+                        }
+                      }}
+                      required={f.required}
+                    >
+                      <option value="">Sélectionner...</option>
+                      {CATEGORIES_DONNEES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                    {form.categories_donnees.startsWith('Autre:') && (
+                      <input
+                        className="mt-2 w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400"
+                        type="text"
+                        placeholder="Précisez la catégorie"
+                        value={form.categories_donnees.replace('Autre:', '')}
+                        onChange={e => setForm(fm => ({ ...fm, categories_donnees: 'Autre:' + e.target.value }))}
+                        required={f.required}
+                      />
+                    )}
+                  </div>
+                );
+                // Personnes concernées
+                if (f.key === 'personnes_concernees') return (
+                  <div key={f.key}>
+                    <label className="block text-blue-900 font-semibold mb-1">{f.label}{f.required && ' *'}</label>
+                    <div className="text-xs text-blue-700 mb-1">{f.help}</div>
+                    <select
+                      className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400"
+                      value={PERSONNES_CONCERNEES.includes(form.personnes_concernees) ? form.personnes_concernees : (form.personnes_concernees.startsWith('Autre:') ? 'Autre...' : '')}
+                      onChange={e => {
+                        if (e.target.value === 'Autre...') {
+                          setForm(fm => ({ ...fm, personnes_concernees: 'Autre:' }));
+                        } else {
+                          setForm(fm => ({ ...fm, personnes_concernees: e.target.value }));
+                        }
+                      }}
+                      required={f.required}
+                    >
+                      <option value="">Sélectionner...</option>
+                      {PERSONNES_CONCERNEES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                    {form.personnes_concernees.startsWith('Autre:') && (
+                      <input
+                        className="mt-2 w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400"
+                        type="text"
+                        placeholder="Précisez la personne concernée"
+                        value={form.personnes_concernees.replace('Autre:', '')}
+                        onChange={e => setForm(fm => ({ ...fm, personnes_concernees: 'Autre:' + e.target.value }))}
+                        required={f.required}
+                      />
+                    )}
+                  </div>
+                );
+                // Finalités
+                if (f.key === 'finalites') return (
+                  <div key={f.key}>
+                    <label className="block text-blue-900 font-semibold mb-1">{f.label}{f.required && ' *'}</label>
+                    <div className="text-xs text-blue-700 mb-1">{f.help}</div>
+                    <select
+                      className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400"
+                      value={FINALITES.includes(form.finalites) ? form.finalites : (form.finalites.startsWith('Autre:') ? 'Autre...' : '')}
+                      onChange={e => {
+                        if (e.target.value === 'Autre...') {
+                          setForm(fm => ({ ...fm, finalites: 'Autre:' }));
+                        } else {
+                          setForm(fm => ({ ...fm, finalites: e.target.value }));
+                        }
+                      }}
+                      required={f.required}
+                    >
+                      <option value="">Sélectionner...</option>
+                      {FINALITES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                    {form.finalites.startsWith('Autre:') && (
+                      <input
+                        className="mt-2 w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400"
+                        type="text"
+                        placeholder="Précisez la finalité"
+                        value={form.finalites.replace('Autre:', '')}
+                        onChange={e => setForm(fm => ({ ...fm, finalites: 'Autre:' + e.target.value }))}
+                        required={f.required}
+                      />
+                    )}
+                  </div>
+                );
+                // Default: text/textarea
+                return (
+                  <div key={f.key}>
+                    <label className="block text-blue-900 font-semibold mb-1">{f.label}{f.required && ' *'}</label>
+                    <div className="text-xs text-blue-700 mb-1">{f.help}</div>
+                    {f.key === 'description' || f.key === 'mesures' || f.key === 'necessite' ? (
+                      <textarea className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400" value={form[f.key]} onChange={e => handleChange(f.key, e.target.value)} required={f.required} />
+                    ) : (
+                      <input className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400" value={form[f.key]} onChange={e => handleChange(f.key, e.target.value)} required={f.required} />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
           <div className="flex gap-4">
