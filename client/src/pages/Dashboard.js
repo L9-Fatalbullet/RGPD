@@ -1,77 +1,76 @@
 import React from 'react';
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
-import { CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { ChartBarIcon, ClipboardDocumentListIcon, BookOpenIcon, SparklesIcon } from '@heroicons/react/24/outline';
 
-const DOMAINS = [
-  { key: 'gouvernance', label: 'Gouvernance', color: 'bg-blue-100', icon: <CheckCircleIcon className="w-6 h-6 text-blue-700" /> },
-  { key: 'juridique', label: 'Juridique', color: 'bg-green-100', icon: <CheckCircleIcon className="w-6 h-6 text-green-700" /> },
-  { key: 'technique', label: 'Technique', color: 'bg-yellow-100', icon: <CheckCircleIcon className="w-6 h-6 text-yellow-700" /> },
-  { key: 'sensibilisation', label: 'Sensibilisation', color: 'bg-purple-100', icon: <CheckCircleIcon className="w-6 h-6 text-purple-700" /> },
+const stats = [
+  { label: "Score de maturité", value: "70%", color: "bg-blue-100 text-blue-800", icon: <ChartBarIcon className="w-7 h-7 text-blue-600" /> },
+  { label: "Traitements enregistrés", value: "5", color: "bg-yellow-100 text-yellow-800", icon: <ClipboardDocumentListIcon className="w-7 h-7 text-yellow-600" /> },
+  { label: "DPIA réalisées", value: "2", color: "bg-green-100 text-green-800", icon: <SparklesIcon className="w-7 h-7 text-green-600" /> },
 ];
 
-// Mock scores (replace with backend data later)
-const domainScores = [
-  { domain: 'Gouvernance', score: 70, key: 'gouvernance' },
-  { domain: 'Juridique', score: 55, key: 'juridique' },
-  { domain: 'Technique', score: 80, key: 'technique' },
-  { domain: 'Sensibilisation', score: 40, key: 'sensibilisation' },
+const actions = [
+  { label: "Auto-évaluation", desc: "Évaluez votre conformité", to: "/assessment", icon: <ChartBarIcon className="w-6 h-6" /> },
+  { label: "Générer un document", desc: "Créez vos documents CNDP", to: "/documents", icon: <ClipboardDocumentListIcon className="w-6 h-6" /> },
+  { label: "Guide Loi 09-08", desc: "Découvrez les étapes clés", to: "/guide", icon: <BookOpenIcon className="w-6 h-6" /> },
+  { label: "Bonnes pratiques", desc: "Conseils et actualités", to: "/best-practices", icon: <SparklesIcon className="w-6 h-6" /> },
 ];
-const globalScore = Math.round(domainScores.reduce((sum, d) => sum + d.score, 0) / domainScores.length);
-let maturity = 'Faible';
-if (globalScore >= 80) maturity = 'Élevé';
-else if (globalScore >= 50) maturity = 'Moyen';
-
-const RECOMMENDATIONS = {
-  gouvernance: "Renforcez la gouvernance en désignant un responsable et en documentant vos procédures.",
-  juridique: "Mettez à jour vos mentions légales et assurez-vous de la conformité des contrats.",
-  technique: "Améliorez la sécurité technique : chiffrement, sauvegardes, contrôle d'accès.",
-  sensibilisation: "Développez la formation et la sensibilisation de votre personnel.",
-};
 
 export default function Dashboard() {
   return (
     <section>
-      <h1 className="text-2xl font-bold mb-2">Tableau de bord de conformité</h1>
-      <p className="text-gray-700 mb-4">Visualisez votre niveau de maturité et suivez vos progrès vers la conformité à la Loi 09-08.</p>
-      <div className="w-full bg-gray-200 rounded-full h-3 mb-6">
-        <div
-          className="bg-blue-600 h-3 rounded-full transition-all"
-          style={{ width: `${globalScore}%` }}
-        ></div>
-      </div>
-      <div className="flex flex-col md:flex-row gap-8 items-center mb-8">
-        <div className="flex-1 bg-white rounded shadow p-6 flex flex-col items-center">
-          <div className="text-4xl font-extrabold text-blue-700 mb-2">{globalScore}%</div>
-          <div className="mb-2 text-lg">Niveau de maturité : <span className="font-bold">{maturity}</span></div>
-          <div className="w-full h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={domainScores} outerRadius={90}>
-                <PolarGrid />
-                <PolarAngleAxis dataKey="domain" />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} />
-                <Radar name="Score" dataKey="score" stroke="#2563eb" fill="#2563eb" fillOpacity={0.5} />
-              </RadarChart>
-            </ResponsiveContainer>
+      {/* Hero Section */}
+      <div className="relative overflow-hidden rounded-2xl mb-10 shadow-lg bg-gradient-to-br from-blue-900 via-blue-700 to-yellow-400 text-white p-8 flex flex-col md:flex-row items-center gap-8 animate-fade-in">
+        <div className="flex-1">
+          <h1 className="text-3xl md:text-4xl font-extrabold mb-2 tracking-tight drop-shadow">Bienvenue sur la plateforme Conformité CNDP</h1>
+          <p className="text-lg md:text-xl font-light mb-4 drop-shadow">Votre assistant moderne pour la conformité à la Loi marocaine 09-08 sur la protection des données personnelles.</p>
+          <div className="flex gap-4 mt-4">
+            <a href="/assessment" className="bg-white/90 hover:bg-yellow-400 hover:text-blue-900 text-blue-900 font-bold px-6 py-3 rounded-lg shadow transition-all text-lg">Commencer l'auto-évaluation</a>
+            <a href="/guide" className="bg-blue-800/80 hover:bg-blue-900 text-white font-semibold px-6 py-3 rounded-lg shadow transition-all text-lg">Voir le guide</a>
           </div>
         </div>
-        <div className="flex-1 grid grid-cols-1 gap-4">
-          {domainScores.map((d, i) => (
-            <div key={d.key} className={`flex items-center gap-3 rounded p-4 shadow ${DOMAINS[i].color}`}>
-              {d.score >= 60 ? DOMAINS[i].icon : <ExclamationTriangleIcon className="w-6 h-6 text-red-500" />}
-              <div>
-                <div className="font-semibold text-gray-800">{DOMAINS[i].label} <span className="ml-2 text-sm font-normal text-gray-500">{d.score}%</span></div>
-                <div className="text-xs text-gray-700 mt-1">
-                  {d.score < 60 ? <span className="text-red-600 font-medium">{RECOMMENDATIONS[d.key]}</span> : <span className="text-green-700">Conforme</span>}
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="flex-1 flex justify-center items-center">
+          {/* Moroccan/CNDP-inspired SVG illustration */}
+          <svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="90" cy="90" r="80" fill="#fff" fillOpacity="0.15" />
+            <circle cx="90" cy="90" r="60" fill="#fff" fillOpacity="0.10" />
+            <path d="M90 40 L110 90 L70 90 Z" fill="#2563eb" fillOpacity="0.7" />
+            <circle cx="90" cy="90" r="20" fill="#facc15" fillOpacity="0.8" />
+            <text x="90" y="97" textAnchor="middle" fontSize="22" fontWeight="bold" fill="#1e293b">CNDP</text>
+          </svg>
         </div>
       </div>
-      <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded shadow mb-4">
-        <div className="font-semibold text-blue-900 mb-1">Conseil général :</div>
-        <div className="text-gray-700 text-sm">Pour atteindre un niveau de conformité élevé, améliorez les domaines faibles et maintenez les bonnes pratiques dans les domaines forts.</div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        {stats.map((s, i) => (
+          <div key={i} className={`rounded-xl shadow-lg p-6 flex flex-col items-center gap-2 ${s.color} animate-fade-in`} style={{ animationDelay: `${i * 0.1}s` }}>
+            {s.icon}
+            <div className="text-3xl font-extrabold">{s.value}</div>
+            <div className="text-sm font-semibold opacity-80">{s.label}</div>
+          </div>
+        ))}
       </div>
+      {/* Action Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+        {actions.map((a, i) => (
+          <a
+            key={a.to}
+            href={a.to}
+            className="group bg-white/80 backdrop-blur rounded-2xl shadow-lg p-8 flex items-center gap-6 hover:scale-[1.03] hover:shadow-2xl transition-all border-t-4 border-blue-100 hover:border-yellow-400 animate-fade-in"
+            style={{ animationDelay: `${i * 0.1 + 0.3}s` }}
+          >
+            <div className="bg-blue-100 rounded-full p-4 group-hover:bg-yellow-400 transition-all">
+              {a.icon}
+            </div>
+            <div>
+              <div className="text-xl font-bold text-blue-900 group-hover:text-yellow-700 transition-all">{a.label}</div>
+              <div className="text-gray-700 text-sm mt-1">{a.desc}</div>
+            </div>
+          </a>
+        ))}
+      </div>
+      <style>{`
+        @keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+        .animate-fade-in { animation: fade-in 0.7s cubic-bezier(.4,0,.2,1) both; }
+      `}</style>
     </section>
   );
 } 
