@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
-import { HomeIcon, ChartBarIcon, ClipboardDocumentListIcon, BookOpenIcon, DocumentTextIcon, SparklesIcon, ArrowLeftOnRectangleIcon, DocumentCheckIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, ChartBarIcon, ClipboardDocumentListIcon, BookOpenIcon, DocumentTextIcon, SparklesIcon, ArrowLeftOnRectangleIcon, DocumentCheckIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import Dashboard from './pages/Dashboard';
 import Assessment from './pages/Assessment';
 import Guide from './pages/Guide';
@@ -8,6 +8,7 @@ import Documents from './pages/Documents';
 import BestPractices from './pages/BestPractices';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Progress from './pages/Progress';
 
 // AuthContext
 const AuthContext = createContext();
@@ -59,6 +60,7 @@ function ProtectedRoute({ children }) {
 function Sidebar({ token, logout }) {
   const nav = [
     { to: '/dashboard', label: 'Accueil', icon: <HomeIcon className="w-6 h-6" /> },
+    { to: '/progress', label: 'Progression', icon: <ArrowPathIcon className="w-6 h-6" /> },
     { to: '/assessment', label: 'Auto-évaluation', icon: <ChartBarIcon className="w-6 h-6" /> },
     { to: '/register', label: 'Registre', icon: <DocumentCheckIcon className="w-6 h-6" /> },
     { to: '/guide', label: 'Guide', icon: <BookOpenIcon className="w-6 h-6" /> },
@@ -112,6 +114,7 @@ function App() {
             <div className="max-w-5xl mx-auto bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6 md:p-10">
               <Routes>
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
                 <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
                 <Route path="/register" element={<ProtectedRoute><Register /></ProtectedRoute>} />
                 <Route path="/guide" element={<Guide />} />
