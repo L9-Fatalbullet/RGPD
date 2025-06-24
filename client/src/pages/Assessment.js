@@ -40,9 +40,14 @@ const RECOMMENDATIONS = {
   sensibilisation: "Développez la formation et la sensibilisation de votre personnel.",
 };
 
+const API_URL = 'http://localhost:4000/api/assessments';
+
 export default function Assessment() {
   const [answers, setAnswers] = useState(Array(QUESTIONS.length).fill(0));
   const [submitted, setSubmitted] = useState(false);
+  const [saveStatus, setSaveStatus] = useState('');
+  const [loadId, setLoadId] = useState('');
+  const [loadStatus, setLoadStatus] = useState('');
 
   // Calculate domain scores
   const domainScores = DOMAINS.map(domain => {
@@ -77,10 +82,63 @@ export default function Assessment() {
     setSubmitted(true);
   }
 
+  async function handleSave() {
+    setSaveStatus('Enregistrement...');
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers, date: new Date().toISOString() })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSaveStatus(`Enregistré ! ID : ${data.id}`);
+      } else {
+        setSaveStatus("Erreur lors de l'enregistrement.");
+      }
+    } catch (e) {
+      setSaveStatus("Erreur réseau ou serveur.");
+    }
+  }
+
+  async function handleLoad() {
+    setLoadStatus('Chargement...');
+    try {
+      const res = await fetch(`${API_URL}/${loadId}`);
+      if (!res.ok) throw new Error('Not found');
+      const data = await res.json();
+      if (data.answers) {
+        setAnswers(data.answers);
+        setSubmitted(false);
+        setLoadStatus('Chargé !');
+      } else {
+        setLoadStatus("Aucune donnée trouvée.");
+      }
+    } catch (e) {
+      setLoadStatus("Erreur lors du chargement.");
+    }
+  }
+
   return (
     <section>
       <h1 className="text-2xl font-bold mb-2">Auto-évaluation de maturité</h1>
       <p className="text-gray-700 mb-4">Répondez au questionnaire pour évaluer votre conformité à la Loi 09-08.</p>
+      <div className="flex flex-col md:flex-row gap-4 mb-4">
+        <button onClick={handleSave} className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded shadow text-sm">Sauvegarder mes réponses</button>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            placeholder="ID à charger"
+            value={loadId}
+            onChange={e => setLoadId(e.target.value)}
+            className="border rounded px-2 py-1 text-sm"
+            style={{ width: 120 }}
+          />
+          <button onClick={handleLoad} className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded text-sm">Charger</button>
+        </div>
+      </div>
+      {saveStatus && <div className="text-xs text-blue-700 mb-2">{saveStatus}</div>}
+      {loadStatus && <div className="text-xs text-green-700 mb-2">{loadStatus}</div>}
       {!submitted ? (
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
