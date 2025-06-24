@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SparklesIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '../App';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000/api/assessments';
 
 const QUESTIONS = [
   { label: "Registre des traitements à jour", key: "registre" },
@@ -10,11 +13,54 @@ const QUESTIONS = [
 ];
 
 export default function Assessment() {
-  const [answers, setAnswers] = useState({ registre: 3, privacy: 2, training: 2, security: 3, rights: 2 });
+  const { token } = useAuth();
+  const [answers, setAnswers] = useState({ registre: 0, privacy: 0, training: 0, security: 0, rights: 0 });
   const [show, setShow] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saveStatus, setSaveStatus] = useState('');
+
+  // Load latest assessment on mount
+  useEffect(() => {
+    if (!token) return;
+    setLoading(true);
+    fetch(API_URL, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          // Use the latest assessment
+          const latest = data[data.length - 1];
+          if (latest.answers) setAnswers(latest.answers);
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [token]);
 
   const handleChange = (key, value) => {
     setAnswers(a => ({ ...a, [key]: Number(value) }));
+  };
+
+  // Save assessment
+  const handleSave = async () => {
+    if (!token) return;
+    setSaveStatus('Enregistrement...');
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ answers, date: new Date().toISOString() })
+      });
+      const data = await res.json();
+      if (data.success) setSaveStatus('Enregistré !');
+      else setSaveStatus("Erreur lors de l'enregistrement.");
+    } catch {
+      setSaveStatus("Erreur réseau ou serveur.");
+    }
   };
 
   // Radar chart data
@@ -50,22 +96,34 @@ export default function Assessment() {
       </div>
       {/* Assessment Form */}
       <div className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-8 mb-10 border-t-4 border-blue-100 animate-fade-in">
-        <form className="grid md:grid-cols-2 gap-6">
-          {QUESTIONS.map((q, i) => (
-            <div key={q.key} className="flex flex-col gap-2 animate-fade-in" style={{ animationDelay: `${i * 0.1}s` }}>
-              <label className="font-semibold text-blue-900">{q.label}</label>
-              <select className="rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400" value={answers[q.key]} onChange={e => handleChange(q.key, e.target.value)}>
-                <option value={0}>Non commencé</option>
-                <option value={1}>En cours</option>
-                <option value={2}>Partiellement fait</option>
-                <option value={3}>Totalement fait</option>
-              </select>
-            </div>
-          ))}
-        </form>
-        <button className="mt-6 bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded flex items-center text-lg font-semibold shadow transition-all animate-fade-in" onClick={() => setShow(true)}>
-          <ChartBarIcon className="w-5 h-5 mr-2" /> Voir le résultat
-        </button>
+        {loading ? (
+          <div className="text-blue-700">Chargement...</div>
+        ) : (
+          <form className="grid md:grid-cols-2 gap-6">
+            {QUESTIONS.map((q, i) => (
+              <div key={q.key} className="flex flex-col gap-2 animate-fade-in" style={{ animationDelay: `${i * 0.1}s` }}>
+                <label className="font-semibold text-blue-900">{q.label}</label>
+                <select className="rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400" value={answers[q.key]} onChange={e => handleChange(q.key, e.target.value)}>
+                  <option value={0}>Non commencé</option>
+                  <option value={1}>En cours</option>
+                  <option value={2}>Partiellement fait</option>
+                  <option value={3}>Totalement fait</option>
+                </select>
+              </div>
+            ))}
+          </form>
+        )}
+        <div className="flex flex-col md:flex-row gap-4 mt-6">
+          <button className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded flex items-center text-lg font-semibold shadow transition-all animate-fade-in" onClick={() => setShow(true)} disabled={loading}>
+            <ChartBarIcon className="w-5 h-5 mr-2" /> Voir le résultat
+          </button>
+          {token && (
+            <button className="bg-blue-700 hover:bg-blue-900 text-white px-6 py-2 rounded font-semibold animate-fade-in" onClick={handleSave} type="button" disabled={loading}>
+              Enregistrer mon évaluation
+            </button>
+          )}
+        </div>
+        {saveStatus && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{saveStatus}</div>}
       </div>
       {/* Radar Chart Result */}
       {show && (
