@@ -1,5 +1,10 @@
-import React from 'react';
-import { SparklesIcon, ChartBarIcon, ShieldCheckIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import React, { useEffect, useState } from 'react';
+import { SparklesIcon, ChartBarIcon, ExclamationTriangleIcon, CheckCircleIcon, DocumentCheckIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { Link } from 'react-router-dom';
+
+const API_ASSESS = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/assessments';
+const API_REG = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/registers';
+const API_DPIA = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/dpias';
 
 const STATUS = [
   {
@@ -25,15 +30,65 @@ const RECOMMENDATIONS = [
 ];
 
 export default function Dashboard() {
+  const [assessment, setAssessment] = useState(null);
+  const [registers, setRegisters] = useState([]);
+  const [dpias, setDpias] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [score, setScore] = useState(0);
+  const [insights, setInsights] = useState([]);
+
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      fetch(API_ASSESS, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } }).then(r => r.json()),
+      fetch(API_REG, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } }).then(r => r.json()),
+      fetch(API_DPIA, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } }).then(r => r.json()),
+    ]).then(([assess, regs, dpias]) => {
+      const latest = Array.isArray(assess) && assess.length > 0 ? assess[assess.length - 1] : null;
+      setAssessment(latest);
+      setRegisters(regs || []);
+      setDpias(dpias || []);
+      // Compute score
+      let total = 0, max = 0;
+      if (latest && latest.answers) {
+        Object.values(latest.answers).forEach(v => { total += v; max += 2; });
+      }
+      let s = max > 0 ? Math.round((total / max) * 70) : 0; // 70% from assessment
+      if (regs && regs.length > 0) s += 15; // 15% for register
+      if (latest && latest.answers && latest.answers.dpia === 2 && dpias && dpias.length > 0) s += 15; // 15% for DPIA if needed
+      setScore(s);
+      // Insights
+      const i = [];
+      if (!latest) i.push({ icon: <ChartBarIcon className="w-5 h-5 text-yellow-600" />, text: "Aucune auto-évaluation trouvée.", link: "/assessment", action: "Faire l'auto-évaluation" });
+      else {
+        const missing = Object.entries(latest.answers).filter(([k, v]) => v < 2);
+        if (missing.length > 0) i.push({ icon: <ExclamationTriangleIcon className="w-5 h-5 text-yellow-600" />, text: `${missing.length} obligation(s) non remplies dans l'auto-évaluation.`, link: "/assessment", action: "Compléter" });
+        if (latest.answers.dpia === 2 && (!dpias || dpias.length === 0)) i.push({ icon: <ExclamationTriangleIcon className="w-5 h-5 text-yellow-600" />, text: "DPIA requise mais non réalisée.", link: "/dpia", action: "Faire une DPIA" });
+      }
+      if (!regs || regs.length === 0) i.push({ icon: <DocumentCheckIcon className="w-5 h-5 text-yellow-600" />, text: "Aucun registre des traitements trouvé.", link: "/register", action: "Créer un registre" });
+      setInsights(i);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
   return (
     <section>
-      {/* Hero/Intro Section */}
+      {/* Compliance Score Card */}
       <div className="relative overflow-hidden rounded-2xl mb-10 shadow-lg bg-gradient-to-br from-blue-900 via-blue-700 to-yellow-400 text-white p-8 flex flex-col md:flex-row items-center gap-8 animate-fade-in">
         <div className="flex-1">
           <h1 className="text-3xl md:text-4xl font-extrabold mb-2 tracking-tight drop-shadow flex items-center gap-2">
             <SparklesIcon className="w-10 h-10 text-yellow-300" /> Tableau de bord conformité
           </h1>
           <p className="text-lg md:text-xl font-light mb-4 drop-shadow">Suivi visuel de votre conformité à la Loi 09-08 et recommandations personnalisées.</p>
+          <div className="mt-6 flex items-center gap-4">
+            <div className="bg-white/80 rounded-full shadow-lg flex items-center justify-center w-28 h-28 border-8 border-yellow-300">
+              <span className="text-4xl font-extrabold text-blue-900 drop-shadow">{score}%</span>
+            </div>
+            <div className="flex flex-col gap-2">
+              <div className="text-blue-900 font-bold text-lg">Score de conformité</div>
+              <div className="text-gray-700 text-sm">Basé sur l'auto-évaluation, le registre et la DPIA.</div>
+            </div>
+          </div>
         </div>
         <div className="flex-1 flex justify-center items-center">
           {/* Moroccan-inspired SVG */}
@@ -45,6 +100,22 @@ export default function Dashboard() {
             <text x="70" y="77" textAnchor="middle" fontSize="16" fontWeight="bold" fill="#1e293b">CNDP</text>
           </svg>
         </div>
+      </div>
+      {/* Actionable Insights */}
+      <div className="mb-10 animate-fade-in">
+        <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><CheckCircleIcon className="w-7 h-7 text-blue-700" /> Actions à mener</h2>
+        {loading ? <div className="text-blue-700">Chargement...</div> : (
+          insights.length === 0 ? <div className="text-green-700 font-semibold">Aucune action urgente. Bravo !</div> :
+          <ul className="space-y-4">
+            {insights.map((i, idx) => (
+              <li key={idx} className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-4 flex items-center gap-4 border-l-4 border-yellow-400 animate-fade-in">
+                {i.icon}
+                <span className="flex-1 text-blue-900 font-semibold">{i.text}</span>
+                <Link to={i.link} className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-4 py-2 rounded font-semibold shadow">{i.action}</Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
       {/* Compliance Status Cards */}
       <div className="grid md:grid-cols-2 gap-6 mb-10 animate-fade-in">
