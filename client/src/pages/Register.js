@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, SparklesIcon, DocumentCheckIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../App';
 
-const API_URL = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/registers';
+const API_BASE = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev';
 
 const FIELDS = [
   { key: 'nom', label: 'Nom du traitement', required: true },
@@ -26,14 +26,19 @@ export default function Register({ folderId }) {
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(emptyRegister());
   const [status, setStatus] = useState('');
+  const [error, setError] = useState('');
 
   // Load registers
   useEffect(() => {
     if (!folderId) return;
     setLoading(true);
-    fetch(`${API_URL}?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } })
+    fetch(`${API_BASE}/api/registers?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } })
       .then(r => r.json())
-      .then(data => { setRegisters(data); setLoading(false); });
+      .then(data => { setRegisters(data); setLoading(false); })
+      .catch(() => {
+        setLoading(false);
+        setError('Erreur de connexion au serveur. Vérifiez votre connexion ou réessayez plus tard.');
+      });
   }, [folderId]);
 
   // Open modal for add/edit
@@ -53,7 +58,7 @@ export default function Register({ folderId }) {
     e.preventDefault();
     setStatus('Enregistrement...');
     const method = editId ? 'PUT' : 'POST';
-    const url = editId ? `${API_URL}/${editId}` : API_URL;
+    const url = editId ? `${API_BASE}/api/registers/${editId}` : `${API_BASE}/api/registers`;
     try {
       const res = await fetch(url, {
         method,
@@ -77,7 +82,7 @@ export default function Register({ folderId }) {
     if (!window.confirm('Supprimer ce traitement ?')) return;
     setStatus('Suppression...');
     try {
-      const res = await fetch(`${API_URL}/${id}`, {
+      const res = await fetch(`${API_BASE}/api/registers/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` }
       });
@@ -90,6 +95,7 @@ export default function Register({ folderId }) {
   };
 
   if (!folderId) return <div className="text-blue-700 font-semibold p-8">Veuillez sélectionner ou créer un dossier de conformité pour commencer.</div>;
+  if (error) return <div className="text-red-600 font-semibold p-8">{error}</div>;
 
   return (
     <section>

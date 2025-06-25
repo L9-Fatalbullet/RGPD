@@ -3,7 +3,7 @@ import { SparklesIcon, ChartBarIcon, InformationCircleIcon } from '@heroicons/re
 import { useAuth } from '../App';
 import jsPDF from 'jspdf';
 
-const API_URL = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/assessments';
+const API_BASE = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev';
 
 const DOMAINS = [
   { key: 'gouvernance', label: 'Gouvernance' },
@@ -80,12 +80,13 @@ export default function Assessment({ folderId }) {
   const [saveStatus, setSaveStatus] = useState('');
   const [step, setStep] = useState(0); // step = domain index
   const saveTimeout = useRef();
+  const [error, setError] = useState('');
 
   // Load latest assessment on mount
   useEffect(() => {
     if (!folderId) return;
     setLoading(true);
-    fetch(`/api/assessments?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } })
+    fetch(`${API_BASE}/api/assessments?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } })
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
@@ -94,7 +95,10 @@ export default function Assessment({ folderId }) {
         }
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        setLoading(false);
+        setError('Erreur de connexion au serveur. Vérifiez votre connexion ou réessayez plus tard.');
+      });
   }, [folderId]);
 
   // Auto-save on answers change (debounced)
@@ -103,7 +107,7 @@ export default function Assessment({ folderId }) {
     setSaveStatus('Enregistrement...');
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(() => {
-      fetch(`/api/assessments?folderId=${folderId}`, {
+      fetch(`${API_BASE}/api/assessments?folderId=${folderId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -149,6 +153,8 @@ export default function Assessment({ folderId }) {
 
   // Recommendations for unmet obligations
   const missing = QUESTIONS.filter(q => (answers[q.key] || 0) < 2);
+
+  if (error) return <div className="text-red-600 font-semibold p-8">{error}</div>;
 
   if (!folderId) return <div className="text-blue-700 font-semibold p-8">Veuillez sélectionner ou créer un dossier de conformité pour commencer.</div>;
 

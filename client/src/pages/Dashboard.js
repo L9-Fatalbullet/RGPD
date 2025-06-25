@@ -3,6 +3,8 @@ import { SparklesIcon, ChartBarIcon, ExclamationTriangleIcon, CheckCircleIcon, D
 import { Link } from 'react-router-dom';
 import { useAuth } from '../App';
 
+const API_BASE = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev';
+
 const API_ASSESS = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/assessments';
 const API_REG = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/registers';
 const API_DPIA = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/dpias';
@@ -88,14 +90,15 @@ export default function Dashboard({ folderId }) {
     return [70 + r * Math.cos(angle), 70 + r * Math.sin(angle)];
   });
   const polygon = points.map(([x, y]) => `${x},${y}`).join(' ');
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!folderId) return;
     setLoading(true);
     Promise.all([
-      fetch(`${API_ASSESS}?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } }).then(r => r.json()),
-      fetch(`${API_REG}?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } }).then(r => r.json()),
-      fetch(`${API_DPIA}?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } }).then(r => r.json()),
+      fetch(`${API_BASE}/api/assessments?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } }).then(r => r.json()),
+      fetch(`${API_BASE}/api/registers?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } }).then(r => r.json()),
+      fetch(`${API_BASE}/api/dpias?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } }).then(r => r.json()),
     ]).then(([assess, regs, dpias]) => {
       const latest = Array.isArray(assess) && assess.length > 0 ? assess[assess.length - 1] : null;
       setAssessment(latest);
@@ -121,8 +124,13 @@ export default function Dashboard({ folderId }) {
       if (!regs || regs.length === 0) i.push({ icon: <DocumentCheckIcon className="w-5 h-5 text-yellow-600" />, text: "Aucun registre des traitements trouvé.", link: "/register", action: "Créer un registre" });
       setInsights(i);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => {
+      setLoading(false);
+      setError('Erreur de connexion au serveur. Vérifiez votre connexion ou réessayez plus tard.');
+    });
   }, [folderId]);
+
+  if (error) return <div className="text-red-600 font-semibold p-8">{error}</div>;
 
   if (!folderId) return <div className="text-blue-700 font-semibold p-8">Veuillez sélectionner ou créer un dossier de conformité pour commencer.</div>;
 

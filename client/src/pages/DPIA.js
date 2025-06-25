@@ -3,7 +3,7 @@ import { PlusIcon, PencilIcon, TrashIcon, SparklesIcon, ShieldCheckIcon, ArrowRi
 import { useAuth } from '../App';
 import jsPDF from 'jspdf';
 
-const API_URL = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/dpias';
+const API_BASE = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev';
 
 const COMMON_RISKS = [
   {
@@ -119,14 +119,19 @@ export default function DPIA({ folderId }) {
   const saveTimeout = useRef();
   const [saveStatus, setSaveStatus] = useState('');
   const [currentId, setCurrentId] = useState(null);
+  const [error, setError] = useState('');
 
   // Load DPIAs
   useEffect(() => {
     if (!folderId) return;
     setLoading(true);
-    fetch(`/api/dpias?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } })
+    fetch(`${API_BASE}/api/dpias?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } })
       .then(r => r.json())
-      .then(data => { setDPIAs(data); setLoading(false); });
+      .then(data => { setDPIAs(data); setLoading(false); })
+      .catch(() => {
+        setLoading(false);
+        setError('Erreur de connexion au serveur. Vérifiez votre connexion ou réessayez plus tard.');
+      });
   }, [folderId]);
 
   // Handle form change
@@ -171,7 +176,7 @@ export default function DPIA({ folderId }) {
       let res, data;
       if (!currentId) {
         // Create new DPIA
-        res = await fetch(API_URL, {
+        res = await fetch(`${API_BASE}/api/dpias`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ ...form, folderId })
@@ -180,7 +185,7 @@ export default function DPIA({ folderId }) {
         if (data.success && data.id) setCurrentId(data.id);
       } else {
         // Update existing DPIA
-        res = await fetch(`${API_URL}/${currentId}`, {
+        res = await fetch(`${API_BASE}/api/dpias/${currentId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ ...form, folderId })
@@ -198,7 +203,7 @@ export default function DPIA({ folderId }) {
     e.preventDefault();
     setStatus('Enregistrement...');
     try {
-      const res = await fetch(API_URL, {
+      const res = await fetch(`${API_BASE}/api/dpias`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ...form, folderId })
@@ -233,7 +238,7 @@ export default function DPIA({ folderId }) {
     if (!window.confirm('Supprimer cette DPIA ?')) return;
     setStatus('Suppression...');
     try {
-      const res = await fetch(`${API_URL}/${id}`, {
+      const res = await fetch(`${API_BASE}/api/dpias/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -251,6 +256,7 @@ export default function DPIA({ folderId }) {
 
   // Render
   if (!folderId) return <div className="text-blue-700 font-semibold p-8">Veuillez sélectionner ou créer un dossier de conformité pour commencer.</div>;
+  if (error) return <div className="text-red-600 font-semibold p-8">{error}</div>;
   return (
     <section>
       {/* Hero/Intro Section */}

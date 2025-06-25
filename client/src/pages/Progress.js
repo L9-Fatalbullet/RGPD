@@ -4,8 +4,7 @@ import { useAuth } from '../App';
 import { Link } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 
-const API_ASSESS = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/assessments';
-const API_REG = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/registers';
+const API_BASE = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev';
 
 const CHECKLISTS = {
   registre: [
@@ -150,21 +149,25 @@ export default function Progress({ folderId }) {
   const [expanded, setExpanded] = useState(null);
   const [checklists, setChecklists] = useState({});
   const [dpias, setDpias] = useState([]);
+  const [error, setError] = useState(null);
 
   // Load assessment and registers
   useEffect(() => {
     if (!folderId) return;
     setLoading(true);
     Promise.all([
-      fetch(`/api/assessments?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-      fetch(`/api/registers?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-      fetch(`/api/dpias?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      fetch(`${API_BASE}/api/assessments?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      fetch(`${API_BASE}/api/registers?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      fetch(`${API_BASE}/api/dpias?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
     ]).then(([assess, regs, dpias]) => {
       setAssessment(Array.isArray(assess) && assess.length > 0 ? assess[assess.length - 1] : null);
       setRegisters(regs || []);
       setDpias(dpias || []);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => {
+      setLoading(false);
+      setError('Erreur de connexion au serveur. Vérifiez votre connexion ou réessayez plus tard.');
+    });
   }, [token, folderId]);
 
   // Load checklist state from localStorage
@@ -205,6 +208,8 @@ export default function Progress({ folderId }) {
     setChecklistState(user.id, state);
     setChecklists({ ...state });
   };
+
+  if (error) return <div className="text-red-600 font-semibold p-8">{error}</div>;
 
   if (!folderId) return <div className="text-blue-700 font-semibold p-8">Veuillez sélectionner ou créer un dossier de conformité pour commencer.</div>;
 
