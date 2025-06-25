@@ -131,6 +131,22 @@ export default function Progress() {
   const completed = STEPS.filter(s => done[s.key]).length;
   const percent = Math.round((completed / total) * 100);
 
+  // Find next recommended action
+  const nextStep = STEPS.find(s => !done[s.key]);
+
+  // Milestone positions (as % along the bar)
+  const milestonePercents = STEPS.map((s, i) => Math.round((i / (STEPS.length - 1)) * 100));
+  const milestoneIcons = [
+    <CheckCircleIcon className="w-6 h-6 text-green-500" />, // Register
+    <ArrowPathIcon className="w-6 h-6 text-blue-700" />,    // Declaration
+    <SparklesIcon className="w-6 h-6 text-yellow-400" />,   // DPIA
+    <ArrowRightCircleIcon className="w-6 h-6 text-blue-700" />, // Security
+    <ArrowRightCircleIcon className="w-6 h-6 text-blue-700" />, // Rights
+    <CheckCircleIcon className="w-6 h-6 text-green-500" />, // Sensibilisation
+  ];
+  // Confetti placeholder (will be replaced with animation)
+  const showConfetti = percent === 100;
+
   // Checklist handlers
   const handleCheck = (stepKey, idx) => {
     if (!user || !user.id) return;
@@ -162,12 +178,42 @@ export default function Progress() {
           </svg>
         </div>
       </div>
-      {/* Progress Bar */}
-      <div className="mb-8 animate-fade-in">
+      {/* Next Recommended Action Card */}
+      {nextStep ? (
+        <div className="mb-6 animate-fade-in">
+          <div className="bg-white/90 backdrop-blur rounded-xl shadow-lg p-6 flex items-center gap-4 border-l-4 border-yellow-400">
+            <ArrowRightCircleIcon className="w-8 h-8 text-yellow-400 animate-bounce" />
+            <div className="flex-1">
+              <div className="font-bold text-blue-900 text-lg mb-1">Prochaine étape recommandée</div>
+              <div className="text-gray-700 text-sm mb-2">{nextStep.desc}</div>
+              <Link to={nextStep.link} className="inline-flex items-center bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-4 py-2 rounded font-semibold shadow transition-all">Compléter cette étape <ArrowRightCircleIcon className="w-5 h-5 ml-2" /></Link>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="mb-6 animate-fade-in">
+          <div className="bg-green-50 border-l-4 border-green-400 p-6 rounded-xl shadow-lg flex items-center gap-4">
+            <CheckCircleIcon className="w-8 h-8 text-green-500 animate-pulse" />
+            <div className="flex-1 text-green-700 font-semibold">Félicitations ! Vous avez complété toutes les étapes de conformité.</div>
+          </div>
+        </div>
+      )}
+      {/* Confetti animation placeholder */}
+      {showConfetti && <div id="confetti-placeholder" className="fixed inset-0 pointer-events-none z-50"></div>}
+      {/* Progress Bar with Milestones */}
+      <div className="mb-8 animate-fade-in relative">
         <div className="flex items-center gap-4 mb-2">
           <div className="font-semibold text-blue-900">Progression : {percent}%</div>
-          <div className="flex-1 h-4 bg-blue-100 rounded-full overflow-hidden">
-            <div className="h-4 bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 rounded-full transition-all" style={{ width: percent + '%' }}></div>
+          <div className="flex-1 h-4 bg-blue-100 rounded-full overflow-hidden relative">
+            <div className="h-4 bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 rounded-full transition-all duration-700" style={{ width: percent + '%' }}></div>
+            {/* Milestone markers */}
+            {milestonePercents.map((p, i) => (
+              <div key={i} className="absolute top-1/2 -translate-y-1/2" style={{ left: `calc(${p}% - 12px)` }}>
+                <div className={`rounded-full bg-white shadow-lg border-2 ${done[STEPS[i].key] ? 'border-green-400' : 'border-blue-200'} flex items-center justify-center w-7 h-7 transition-all duration-300`}>
+                  {milestoneIcons[i]}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
