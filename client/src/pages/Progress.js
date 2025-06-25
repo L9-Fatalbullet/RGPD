@@ -79,6 +79,58 @@ const STEPS = [
   },
 ];
 
+// --- Redesigned Progression Milestones ---
+const MILESTONES = [
+  {
+    key: 'register',
+    label: 'Registre des traitements',
+    desc: 'Votre registre des traitements est-il créé et à jour ?',
+    link: '/register',
+    getStatus: ({ registers }) => registers && registers.length > 0,
+    getDate: ({ registers }) => registers && registers.length > 0 ? new Date(Math.max(...registers.map(r => new Date(r.date).getTime()))).toLocaleDateString('fr-FR') : null,
+  },
+  {
+    key: 'dpia',
+    label: 'DPIA (Analyse d\u2019impact)',
+    desc: 'Avez-vous réalisé une DPIA pour les traitements à risque ?',
+    link: '/dpia',
+    getStatus: ({ dpias }) => dpias && dpias.length > 0,
+    getDate: ({ dpias }) => dpias && dpias.length > 0 ? new Date(Math.max(...dpias.map(d => new Date(d.date).getTime()))).toLocaleDateString('fr-FR') : null,
+  },
+  {
+    key: 'assessment',
+    label: 'Auto-évaluation',
+    desc: 'Avez-vous complété une auto-évaluation de conformité ?',
+    link: '/assessment',
+    getStatus: ({ assessment }) => !!assessment,
+    getDate: ({ assessment }) => assessment && assessment.date ? new Date(assessment.date).toLocaleDateString('fr-FR') : null,
+  },
+  {
+    key: 'security',
+    label: 'Mesures de sécurité',
+    desc: 'Des mesures techniques et organisationnelles sont-elles en place ?',
+    link: '/assessment',
+    getStatus: ({ assessment }) => assessment && assessment.answers && (assessment.answers.securite === 2 || assessment.answers.chiffrement === 2 || assessment.answers.incidents === 2),
+    getDate: ({ assessment }) => assessment && assessment.date ? new Date(assessment.date).toLocaleDateString('fr-FR') : null,
+  },
+  {
+    key: 'rights',
+    label: 'Gestion des droits',
+    desc: 'Les droits des personnes sont-ils respectés et gérés ?',
+    link: '/assessment',
+    getStatus: ({ assessment }) => assessment && assessment.answers && (assessment.answers.droits === 2 && assessment.answers.information === 2 && assessment.answers.procedure_droits === 2),
+    getDate: ({ assessment }) => assessment && assessment.date ? new Date(assessment.date).toLocaleDateString('fr-FR') : null,
+  },
+  {
+    key: 'training',
+    label: 'Sensibilisation du personnel',
+    desc: 'Le personnel a-t-il été formé à la protection des données ?',
+    link: '/best-practices',
+    getStatus: ({ assessment }) => assessment && assessment.answers && assessment.answers.politique === 2,
+    getDate: ({ assessment }) => assessment && assessment.date ? new Date(assessment.date).toLocaleDateString('fr-FR') : null,
+  },
+];
+
 function getChecklistState(userId) {
   try {
     return JSON.parse(localStorage.getItem('cndp_checklists_' + userId)) || {};
@@ -97,6 +149,7 @@ export default function Progress() {
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(null);
   const [checklists, setChecklists] = useState({});
+  const [dpias, setDpias] = useState([]);
 
   // Load assessment and registers
   useEffect(() => {
@@ -105,9 +158,11 @@ export default function Progress() {
     Promise.all([
       fetch(API_ASSESS, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
       fetch(API_REG, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-    ]).then(([assess, regs]) => {
+      fetch('https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/dpias', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+    ]).then(([assess, regs, dpias]) => {
       setAssessment(Array.isArray(assess) && assess.length > 0 ? assess[assess.length - 1] : null);
       setRegisters(regs || []);
+      setDpias(dpias || []);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [token]);
@@ -119,34 +174,15 @@ export default function Progress() {
     }
   }, [user]);
 
-  // Step completion logic
-  const done = {
-    registre: registers.length > 0,
-    declaration: assessment && assessment.answers && (assessment.answers.declaration === 2),
-    dpia: assessment && assessment.answers && (assessment.answers.dpia === 2),
-    securite: assessment && assessment.answers && (assessment.answers.securite === 2 || assessment.answers.chiffrement === 2 || assessment.answers.incidents === 2),
-    droits: assessment && assessment.answers && (assessment.answers.droits === 2 && assessment.answers.information === 2 && assessment.answers.procedure_droits === 2),
-    sensibilisation: assessment && assessment.answers && (assessment.answers.politique === 2),
-  };
-  const total = STEPS.length;
-  const completed = STEPS.filter(s => done[s.key]).length;
-  const percent = Math.round((completed / total) * 100);
-
-  // Find next recommended action
-  const nextStep = STEPS.find(s => !done[s.key]);
-
-  // Milestone positions (as % along the bar)
-  const milestonePercents = STEPS.map((s, i) => Math.round((i / (STEPS.length - 1)) * 100));
-  const milestoneIcons = [
-    <CheckCircleIcon className="w-6 h-6 text-green-500" />, // Register
-    <ArrowPathIcon className="w-6 h-6 text-blue-700" />,    // Declaration
-    <SparklesIcon className="w-6 h-6 text-yellow-400" />,   // DPIA
-    <ArrowRightCircleIcon className="w-6 h-6 text-blue-700" />, // Security
-    <ArrowRightCircleIcon className="w-6 h-6 text-blue-700" />, // Rights
-    <CheckCircleIcon className="w-6 h-6 text-green-500" />, // Sensibilisation
-  ];
-  // Confetti placeholder (will be replaced with animation)
-  const showConfetti = percent === 100;
+  // Compute milestone status
+  const milestoneData = MILESTONES.map(m => ({
+    ...m,
+    status: m.getStatus({ assessment, registers, dpias }),
+    date: m.getDate({ assessment, registers, dpias }),
+  }));
+  const completed = milestoneData.filter(m => m.status).length;
+  const percent = Math.round((completed / MILESTONES.length) * 100);
+  const nextMilestone = milestoneData.find(m => !m.status);
 
   // Confetti animation effect
   useEffect(() => {
@@ -192,14 +228,14 @@ export default function Progress() {
         </div>
       </div>
       {/* Next Recommended Action Card */}
-      {nextStep ? (
+      {nextMilestone ? (
         <div className="mb-6 animate-fade-in">
           <div className="bg-white/90 backdrop-blur rounded-xl shadow-lg p-6 flex items-center gap-4 border-l-4 border-yellow-400">
             <ArrowRightCircleIcon className="w-8 h-8 text-yellow-400 animate-bounce" />
             <div className="flex-1">
               <div className="font-bold text-blue-900 text-lg mb-1">Prochaine étape recommandée</div>
-              <div className="text-gray-700 text-sm mb-2">{nextStep.desc}</div>
-              <Link to={nextStep.link} className="inline-flex items-center bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-4 py-2 rounded font-semibold shadow transition-all">Compléter cette étape <ArrowRightCircleIcon className="w-5 h-5 ml-2" /></Link>
+              <div className="text-gray-700 text-sm mb-2">{nextMilestone.desc}</div>
+              <Link to={nextMilestone.link} className="inline-flex items-center bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-4 py-2 rounded font-semibold shadow transition-all">Compléter cette étape <ArrowRightCircleIcon className="w-5 h-5 ml-2" /></Link>
             </div>
           </div>
         </div>
@@ -212,7 +248,7 @@ export default function Progress() {
         </div>
       )}
       {/* Confetti animation placeholder */}
-      {showConfetti && <div id="confetti-placeholder" className="fixed inset-0 pointer-events-none z-50"></div>}
+      {percent === 100 && <div id="confetti-placeholder" className="fixed inset-0 pointer-events-none z-50"></div>}
       {/* Progress Bar with Milestones */}
       <div className="mb-8 animate-fade-in relative">
         <div className="flex items-center gap-4 mb-2">
@@ -220,61 +256,34 @@ export default function Progress() {
           <div className="flex-1 h-4 bg-blue-100 rounded-full overflow-hidden relative">
             <div className="h-4 bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 rounded-full transition-all duration-700" style={{ width: percent + '%' }}></div>
             {/* Milestone markers */}
-            {milestonePercents.map((p, i) => (
-              <div key={i} className="absolute top-1/2 -translate-y-1/2" style={{ left: `calc(${p}% - 12px)` }}>
-                <div className={`rounded-full bg-white shadow-lg border-2 ${done[STEPS[i].key] ? 'border-green-400' : 'border-blue-200'} flex items-center justify-center w-7 h-7 transition-all duration-300`}>
-                  {milestoneIcons[i]}
+            {milestoneData.map((m, i) => (
+              <div key={m.key} className="absolute top-1/2 -translate-y-1/2" style={{ left: `calc(${(i / (milestoneData.length - 1)) * 100}% - 12px)` }}>
+                <div className={`rounded-full bg-white shadow-lg border-2 ${m.status ? 'border-green-400' : 'border-blue-200'} flex items-center justify-center w-7 h-7 transition-all duration-300`}>
+                  {m.status ? <CheckCircleIcon className="w-5 h-5 text-green-500" /> : <XCircleIcon className="w-5 h-5 text-yellow-500" />}
                 </div>
               </div>
             ))}
           </div>
         </div>
       </div>
-      {/* Checklist with expandable steps */}
+      {/* Timeline/Stepper */}
       <ol className="space-y-4 animate-fade-in">
-        {STEPS.map((step, i) => {
-          const checklist = CHECKLISTS[step.key] || [];
-          const checked = checklists[step.key] || [];
-          const checkedCount = checked.filter(Boolean).length;
-          const isDone = done[step.key];
-          return (
-            <li key={step.key} className={`bg-white/80 backdrop-blur rounded-xl shadow-lg p-6 border-t-4 ${isDone ? 'border-green-300' : 'border-blue-100'} hover:scale-[1.01] transition group`}>
-              <div
-                className={`flex items-center gap-4 cursor-pointer select-none ${isDone ? 'opacity-80' : ''}`}
-                onClick={() => setExpanded(expanded === step.key ? null : step.key)}
-                tabIndex={0}
-                aria-expanded={expanded === step.key}
-                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setExpanded(expanded === step.key ? null : step.key); }}
-              >
-                <span className="transition-transform group-hover:scale-110">
-                  {isDone ? <CheckCircleIcon className="w-8 h-8 text-green-600" /> : <XCircleIcon className="w-8 h-8 text-yellow-500" />}
-                </span>
-                <div className="flex-1">
-                  <div className="font-bold text-blue-900 text-lg mb-1 flex items-center gap-2">
-                    {step.label}
-                    {isDone && <span className="ml-2 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-semibold animate-fade-in">Terminé</span>}
-                  </div>
-                  <div className="text-gray-700 text-sm mb-2">{step.desc}</div>
-                  <Link to={step.link} className="inline-flex items-center text-blue-700 hover:underline text-sm font-semibold group-hover:text-yellow-500 transition"><ArrowRightCircleIcon className="w-5 h-5 mr-1" /> Accéder</Link>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-blue-900">{checkedCount}/{checklist.length}</span>
-                  {expanded === step.key ? <ChevronUpIcon className="w-5 h-5 text-blue-700" /> : <ChevronDownIcon className="w-5 h-5 text-blue-700" />}
-                </div>
+        {milestoneData.map((m, i) => (
+          <li key={m.key} className={`bg-white/80 backdrop-blur rounded-xl shadow-lg p-6 border-t-4 ${m.status ? 'border-green-300' : 'border-blue-100'} hover:scale-[1.01] transition group flex items-center gap-4`}> 
+            <span className="transition-transform group-hover:scale-110">
+              {m.status ? <CheckCircleIcon className="w-8 h-8 text-green-600" /> : <XCircleIcon className="w-8 h-8 text-yellow-500" />}
+            </span>
+            <div className="flex-1">
+              <div className="font-bold text-blue-900 text-lg mb-1 flex items-center gap-2">
+                {m.label}
+                {m.status && <span className="ml-2 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-semibold animate-fade-in">Terminé</span>}
               </div>
-              {expanded === step.key && (
-                <ul className="mt-4 space-y-2">
-                  {checklist.map((item, idx) => (
-                    <li key={idx} className="flex items-center gap-2">
-                      <input type="checkbox" checked={!!checked[idx]} onChange={() => handleCheck(step.key, idx)} className="accent-blue-700 w-5 h-5 transition" />
-                      <span className={checked[idx] ? 'line-through text-gray-400' : ''}>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          );
-        })}
+              <div className="text-gray-700 text-sm mb-2">{m.desc}</div>
+              {m.date && <div className="text-xs text-blue-700 mb-1">Dernière mise à jour : {m.date}</div>}
+              <Link to={m.link} className="inline-flex items-center text-blue-700 hover:underline text-sm font-semibold group-hover:text-yellow-500 transition"><ArrowRightCircleIcon className="w-5 h-5 mr-1" /> Accéder</Link>
+            </div>
+          </li>
+        ))}
       </ol>
       <style>{`
         @keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
