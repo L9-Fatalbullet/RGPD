@@ -135,15 +135,18 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, set
   );
 }
 
-function Topbar({ user, onMenuClick }) {
+function Topbar({ user, onMenuClick, folderId, setFolderId, token }) {
   return (
-    <header className="md:hidden sticky top-0 z-50 bg-white/80 backdrop-blur-lg shadow flex items-center justify-between px-4 py-3 border-b border-yellow-400">
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg shadow flex items-center justify-between px-4 py-3 border-b border-yellow-400">
       <button aria-label="Ouvrir le menu" onClick={onMenuClick} className="p-2 rounded-full bg-yellow-400/80 hover:bg-yellow-400 transition md:hidden">
         <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke="#1e293b" strokeWidth="2" strokeLinecap="round"/></svg>
       </button>
-      <span className="flex items-center gap-2">
+      <span className="flex items-center gap-4">
         <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className="w-8 h-8 object-contain" />
         <span className="text-lg font-bold tracking-tight text-blue-900">RGPD Compliance Maroc</span>
+        <div className="hidden md:block ml-4">
+          <FolderSwitcher folderId={folderId} setFolderId={setFolderId} token={token} />
+        </div>
       </span>
       {user && <span className="text-xs text-blue-900">{user.email}</span>}
     </header>
@@ -385,9 +388,8 @@ function App() {
             </aside>
           </div>
         )}
-        <div className={`flex-1 ${collapsed ? 'md:ml-20' : 'md:ml-64'} flex flex-col min-h-screen bg-white transition-all`}>
-          <Topbar user={user} onMenuClick={() => setMobileOpen(true)} />
-          <FolderSwitcher folderId={folderId} setFolderId={setFolderId} token={token} />
+        <div className="flex-1 flex flex-col min-h-screen">
+          <Topbar user={user} onMenuClick={() => setMobileOpen(true)} folderId={folderId} setFolderId={setFolderId} token={token} />
           <main className="flex-1 p-4 md:p-8 min-h-screen bg-white" style={{ minHeight: 'calc(100vh - 56px)' }}>
             <div className="w-full bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6 md:p-10">
               <Routes>
