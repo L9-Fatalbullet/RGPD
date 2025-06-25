@@ -183,11 +183,22 @@ function FolderSwitcher({ folderId, setFolderId, token, exposeOpenModal, renderB
 
   // Fetch folders
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setError('Vous devez être connecté pour gérer les dossiers.');
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError('');
     fetch(`${API_BASE}/api/folders`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
+      .then(async r => {
+        if (!r.ok) {
+          let err = 'Erreur de connexion au serveur.';
+          try { err = (await r.json()).error || err; } catch { try { err = await r.text(); } catch {} }
+          throw new Error(err);
+        }
+        return r.json();
+      })
       .then(f => {
         setFolders(f);
         setLoading(false);
@@ -197,8 +208,8 @@ function FolderSwitcher({ folderId, setFolderId, token, exposeOpenModal, renderB
           localStorage.setItem('cndp_folder', f[0].id);
         }
       })
-      .catch(() => {
-        setError('Erreur de connexion au serveur.');
+      .catch((e) => {
+        setError(e.message || 'Erreur de connexion au serveur. Vérifiez votre connexion ou réessayez plus tard.');
         setLoading(false);
       });
   }, [token]);
@@ -277,7 +288,14 @@ function FolderSwitcher({ folderId, setFolderId, token, exposeOpenModal, renderB
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ name: modalValue })
     })
-      .then(r => r.json())
+      .then(async r => {
+        if (!r.ok) {
+          let err = 'Erreur lors du renommage.';
+          try { err = (await r.json()).error || err; } catch { try { err = await r.text(); } catch {} }
+          throw new Error(err);
+        }
+        return r.json();
+      })
       .then(f => {
         setFolders(prev => prev.map(folder => folder.id === renamingId ? f : folder));
         if (folderId === renamingId) {
@@ -287,8 +305,9 @@ function FolderSwitcher({ folderId, setFolderId, token, exposeOpenModal, renderB
         closeModal();
         setDropdownOpen(false);
         setLoading(false);
+        setError('');
       })
-      .catch(() => { setError('Erreur lors du renommage.'); setLoading(false); });
+      .catch((e) => { setError(e.message || 'Erreur lors du renommage.'); setLoading(false); });
   }
   // Delete folder
   function handleDeleteFolder() {
@@ -298,6 +317,14 @@ function FolderSwitcher({ folderId, setFolderId, token, exposeOpenModal, renderB
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
     })
+      .then(async r => {
+        if (!r.ok) {
+          let err = 'Erreur lors de la suppression.';
+          try { err = (await r.json()).error || err; } catch { try { err = await r.text(); } catch {} }
+          throw new Error(err);
+        }
+        return r;
+      })
       .then(() => {
         const updated = folders.filter(f => f.id !== deletingId);
         setFolders(updated);
@@ -311,8 +338,9 @@ function FolderSwitcher({ folderId, setFolderId, token, exposeOpenModal, renderB
         closeDeleteConfirm();
         setDropdownOpen(false);
         setLoading(false);
+        setError('');
       })
-      .catch(() => { setError('Erreur lors de la suppression.'); setLoading(false); });
+      .catch((e) => { setError(e.message || 'Erreur lors de la suppression.'); setLoading(false); });
   }
 
   // Expose modal open function for onboarding
