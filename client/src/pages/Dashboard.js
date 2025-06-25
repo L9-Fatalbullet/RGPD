@@ -184,60 +184,6 @@ export default function Dashboard() {
               </div>
             )}
           </div>
-          {/* Recent Activity Feed */}
-          <div className="w-full max-w-xl mt-8 animate-fade-in">
-            <h2 className="text-lg font-bold text-blue-900 mb-3 flex items-center gap-2">
-              <ArrowPathIcon className="w-6 h-6 text-blue-700" /> Activité récente
-            </h2>
-            {(() => {
-              // Gather and sort activity from assessments, registers, and dpias
-              const activities = [];
-              if (assessment && assessment.date) activities.push({
-                type: 'Évaluation',
-                date: assessment.date,
-                desc: 'Nouvelle auto-évaluation réalisée.',
-                icon: <ChartBarIcon className="w-5 h-5 text-blue-700" />,
-                link: '/assessment',
-              });
-              if (registers && registers.length > 0) registers.forEach(r => {
-                activities.push({
-                  type: 'Registre',
-                  date: r.date,
-                  desc: `Traitement ajouté: ${r.nom || 'Nouveau traitement'}`,
-                  icon: <DocumentCheckIcon className="w-5 h-5 text-blue-700" />,
-                  link: '/register',
-                });
-              });
-              if (dpias && dpias.length > 0) dpias.forEach(d => {
-                activities.push({
-                  type: 'DPIA',
-                  date: d.date,
-                  desc: `DPIA réalisée: ${d.nom || 'Nouvelle DPIA'}`,
-                  icon: <ShieldCheckIcon className="w-5 h-5 text-yellow-500" />,
-                  link: '/dpia',
-                });
-              });
-              activities.sort((a, b) => new Date(b.date) - new Date(a.date));
-              if (activities.length === 0) {
-                return <div className="text-gray-500 italic">Aucune activité récente pour le moment.</div>;
-              }
-              return (
-                <ul className="space-y-3">
-                  {activities.slice(0, 6).map((a, i) => (
-                    <li key={i} className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-3 flex items-center gap-3 border-l-4 border-blue-300 animate-fade-in transition hover:scale-[1.02]">
-                      {a.icon}
-                      <div className="flex-1">
-                        <div className="text-xs text-gray-500">{new Date(a.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
-                        <div className="font-semibold text-blue-900">{a.type}</div>
-                        <div className="text-sm text-blue-800">{a.desc}</div>
-                      </div>
-                      <Link to={a.link} className="ml-auto text-blue-700 underline text-xs">Voir</Link>
-                    </li>
-                  ))}
-                </ul>
-              );
-            })()}
-          </div>
         </div>
       </div>
       {/* Actionable Insights */}
