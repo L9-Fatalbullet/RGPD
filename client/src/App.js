@@ -283,7 +283,7 @@ function FolderSwitcher({ folderId, setFolderId, token, exposeOpenModal, renderB
     e.preventDefault();
     if (!modalValue.trim() || !renamingId) return;
     setLoading(true);
-    fetch(`${API_BASE}/api/folders/${renamingId}`, {
+    fetch(`${API_BASE}/api/folders/${Number(renamingId)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ name: modalValue })
@@ -292,6 +292,7 @@ function FolderSwitcher({ folderId, setFolderId, token, exposeOpenModal, renderB
         if (!r.ok) {
           let err = 'Erreur lors du renommage.';
           try { err = (await r.json()).error || err; } catch { try { err = await r.text(); } catch {} }
+          if (r.status === 404) err = 'Vous n’êtes pas autorisé à modifier ce dossier ou il n’existe pas.';
           throw new Error(err);
         }
         return r.json();
@@ -313,7 +314,7 @@ function FolderSwitcher({ folderId, setFolderId, token, exposeOpenModal, renderB
   function handleDeleteFolder() {
     if (!deletingId) return;
     setLoading(true);
-    fetch(`${API_BASE}/api/folders/${deletingId}`, {
+    fetch(`${API_BASE}/api/folders/${Number(deletingId)}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -321,6 +322,7 @@ function FolderSwitcher({ folderId, setFolderId, token, exposeOpenModal, renderB
         if (!r.ok) {
           let err = 'Erreur lors de la suppression.';
           try { err = (await r.json()).error || err; } catch { try { err = await r.text(); } catch {} }
+          if (r.status === 404) err = 'Vous n’êtes pas autorisé à supprimer ce dossier ou il n’existe pas.';
           throw new Error(err);
         }
         return r;
