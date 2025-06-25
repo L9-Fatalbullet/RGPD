@@ -71,7 +71,7 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath }) {
     { to: '/best-practices', label: 'Bonnes pratiques', icon: <SparklesIcon className="w-6 h-6" /> },
   ];
   return (
-    <aside aria-label="Navigation principale" className={`relative overflow-hidden backdrop-blur-lg bg-gradient-to-br from-blue-950/90 via-blue-900/80 to-blue-800/70 shadow-xl border-r-4 border-yellow-400/80 ${collapsed ? 'w-20' : 'w-64'} min-h-screen flex flex-col fixed z-40 left-0 top-0 transition-all duration-300 rounded-tr-3xl rounded-br-3xl`}>
+    <aside aria-label="Navigation principale" className={`relative overflow-hidden backdrop-blur-lg bg-gradient-to-br from-blue-900 via-blue-700 to-yellow-400 shadow-xl border-r-4 border-yellow-400 ${collapsed ? 'w-20' : 'w-64'} min-h-screen flex flex-col fixed z-40 left-0 top-0 transition-all duration-300 rounded-tr-3xl rounded-br-3xl`}>
       {/* Moroccan Pattern Overlay */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{zIndex:0}} viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
