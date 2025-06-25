@@ -59,7 +59,7 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
-function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath }) {
+function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, setEditProfileOpen }) {
   const nav = [
     { to: '/dashboard', label: 'Accueil', icon: <HomeIcon className="w-6 h-6" /> },
     { to: '/progress', label: 'Progression', icon: <ArrowPathIcon className="w-6 h-6" /> },
@@ -113,19 +113,36 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath }) {
       <div className={`relative w-full px-4 pb-6 mt-auto`} style={{zIndex:1}}>
         {!collapsed && user && (
           <div className="w-full flex flex-col items-center bg-white/10 rounded-xl p-4 shadow">
-            <img src={user?.avatar || '/default-avatar.png'} alt="Avatar" className="w-16 h-16 rounded-full border-2 border-yellow-400 shadow mb-2 object-cover bg-white" />
+            <div className="relative mb-2">
+              <img src={user?.avatar || '/default-avatar.png'} alt="Avatar" className="w-16 h-16 rounded-full border-2 border-yellow-400 shadow object-cover bg-white" />
+              {!user?.avatar && (
+                <span className="absolute inset-0 flex items-center justify-center">
+                  <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="#2563eb" strokeWidth="2"/><path d="M4 20c0-2.21 3.582-4 8-4s8 1.79 8 4" stroke="#2563eb" strokeWidth="2"/></svg>
+                </span>
+              )}
+            </div>
             <div className="w-full text-center">
               <div className="font-bold text-white text-base truncate">{user.name || user.email}</div>
               <div className="text-xs text-yellow-100 truncate">{user.email}</div>
               <div className="text-xs text-blue-100 mt-1">{user.role === 'admin' ? 'Administrateur' : 'Utilisateur'}</div>
             </div>
-            <button onClick={logout} className="w-full mt-4 flex items-center justify-center gap-2 bg-yellow-400 hover:bg-yellow-500 px-3 py-2 rounded text-xs font-semibold text-blue-900 transition shadow" tabIndex={0}>
-              <ArrowLeftOnRectangleIcon className="w-5 h-5" /> Déconnexion
-            </button>
+            <div className="flex gap-2 w-full mt-4">
+              <button onClick={() => setEditProfileOpen(true)} className="flex-1 bg-blue-700 hover:bg-blue-800 text-white rounded px-3 py-2 font-semibold transition shadow">Modifier</button>
+              <button onClick={logout} className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded px-3 py-2 font-semibold transition shadow whitespace-nowrap" tabIndex={0}>
+                <ArrowLeftOnRectangleIcon className="w-5 h-5" /> Déconnexion
+              </button>
+            </div>
           </div>
         )}
         {collapsed && (
-          <img src={user?.avatar || '/default-avatar.png'} alt="Avatar" className="w-12 h-12 rounded-full border-2 border-yellow-400 shadow object-cover bg-white mx-auto" />
+          <div className="relative mx-auto">
+            <img src={user?.avatar || '/default-avatar.png'} alt="Avatar" className="w-12 h-12 rounded-full border-2 border-yellow-400 shadow object-cover bg-white" />
+            {!user?.avatar && (
+              <span className="absolute inset-0 flex items-center justify-center">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="#2563eb" strokeWidth="2"/><path d="M4 20c0-2.21 3.582-4 8-4s8 1.79 8 4" stroke="#2563eb" strokeWidth="2"/></svg>
+              </span>
+            )}
+          </div>
         )}
       </div>
     </aside>
@@ -151,11 +168,24 @@ function App() {
   const { token, user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [editName, setEditName] = useState(user?.name || '');
+  const [editAvatar, setEditAvatar] = useState(null);
   const location = window.location.pathname;
   const sidebarRef = useRef();
 
   // Close mobile sidebar on route change
   useEffect(() => { setMobileOpen(false); }, [location]);
+
+  // Handle profile update (local only for now)
+  function handleProfileSave(e) {
+    e.preventDefault();
+    // Here you would send to backend; for now, update localStorage and reload
+    const updatedUser = { ...user, name: editName };
+    localStorage.setItem('cndp_token', localStorage.getItem('cndp_token'));
+    setEditProfileOpen(false);
+    window.location.reload();
+  }
 
   return (
     <Router>
@@ -175,12 +205,12 @@ function App() {
           <rect width="100vw" height="100vh" fill="url(#mosaic)" />
         </svg>
         {/* Desktop Sidebar */}
-        <Sidebar token={token} logout={logout} user={user} collapsed={collapsed} setCollapsed={setCollapsed} activePath={location} />
+        <Sidebar token={token} logout={logout} user={user} collapsed={collapsed} setCollapsed={setCollapsed} activePath={location} setEditProfileOpen={setEditProfileOpen} />
         {/* Mobile Sidebar Drawer */}
         {mobileOpen && (
           <div className="fixed inset-0 z-50 bg-black/40" onClick={() => setMobileOpen(false)} aria-label="Fermer le menu mobile">
             <aside ref={sidebarRef} className="absolute left-0 top-0 h-full w-64 bg-white/90 backdrop-blur-lg shadow-xl border-r-4 border-yellow-400 rounded-tr-3xl rounded-br-3xl animate-fade-in">
-              <Sidebar token={token} logout={logout} user={user} collapsed={false} setCollapsed={() => {}} activePath={location} />
+              <Sidebar token={token} logout={logout} user={user} collapsed={false} setCollapsed={() => {}} activePath={location} setEditProfileOpen={setEditProfileOpen} />
             </aside>
           </div>
         )}
@@ -208,6 +238,22 @@ function App() {
           </footer>
         </div>
       </div>
+      {/* Profile Edit Modal */}
+      {editProfileOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <form className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-xs flex flex-col gap-4" onSubmit={handleProfileSave}>
+            <h2 className="text-lg font-bold text-blue-900 mb-2">Modifier le profil</h2>
+            <label className="text-sm font-semibold text-blue-900">Nom</label>
+            <input type="text" className="rounded border px-3 py-2" value={editName} onChange={e => setEditName(e.target.value)} />
+            <label className="text-sm font-semibold text-blue-900">Avatar</label>
+            <input type="file" accept="image/*" className="rounded border px-3 py-2" onChange={e => setEditAvatar(e.target.files[0])} />
+            <div className="flex gap-2 mt-4">
+              <button type="button" className="flex-1 bg-gray-200 hover:bg-gray-300 text-blue-900 rounded px-4 py-2 font-semibold" onClick={() => setEditProfileOpen(false)}>Annuler</button>
+              <button type="submit" className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded px-4 py-2 font-semibold">Enregistrer</button>
+            </div>
+          </form>
+        </div>
+      )}
       <style>{`
         body { font-family: 'Inter', 'Nunito', 'Open Sans', sans-serif; }
         @keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
