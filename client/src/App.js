@@ -61,6 +61,7 @@ function ProtectedRoute({ children }) {
 }
 
 function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, setEditProfileOpen }) {
+  const [hovered, setHovered] = React.useState(false);
   const nav = [
     { to: '/dashboard', label: 'Accueil', icon: <HomeIcon className="w-6 h-6" /> },
     { to: '/progress', label: 'Progression', icon: <ArrowPathIcon className="w-6 h-6" /> },
@@ -71,8 +72,14 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, set
     { to: '/documents', label: 'Documents', icon: <ClipboardDocumentListIcon className="w-6 h-6" /> },
     { to: '/best-practices', label: 'Bonnes pratiques', icon: <SparklesIcon className="w-6 h-6" /> },
   ];
+  const isExpanded = hovered;
   return (
-    <aside aria-label="Navigation principale" className={`relative overflow-hidden backdrop-blur-lg bg-gradient-to-br from-blue-900 via-blue-700 to-yellow-400 shadow-xl border-r-4 border-yellow-400 ${collapsed ? 'w-20' : 'w-64'} min-h-screen flex flex-col fixed z-40 left-0 top-0 transition-all duration-300 rounded-tr-3xl rounded-br-3xl`}>
+    <aside
+      aria-label="Navigation principale"
+      className={`relative overflow-hidden backdrop-blur-lg bg-gradient-to-br from-blue-900 via-blue-700 to-yellow-400 shadow-xl border-r-4 border-yellow-400 ${isExpanded ? 'w-64' : 'w-20'} min-h-screen flex flex-col fixed z-40 left-0 top-0 transition-all duration-300 rounded-tr-3xl rounded-br-3xl`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
       {/* Moroccan Pattern Overlay */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{zIndex:0}} viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -86,12 +93,9 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, set
       {/* Soft border glow */}
       <div className="absolute inset-0 rounded-tr-3xl rounded-br-3xl border-2 border-yellow-400/20 pointer-events-none" style={{boxShadow:'0 0 32px 0 #facc1540, 0 2px 16px 0 #1e293b40'}}></div>
       {/* Sidebar content */}
-      <div className={`relative flex flex-col items-center ${collapsed ? 'py-4' : 'gap-3 px-6 py-6'} border-b border-blue-100`} style={{zIndex:1}}>
-        <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className={`transition-transform duration-300 ${collapsed ? 'w-10 h-10' : 'w-16 h-16'} object-contain rounded-full shadow-lg hover:scale-110`} />
-        {!collapsed && <span className="text-lg font-bold text-white text-center leading-tight mt-2">RGPD Compliance<br />Maroc</span>}
-        <button aria-label={collapsed ? 'Développer le menu' : 'Réduire le menu'} onClick={() => setCollapsed(!collapsed)} className="mt-2 p-1 rounded-full bg-yellow-400/80 hover:bg-yellow-400 transition" tabIndex={0}>
-          <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><path d="M7 5l5 5-5 5" stroke="#1e293b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </button>
+      <div className={`relative flex flex-col items-center ${isExpanded ? 'gap-3 px-6 py-6' : 'py-4'} border-b border-blue-100`} style={{zIndex:1}}>
+        <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className={`transition-transform duration-300 ${isExpanded ? 'w-16 h-16' : 'w-10 h-10'} object-contain rounded-full shadow-lg hover:scale-110`} />
+        {isExpanded && <span className="text-lg font-bold text-white text-center leading-tight mt-2">RGPD Compliance<br />Maroc</span>}
       </div>
       <nav className="relative flex-1 px-2 py-6 flex flex-col gap-2" role="navigation" style={{zIndex:1}}>
         {nav.map(item => (
@@ -100,10 +104,10 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, set
               ${activePath === item.to ? 'bg-yellow-400/80 text-blue-900 shadow-lg border-l-4 border-yellow-500' : 'hover:bg-yellow-100/80 hover:text-yellow-300 text-white'}`}
           >
             <span className="transition-transform group-hover:scale-110 text-white">{item.icon}</span>
-            {!collapsed && item.label}
+            {isExpanded && item.label}
           </Link>
         ))}
-        {user && user.role === 'admin' && !collapsed && (
+        {user && user.role === 'admin' && isExpanded && (
           <li>
             <Link to="/admin" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-yellow-100/80 transition text-base font-medium text-white">
               <span className="icon">🛡️</span> Admin
@@ -123,7 +127,7 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, set
           </Link>
           <button onClick={logout} className={`w-full bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded px-3 py-2 font-semibold transition shadow whitespace-nowrap mt-2 flex items-center justify-center gap-2`} tabIndex={0}>
             <img src="/logout.svg" alt="Déconnexion" className="w-6 h-6" />
-            {!collapsed && <span>Déconnexion</span>}
+            {isExpanded && <span>Déconnexion</span>}
           </button>
         </div>
       </div>
