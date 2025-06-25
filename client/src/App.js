@@ -144,9 +144,6 @@ function Topbar({ user, onMenuClick, folderId, setFolderId, token }) {
       <span className="flex items-center gap-4">
         <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className="w-8 h-8 object-contain" />
         <span className="text-lg font-bold tracking-tight text-blue-900">RGPD Compliance Maroc</span>
-        <div className="hidden md:block ml-4">
-          <FolderSwitcher folderId={folderId} setFolderId={setFolderId} token={token} />
-        </div>
       </span>
       {user && <span className="text-xs text-blue-900">{user.email}</span>}
     </header>
