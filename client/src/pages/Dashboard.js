@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { SparklesIcon, ChartBarIcon, ExclamationTriangleIcon, CheckCircleIcon, DocumentCheckIcon, ShieldCheckIcon, ArrowRightCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../App';
 
 const API_ASSESS = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/assessments';
 const API_REG = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/registers';
@@ -29,6 +30,36 @@ const RECOMMENDATIONS = [
   "Vérifier la conformité des contrats avec les sous-traitants.",
 ];
 
+const DOMAINS = [
+  { key: 'gouvernance', label: 'Gouvernance' },
+  { key: 'juridique', label: 'Juridique' },
+  { key: 'securite', label: 'Sécurité' },
+  { key: 'droits', label: 'Droits des personnes' },
+];
+
+function computeDomainScores(assessment) {
+  if (!assessment || !assessment.answers) return DOMAINS.map(d => ({ domain: d.label, score: 0 }));
+  const QUESTIONS = [
+    { domain: 'gouvernance', key: 'resp_traitement' },
+    { domain: 'gouvernance', key: 'registre' },
+    { domain: 'gouvernance', key: 'politique' },
+    { domain: 'juridique', key: 'declaration' },
+    { domain: 'juridique', key: 'contrats' },
+    { domain: 'securite', key: 'mesures' },
+    { domain: 'securite', key: 'incident' },
+    { domain: 'droits', key: 'droits' },
+    { domain: 'droits', key: 'demande' },
+  ];
+  return DOMAINS.map(domain => {
+    const domainQuestions = QUESTIONS.filter(q => q.domain === domain.key);
+    const total = domainQuestions.reduce((sum, q) => sum + (assessment.answers[q.key] || 0), 0);
+    return {
+      domain: domain.label,
+      score: domainQuestions.length ? Math.round((total / (domainQuestions.length * 2)) * 100) : 0,
+    };
+  });
+}
+
 // Add a Moroccan geometric SVG pattern as a background accent
 const MoroccanPattern = () => (
   <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{zIndex:0}} viewBox="0 0 600 400" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -49,6 +80,14 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [score, setScore] = useState(0);
   const [insights, setInsights] = useState([]);
+  const domainScores = computeDomainScores(assessment);
+  const max = 100;
+  const points = domainScores.map((d, i, arr) => {
+    const angle = (Math.PI * 2 * i) / arr.length - Math.PI / 2;
+    const r = 60 * (d.score / max);
+    return [70 + r * Math.cos(angle), 70 + r * Math.sin(angle)];
+  });
+  const polygon = points.map(([x, y]) => `${x},${y}`).join(' ');
 
   useEffect(() => {
     setLoading(true);
@@ -86,25 +125,70 @@ export default function Dashboard() {
 
   return (
     <section>
-      {/* Compliance Score Card */}
+      {/* Compliance Score Card + Radar Chart */}
       <div className="relative overflow-hidden rounded-2xl mb-10 shadow-lg bg-gradient-to-br from-blue-900 via-blue-700 to-yellow-400 text-white p-8 flex flex-col md:flex-row items-center gap-8 animate-fade-in">
-        <div className="flex-1">
+        <div className="flex-1 flex flex-col gap-6">
           <h1 className="text-3xl md:text-4xl font-extrabold mb-2 tracking-tight drop-shadow flex items-center gap-2">
-            <SparklesIcon className="w-10 h-10 text-yellow-300" /> Tableau de bord conformité
+            <SparklesIcon className="w-10 h-10 text-yellow-300 animate-spin-slow" /> Tableau de bord conformité
           </h1>
           <p className="text-lg md:text-xl font-light mb-4 drop-shadow">Suivi visuel de votre conformité à la Loi 09-08 et recommandations personnalisées.</p>
-          <div className="mt-6 flex items-center gap-4">
-            <div className="bg-white/80 rounded-full shadow-lg flex items-center justify-center w-28 h-28 border-8 border-yellow-300">
-              <span className="text-4xl font-extrabold text-blue-900 drop-shadow">{score}%</span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+            <div className="group bg-white/80 backdrop-blur rounded-xl shadow-lg p-4 flex flex-col items-center border-l-4 border-blue-700 hover:scale-105 hover:shadow-2xl transition animate-fade-in">
+              <DocumentCheckIcon className="w-8 h-8 text-blue-700 group-hover:text-yellow-500 transition" />
+              <div className="text-2xl font-bold text-blue-900 group-hover:text-yellow-700 transition">{registers.length}</div>
+              <div className="font-semibold text-blue-900 text-center">Traitements<br />enregistrés</div>
             </div>
-            <div className="flex flex-col gap-2">
-              <div className="text-blue-900 font-bold text-lg">Score de conformité</div>
-              <div className="text-gray-700 text-sm">Basé sur l'auto-évaluation, le registre et la DPIA.</div>
+            <div className="group bg-white/80 backdrop-blur rounded-xl shadow-lg p-4 flex flex-col items-center border-l-4 border-yellow-400 hover:scale-105 hover:shadow-2xl transition animate-fade-in">
+              <ShieldCheckIcon className="w-8 h-8 text-yellow-400 group-hover:text-blue-700 transition" />
+              <div className="text-2xl font-bold text-blue-900 group-hover:text-yellow-700 transition">{dpias.length}</div>
+              <div className="font-semibold text-blue-900 text-center">DPIA<br />réalisées</div>
+            </div>
+            <div className="group bg-white/80 backdrop-blur rounded-xl shadow-lg p-4 flex flex-col items-center border-l-4 border-green-500 hover:scale-105 hover:shadow-2xl transition animate-fade-in">
+              <ChartBarIcon className="w-8 h-8 text-green-500 group-hover:text-yellow-500 transition" />
+              <div className="text-2xl font-bold text-blue-900 group-hover:text-yellow-700 transition">{score}%</div>
+              <div className="font-semibold text-blue-900 text-center">Score<br />auto-évaluation</div>
+            </div>
+            <div className="group bg-white/80 backdrop-blur rounded-xl shadow-lg p-4 flex flex-col items-center border-l-4 border-blue-300 hover:scale-105 hover:shadow-2xl transition animate-fade-in">
+              <CheckCircleIcon className="w-8 h-8 text-blue-300 group-hover:text-yellow-500 transition" />
+              <div className="text-2xl font-bold text-blue-900 group-hover:text-yellow-700 transition">{(() => {
+                const dates = [];
+                if (assessment && assessment.date) dates.push(new Date(assessment.date));
+                if (registers && registers.length > 0) dates.push(...registers.map(r => new Date(r.date)));
+                if (dpias && dpias.length > 0) dates.push(...dpias.map(d => new Date(d.date)));
+                if (dates.length === 0) return '--';
+                const last = new Date(Math.max(...dates.map(d => d.getTime())));
+                return last.toLocaleDateString('fr-FR');
+              })()}</div>
+              <div className="font-semibold text-blue-900 text-center">Dernière<br />mise à jour</div>
             </div>
           </div>
+          {/* Quick Actions */}
+          <div className="flex flex-wrap gap-4 mt-6">
+            <Link to="/assessment" className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-5 py-2 rounded-lg font-semibold shadow transition-all duration-200 hover:scale-105 animate-fade-in">Nouvelle évaluation</Link>
+            <Link to="/register" className="bg-gradient-to-r from-blue-700 via-yellow-400 to-blue-900 hover:from-yellow-400 hover:to-blue-900 text-white px-5 py-2 rounded-lg font-semibold shadow transition-all duration-200 hover:scale-105 animate-fade-in">Ajouter un traitement</Link>
+            <Link to="/dpia" className="bg-gradient-to-r from-blue-900 via-blue-700 to-yellow-400 hover:from-yellow-400 hover:to-blue-900 text-white px-5 py-2 rounded-lg font-semibold shadow transition-all duration-200 hover:scale-105 animate-fade-in">Nouvelle DPIA</Link>
+          </div>
         </div>
-        <div className="flex-1 flex justify-center items-center">
-          <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className="w-36 h-36 object-contain drop-shadow-xl" />
+        {/* Animated Radar Chart */}
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="font-bold text-blue-900 mb-2">Radar de conformité</div>
+          <svg width="180" height="180" viewBox="0 0 140 140" className="mb-2 animate-fade-in">
+            <circle cx="70" cy="70" r="60" fill="#f1f5f9" />
+            <polygon points="70,10 134,70 70,130 6,70" fill="#2563eb" fillOpacity="0.08" />
+            <polygon points={polygon} fill="#facc15" fillOpacity="0.5" stroke="#2563eb" strokeWidth="2" />
+            {domainScores.map((d, i) => {
+              const angle = (Math.PI * 2 * i) / domainScores.length - Math.PI / 2;
+              const r = 60 * (d.score / max);
+              const x = 70 + r * Math.cos(angle);
+              const y = 70 + r * Math.sin(angle);
+              return <circle key={i} cx={x} cy={y} r="4" fill="#2563eb" stroke="#fff" strokeWidth="2" />;
+            })}
+          </svg>
+          <div className="flex flex-wrap gap-2 justify-center">
+            {domainScores.map((d, i) => (
+              <span key={i} className="px-3 py-1 rounded-full bg-blue-900/10 text-blue-900 font-semibold text-xs animate-fade-in">{d.domain}: {d.score}%</span>
+            ))}
+          </div>
         </div>
       </div>
       {/* Actionable Insights */}
