@@ -71,15 +71,28 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath }) {
     { to: '/best-practices', label: 'Bonnes pratiques', icon: <SparklesIcon className="w-6 h-6" /> },
   ];
   return (
-    <aside aria-label="Navigation principale" className={`backdrop-blur-lg bg-white/60 shadow-xl border-r-4 border-yellow-400 ${collapsed ? 'w-20' : 'w-64'} min-h-screen flex flex-col fixed z-40 left-0 top-0 transition-all duration-300 rounded-tr-3xl rounded-br-3xl`}>
-      <div className={`flex flex-col items-center ${collapsed ? 'py-4' : 'gap-3 px-6 py-6'} border-b border-blue-100`}>
+    <aside aria-label="Navigation principale" className={`relative overflow-hidden backdrop-blur-lg bg-gradient-to-br from-blue-900/80 via-blue-700/60 to-yellow-400/40 shadow-xl border-r-4 border-yellow-400 ${collapsed ? 'w-20' : 'w-64'} min-h-screen flex flex-col fixed z-40 left-0 top-0 transition-all duration-300 rounded-tr-3xl rounded-br-3xl`}>
+      {/* Moroccan Pattern Overlay */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{zIndex:0}} viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="moroccan" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M20 0 L40 20 L20 40 L0 20 Z" fill="#fff" fillOpacity="0.03" />
+            <circle cx="20" cy="20" r="6" fill="#facc15" fillOpacity="0.04" />
+          </pattern>
+        </defs>
+        <rect width="120" height="120" fill="url(#moroccan)" />
+      </svg>
+      {/* Soft border glow */}
+      <div className="absolute inset-0 rounded-tr-3xl rounded-br-3xl border-2 border-yellow-400/30 pointer-events-none" style={{boxShadow:'0 0 32px 0 #facc1580, 0 2px 16px 0 #2563eb40'}}></div>
+      {/* Sidebar content */}
+      <div className={`relative flex flex-col items-center ${collapsed ? 'py-4' : 'gap-3 px-6 py-6'} border-b border-blue-100`} style={{zIndex:1}}>
         <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className={`transition-transform duration-300 ${collapsed ? 'w-10 h-10' : 'w-16 h-16'} object-contain rounded-full shadow-lg hover:scale-110`} />
         {!collapsed && <span className="text-lg font-bold text-blue-900 text-center leading-tight mt-2">RGPD Compliance<br />Maroc</span>}
         <button aria-label={collapsed ? 'Développer le menu' : 'Réduire le menu'} onClick={() => setCollapsed(!collapsed)} className="mt-2 p-1 rounded-full bg-yellow-400/80 hover:bg-yellow-400 transition" tabIndex={0}>
           <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><path d="M7 5l5 5-5 5" stroke="#1e293b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
       </div>
-      <nav className="flex-1 px-2 py-6 flex flex-col gap-2" role="navigation">
+      <nav className="relative flex-1 px-2 py-6 flex flex-col gap-2" role="navigation" style={{zIndex:1}}>
         {nav.map(item => (
           <Link key={item.to} to={item.to} aria-label={item.label} tabIndex={0}
             className={`group flex items-center gap-3 px-3 py-2 my-1 rounded-full font-medium transition-all duration-200 outline-none focus:ring-2 focus:ring-yellow-400
@@ -97,7 +110,7 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath }) {
           </li>
         )}
       </nav>
-      <div className={`px-4 pb-6 mt-auto flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
+      <div className={`relative px-4 pb-6 mt-auto flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`} style={{zIndex:1}}>
         <img src={user?.avatar || '/default-avatar.png'} alt="Avatar" className="w-8 h-8 rounded-full border-2 border-yellow-400 shadow" />
         {!collapsed && user && (
           <div>
