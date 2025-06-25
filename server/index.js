@@ -17,6 +17,7 @@ const AUDIT_PATH = path.resolve('./data/audit.json');
 const FOLDERS_PATH = path.resolve('./data/folders.json');
 
 app.use(cors());
+app.options('*', cors());
 app.use(bodyParser.json());
 
 // Middleware d'authentification
