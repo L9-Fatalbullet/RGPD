@@ -73,8 +73,8 @@ function Sidebar({ token, logout, user }) {
   return (
     <aside className="bg-gradient-to-b from-blue-900 to-blue-700 text-white w-64 min-h-screen flex flex-col shadow-xl fixed z-40 left-0 top-0 hidden md:flex">
       <div className="flex items-center gap-2 px-6 py-6 border-b border-blue-800">
-        <span className="text-3xl font-extrabold tracking-tight">🛡️</span>
-        <span className="text-xl font-bold tracking-tight">CNDP Maroc</span>
+        <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className="w-12 h-12 object-contain" />
+        <span className="text-xl font-bold tracking-tight">RGPD Compliance Maroc</span>
       </div>
       <nav className="flex-1 px-4 py-6 flex flex-col gap-2">
         {nav.map(item => (
@@ -106,7 +106,10 @@ function Sidebar({ token, logout, user }) {
 function Topbar({ user }) {
   return (
     <header className="md:hidden sticky top-0 z-50 bg-gradient-to-r from-blue-900 to-blue-700 shadow text-white flex items-center justify-between px-4 py-3">
-      <span className="text-xl font-bold tracking-tight">🛡️ CNDP Maroc</span>
+      <span className="flex items-center gap-2">
+        <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className="w-8 h-8 object-contain" />
+        <span className="text-lg font-bold tracking-tight">RGPD Compliance Maroc</span>
+      </span>
       {user && <span className="text-xs">{user.email}</span>}
     </header>
   );

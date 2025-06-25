@@ -163,14 +163,7 @@ export default function Assessment() {
           <p className="text-lg md:text-xl font-light mb-4 drop-shadow">Vérifiez votre conformité réelle à la Loi marocaine sur la protection des données.</p>
         </div>
         <div className="flex-1 flex justify-center items-center">
-          {/* Moroccan-inspired SVG */}
-          <svg width="140" height="140" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="70" cy="70" r="60" fill="#fff" fillOpacity="0.12" />
-            <circle cx="70" cy="70" r="40" fill="#fff" fillOpacity="0.10" />
-            <path d="M70 30 L90 70 L50 70 Z" fill="#2563eb" fillOpacity="0.7" />
-            <circle cx="70" cy="70" r="14" fill="#facc15" fillOpacity="0.8" />
-            <text x="70" y="77" textAnchor="middle" fontSize="16" fontWeight="bold" fill="#1e293b">CNDP</text>
-          </svg>
+          <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className="w-36 h-36 object-contain drop-shadow-xl" />
         </div>
       </div>
       {/* Step-by-step wizard */}
