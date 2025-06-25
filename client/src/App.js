@@ -135,7 +135,7 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, set
   );
 }
 
-function Topbar({ user, onMenuClick, folderId, setFolderId, token }) {
+function Topbar({ user, onMenuClick, folderId, setFolderId, token, openFolderModal }) {
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg shadow flex items-center justify-between px-4 py-3 border-b border-yellow-400">
       <button aria-label="Ouvrir le menu" onClick={onMenuClick} className="p-2 rounded-full bg-yellow-400/80 hover:bg-yellow-400 transition md:hidden">
@@ -144,6 +144,9 @@ function Topbar({ user, onMenuClick, folderId, setFolderId, token }) {
       <span className="flex items-center gap-4">
         <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className="w-8 h-8 object-contain" />
         <span className="text-lg font-bold tracking-tight text-blue-900">RGPD Compliance Maroc</span>
+        <div className="hidden md:block ml-4">
+          <FolderSwitcher folderId={folderId} setFolderId={setFolderId} token={token} renderButton={true} />
+        </div>
       </span>
       {user && <span className="text-xs text-blue-900">{user.email}</span>}
     </header>
@@ -245,7 +248,14 @@ function FolderSwitcher({ folderId, setFolderId, token, exposeOpenModal, renderB
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ name: modalValue })
     })
-      .then(r => r.json())
+      .then(async r => {
+        if (!r.ok) {
+          let err = 'Erreur lors de la création.';
+          try { err = (await r.json()).error || err; } catch { try { err = await r.text(); } catch {} }
+          throw new Error(err);
+        }
+        return r.json();
+      })
       .then(f => {
         setFolders(prev => [...prev, f]);
         setFolderId(f.id);
@@ -253,8 +263,9 @@ function FolderSwitcher({ folderId, setFolderId, token, exposeOpenModal, renderB
         closeModal();
         setDropdownOpen(false);
         setLoading(false);
+        setError('');
       })
-      .catch(() => { setError('Erreur lors de la création.'); setLoading(false); });
+      .catch((e) => { setError(e.message || 'Erreur lors de la création.'); setLoading(false); });
   }
   // Rename folder
   function handleRenameFolder(e) {
@@ -462,8 +473,8 @@ function App() {
           </div>
         )}
         <div className="flex-1 flex flex-col min-h-screen">
-          <Topbar user={user} onMenuClick={() => setMobileOpen(true)} folderId={folderId} setFolderId={setFolderId} token={token} />
-          {/* Only render FolderSwitcher for modal control, not for dropdown UI */}
+          <Topbar user={user} onMenuClick={() => setMobileOpen(true)} folderId={folderId} setFolderId={setFolderId} token={token} openFolderModal={openFolderModal} />
+          {/* FolderSwitcher for modal control only (no button) */}
           <FolderSwitcher folderId={folderId} setFolderId={setFolderId} token={token} exposeOpenModal={setOpenFolderModal} renderButton={false} />
           <main className="flex-1 p-4 md:p-8 min-h-screen bg-white" style={{ minHeight: 'calc(100vh - 56px)' }}>
             <div className="w-full bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6 md:p-10">
