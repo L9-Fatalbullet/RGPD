@@ -121,8 +121,9 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, set
               </span>
             )}
           </Link>
-          <button onClick={logout} className="w-full bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded px-3 py-2 font-semibold transition shadow whitespace-nowrap mt-2 flex items-center justify-center gap-2" tabIndex={0}>
-            <ArrowLeftOnRectangleIcon className="w-5 h-5" /> Déconnexion
+          <button onClick={logout} className={`w-full bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded px-3 py-2 font-semibold transition shadow whitespace-nowrap mt-2 flex items-center justify-center gap-2`} tabIndex={0}>
+            <img src="/logout.svg" alt="Déconnexion" className="w-6 h-6" />
+            {!collapsed && <span>Déconnexion</span>}
           </button>
         </div>
       </div>
