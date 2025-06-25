@@ -18,6 +18,16 @@ const FOLDERS_PATH = path.resolve('./data/folders.json');
 
 app.use(cors());
 app.options('*', cors());
+// Manual OPTIONS handler for CORS preflight
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
+    return res.sendStatus(204);
+  }
+  next();
+});
 app.use(bodyParser.json());
 
 // Middleware d'authentification
