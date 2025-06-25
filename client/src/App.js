@@ -155,7 +155,21 @@ function App() {
 
   return (
     <Router>
-      <div className="font-sans min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex">
+      <div className="font-sans min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex relative overflow-x-hidden">
+        {/* Moroccan Mosaic Background */}
+        <svg className="fixed inset-0 w-full h-full z-0 pointer-events-none" style={{opacity:0.08}} viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="mosaic" width="40" height="40" patternUnits="userSpaceOnUse">
+              <g>
+                <rect x="0" y="0" width="40" height="40" fill="#fff" fillOpacity="0.0" />
+                <path d="M20 0 L40 20 L20 40 L0 20 Z" fill="#2563eb" fillOpacity="0.12" />
+                <circle cx="20" cy="20" r="8" fill="#facc15" fillOpacity="0.10" />
+                <circle cx="20" cy="20" r="3" fill="#2563eb" fillOpacity="0.10" />
+              </g>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#mosaic)" />
+        </svg>
         {/* Desktop Sidebar */}
         <Sidebar token={token} logout={logout} user={user} collapsed={collapsed} setCollapsed={setCollapsed} activePath={location} />
         {/* Mobile Sidebar Drawer */}
