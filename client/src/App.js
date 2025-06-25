@@ -165,7 +165,7 @@ function NoFolder({ onCreate }) {
 }
 
 // FolderSwitcher component
-function FolderSwitcher({ folderId, setFolderId, token, exposeOpenModal }) {
+function FolderSwitcher({ folderId, setFolderId, token, exposeOpenModal, renderButton }) {
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -311,6 +311,39 @@ function FolderSwitcher({ folderId, setFolderId, token, exposeOpenModal }) {
   }, [exposeOpenModal]);
 
   // UI
+  if (!renderButton) {
+    // Only render modals if open
+    return <>
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 animate-fade-in">
+          <form onSubmit={modalType === 'create' ? handleCreateFolder : handleRenameFolder} className="bg-white rounded-xl shadow-lg p-6 flex flex-col gap-4 min-w-[260px]">
+            <div className="font-bold text-blue-900 text-lg">{modalType === 'create' ? 'Créer un dossier' : 'Renommer le dossier'}</div>
+            <input ref={inputRef} value={modalValue} onChange={e => setModalValue(e.target.value)} className="rounded border px-3 py-2" placeholder="Nom du dossier" required aria-label="Nom du dossier" />
+            <div className="flex gap-2 mt-2">
+              <button type="button" onClick={closeModal} className="flex-1 bg-gray-200 hover:bg-gray-300 text-blue-900 rounded px-4 py-2 font-semibold">Annuler</button>
+              <button type="submit" className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded px-4 py-2 font-semibold">{modalType === 'create' ? 'Créer' : 'Renommer'}</button>
+            </div>
+          </form>
+        </div>
+      )}
+      {deletingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 animate-fade-in">
+          <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col gap-4 min-w-[260px]">
+            <div className="font-bold text-blue-900 text-lg">Supprimer ce dossier ?</div>
+            <div className="text-blue-900">Cette action est irréversible.</div>
+            <div className="flex gap-2 mt-2">
+              <button type="button" onClick={closeDeleteConfirm} className="flex-1 bg-gray-200 hover:bg-gray-300 text-blue-900 rounded px-4 py-2 font-semibold">Annuler</button>
+              <button type="button" onClick={handleDeleteFolder} className="flex-1 bg-red-500 hover:bg-red-600 text-white rounded px-4 py-2 font-semibold">Supprimer</button>
+            </div>
+          </div>
+        </div>
+      )}
+      <style>{`
+        @keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+        .animate-fade-in { animation: fade-in 0.5s cubic-bezier(.4,0,.2,1) both; }
+      `}</style>
+    </>;
+  }
   if (loading) return <div className="flex items-center gap-2 text-blue-700 text-sm"><svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg> Chargement...</div>;
   if (error) return <div className="text-red-600 font-semibold">{error}</div>;
   if (folders.length === 0) {
@@ -372,36 +405,6 @@ function FolderSwitcher({ folderId, setFolderId, token, exposeOpenModal }) {
           </div>
         </div>
       )}
-      {/* Modal for create/rename */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 animate-fade-in">
-          <form onSubmit={modalType === 'create' ? handleCreateFolder : handleRenameFolder} className="bg-white rounded-xl shadow-lg p-6 flex flex-col gap-4 min-w-[260px]">
-            <div className="font-bold text-blue-900 text-lg">{modalType === 'create' ? 'Créer un dossier' : 'Renommer le dossier'}</div>
-            <input ref={inputRef} value={modalValue} onChange={e => setModalValue(e.target.value)} className="rounded border px-3 py-2" placeholder="Nom du dossier" required aria-label="Nom du dossier" />
-            <div className="flex gap-2 mt-2">
-              <button type="button" onClick={closeModal} className="flex-1 bg-gray-200 hover:bg-gray-300 text-blue-900 rounded px-4 py-2 font-semibold">Annuler</button>
-              <button type="submit" className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded px-4 py-2 font-semibold">{modalType === 'create' ? 'Créer' : 'Renommer'}</button>
-            </div>
-          </form>
-        </div>
-      )}
-      {/* Delete confirmation */}
-      {deletingId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 animate-fade-in">
-          <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col gap-4 min-w-[260px]">
-            <div className="font-bold text-blue-900 text-lg">Supprimer ce dossier ?</div>
-            <div className="text-blue-900">Cette action est irréversible.</div>
-            <div className="flex gap-2 mt-2">
-              <button type="button" onClick={closeDeleteConfirm} className="flex-1 bg-gray-200 hover:bg-gray-300 text-blue-900 rounded px-4 py-2 font-semibold">Annuler</button>
-              <button type="button" onClick={handleDeleteFolder} className="flex-1 bg-red-500 hover:bg-red-600 text-white rounded px-4 py-2 font-semibold">Supprimer</button>
-            </div>
-          </div>
-        </div>
-      )}
-      <style>{`
-        @keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
-        .animate-fade-in { animation: fade-in 0.5s cubic-bezier(.4,0,.2,1) both; }
-      `}</style>
     </div>
   );
 }
@@ -460,7 +463,8 @@ function App() {
         )}
         <div className="flex-1 flex flex-col min-h-screen">
           <Topbar user={user} onMenuClick={() => setMobileOpen(true)} folderId={folderId} setFolderId={setFolderId} token={token} />
-          <FolderSwitcher folderId={folderId} setFolderId={setFolderId} token={token} exposeOpenModal={setOpenFolderModal} />
+          {/* Only render FolderSwitcher for modal control, not for dropdown UI */}
+          <FolderSwitcher folderId={folderId} setFolderId={setFolderId} token={token} exposeOpenModal={setOpenFolderModal} renderButton={false} />
           <main className="flex-1 p-4 md:p-8 min-h-screen bg-white" style={{ minHeight: 'calc(100vh - 56px)' }}>
             <div className="w-full bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6 md:p-10">
               {/* Show onboarding if no folder selected */}
