@@ -11,6 +11,7 @@ import Register from './pages/Register';
 import Progress from './pages/Progress';
 import DPIA from './pages/DPIA';
 import Admin from './pages/Admin';
+import Profile from './pages/Profile';
 
 // AuthContext
 const AuthContext = createContext();
@@ -127,7 +128,7 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, set
               <div className="text-xs text-blue-100 mt-1">{user.role === 'admin' ? 'Administrateur' : 'Utilisateur'}</div>
             </div>
             <div className="flex gap-2 w-full mt-4">
-              <button onClick={() => setEditProfileOpen(true)} className="flex-1 bg-blue-700 hover:bg-blue-800 text-white rounded px-3 py-2 font-semibold transition shadow">Modifier</button>
+              <Link to="/profile" className="flex-1 bg-blue-700 hover:bg-blue-800 text-white rounded px-3 py-2 font-semibold transition shadow text-center">Mon profil</Link>
               <button onClick={logout} className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded px-3 py-2 font-semibold transition shadow whitespace-nowrap" tabIndex={0}>
                 <ArrowLeftOnRectangleIcon className="w-5 h-5" /> Déconnexion
               </button>
@@ -229,6 +230,7 @@ function App() {
                 <Route path="/best-practices" element={<BestPractices />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/" element={<Navigate to="/dashboard" />} />
               </Routes>
             </div>
