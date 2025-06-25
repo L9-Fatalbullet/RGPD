@@ -159,6 +159,31 @@ export default function Dashboard() {
               <span key={i} className="px-3 py-1 rounded-full bg-blue-900/10 text-blue-900 font-semibold text-xs animate-fade-in">{d.domain}: {d.score}%</span>
             ))}
           </div>
+          {/* Personalized Recommendations */}
+          <div className="w-full max-w-xl mt-6 animate-fade-in">
+            {assessment && Object.values(assessment.answers || {}).some(v => v < 2) ? (
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded shadow flex flex-col gap-2">
+                <div className="font-semibold text-yellow-800 flex items-center gap-2 mb-1">
+                  <ExclamationTriangleIcon className="w-5 h-5 text-yellow-500 animate-bounce" /> Recommandations personnalisées
+                </div>
+                <ul className="list-disc pl-6 text-yellow-900">
+                  {Object.entries(assessment.answers || {}).filter(([k, v]) => v < 2).map(([k]) => (
+                    <li key={k} className="mb-1">
+                      {k === 'registre' && <span>Mettez à jour ou créez votre <Link to='/register' className='text-blue-700 underline'>registre des traitements</Link>.</span>}
+                      {k === 'dpia' && <span>Réalisez une <Link to='/dpia' className='text-blue-700 underline'>DPIA</Link> pour les traitements à risque élevé.</span>}
+                      {k === 'declaration' && <span>Déclarez vos traitements à la CNDP. <Link to='/guide' className='text-blue-700 underline'>Voir le guide</Link>.</span>}
+                      {k !== 'registre' && k !== 'dpia' && k !== 'declaration' && <span>Complétez l'obligation : <span className='font-semibold'>{k}</span> dans l'auto-évaluation.</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded shadow flex items-center gap-2">
+                <CheckCircleIcon className="w-5 h-5 text-green-500 animate-pulse" />
+                <span className="text-green-700 font-semibold">Bravo ! Toutes les obligations principales sont remplies.</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       {/* Actionable Insights */}
