@@ -155,8 +155,20 @@ function Topbar({ user, onMenuClick, folderId, setFolderId, token }) {
 
 const API_BASE = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev';
 
+// NoFolder onboarding component
+function NoFolder({ onCreate }) {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] animate-fade-in">
+      <svg width="100" height="100" fill="none" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#facc15" fillOpacity="0.08"/><path d="M30 50h40M50 30v40" stroke="#2563eb" strokeWidth="5" strokeLinecap="round"/><circle cx="50" cy="50" r="32" fill="#2563eb" fillOpacity="0.06"/><path d="M35 60c0-8 10-12 15-12s15 4 15 12v2a2 2 0 01-2 2H37a2 2 0 01-2-2v-2z" fill="#facc15" fillOpacity="0.18"/></svg>
+      <h2 className="text-2xl font-bold text-blue-900 mt-6 mb-2">Bienvenue !</h2>
+      <p className="text-blue-900 text-center max-w-md mb-4">Pour commencer, créez un <span className="font-semibold">dossier de conformité</span>. Chaque dossier vous permet de gérer la conformité d'une entité, d'un projet ou d'une activité distincte selon la Loi 09-08.</p>
+      <button onClick={onCreate} className="bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded-full px-6 py-3 font-bold text-lg shadow mt-2">Créer mon premier dossier</button>
+    </div>
+  );
+}
+
 // FolderSwitcher component
-function FolderSwitcher({ folderId, setFolderId, token }) {
+function FolderSwitcher({ folderId, setFolderId, token, exposeOpenModal }) {
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -295,6 +307,12 @@ function FolderSwitcher({ folderId, setFolderId, token }) {
       .catch(() => { setError('Erreur lors de la suppression.'); setLoading(false); });
   }
 
+  // Expose modal open function for onboarding
+  useEffect(() => {
+    if (exposeOpenModal) exposeOpenModal(() => openCreateModal());
+    // eslint-disable-next-line
+  }, [exposeOpenModal]);
+
   // UI
   if (loading) return <div className="flex items-center gap-2 text-blue-700 text-sm"><svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg> Chargement...</div>;
   if (error) return <div className="text-red-600 font-semibold">{error}</div>;
@@ -401,6 +419,7 @@ function App() {
   const location = window.location.pathname;
   const sidebarRef = useRef();
   const [folderId, setFolderId] = useState(null);
+  const [openFolderModal, setOpenFolderModal] = useState(null);
 
   // Close mobile sidebar on route change
   useEffect(() => { setMobileOpen(false); }, [location]);
@@ -444,22 +463,28 @@ function App() {
         )}
         <div className="flex-1 flex flex-col min-h-screen">
           <Topbar user={user} onMenuClick={() => setMobileOpen(true)} folderId={folderId} setFolderId={setFolderId} token={token} />
+          <FolderSwitcher folderId={folderId} setFolderId={setFolderId} token={token} exposeOpenModal={setOpenFolderModal} />
           <main className="flex-1 p-4 md:p-8 min-h-screen bg-white" style={{ minHeight: 'calc(100vh - 56px)' }}>
             <div className="w-full bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6 md:p-10">
-              <Routes>
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard folderId={folderId} /></ProtectedRoute>} />
-                <Route path="/progress" element={<ProtectedRoute><Progress folderId={folderId} /></ProtectedRoute>} />
-                <Route path="/assessment" element={<ProtectedRoute><Assessment folderId={folderId} /></ProtectedRoute>} />
-                <Route path="/register" element={<ProtectedRoute><Register folderId={folderId} /></ProtectedRoute>} />
-                <Route path="/dpia" element={<ProtectedRoute><DPIA folderId={folderId} /></ProtectedRoute>} />
-                <Route path="/guide" element={<Guide />} />
-                <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
-                <Route path="/best-practices" element={<BestPractices />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                <Route path="/" element={<Navigate to="/dashboard" />} />
-              </Routes>
+              {/* Show onboarding if no folder selected */}
+              {!folderId ? (
+                <NoFolder onCreate={() => openFolderModal && openFolderModal()} />
+              ) : (
+                <Routes>
+                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard folderId={folderId} /></ProtectedRoute>} />
+                  <Route path="/progress" element={<ProtectedRoute><Progress folderId={folderId} /></ProtectedRoute>} />
+                  <Route path="/assessment" element={<ProtectedRoute><Assessment folderId={folderId} /></ProtectedRoute>} />
+                  <Route path="/register" element={<ProtectedRoute><Register folderId={folderId} /></ProtectedRoute>} />
+                  <Route path="/dpia" element={<ProtectedRoute><DPIA folderId={folderId} /></ProtectedRoute>} />
+                  <Route path="/guide" element={<Guide />} />
+                  <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
+                  <Route path="/best-practices" element={<BestPractices />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+                  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                  <Route path="/" element={<Navigate to="/dashboard" />} />
+                </Routes>
+              )}
             </div>
           </main>
           <footer className="text-center text-xs text-blue-900 py-4 opacity-80">
