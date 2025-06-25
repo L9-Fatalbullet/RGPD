@@ -72,7 +72,7 @@ function exportPDF(answers, domainScores, missing) {
   doc.save('auto-evaluation_loi0908.pdf');
 }
 
-export default function Assessment({ folderId }) {
+export default function Assessment() {
   const { token } = useAuth();
   const [answers, setAnswers] = useState(() => Object.fromEntries(QUESTIONS.map(q => [q.key, 0])));
   const [show, setShow] = useState(false);
@@ -84,9 +84,8 @@ export default function Assessment({ folderId }) {
 
   // Load latest assessment on mount
   useEffect(() => {
-    if (!folderId) return;
     setLoading(true);
-    fetch(`${API_BASE}/api/assessments?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } })
+    fetch(`${API_BASE}/api/assessments`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } })
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
@@ -99,15 +98,14 @@ export default function Assessment({ folderId }) {
         setLoading(false);
         setError('Erreur de connexion au serveur. Vérifiez votre connexion ou réessayez plus tard.');
       });
-  }, [folderId]);
+  }, []);
 
   // Auto-save on answers change (debounced)
   useEffect(() => {
-    if (!folderId) return;
     setSaveStatus('Enregistrement...');
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(() => {
-      fetch(`${API_BASE}/api/assessments?folderId=${folderId}`, {
+      fetch(`${API_BASE}/api/assessments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -123,7 +121,7 @@ export default function Assessment({ folderId }) {
         .catch(() => setSaveStatus("Erreur réseau ou serveur."));
     }, 700);
     return () => clearTimeout(saveTimeout.current);
-  }, [answers, folderId]);
+  }, [answers]);
 
   const handleChange = (key, value) => {
     setAnswers(a => ({ ...a, [key]: Number(value) }));
@@ -155,8 +153,6 @@ export default function Assessment({ folderId }) {
   const missing = QUESTIONS.filter(q => (answers[q.key] || 0) < 2);
 
   if (error) return <div className="text-red-600 font-semibold p-8">{error}</div>;
-
-  if (!folderId) return <div className="text-blue-700 font-semibold p-8">Veuillez sélectionner ou créer un dossier de conformité pour commencer.</div>;
 
   return (
     <section>

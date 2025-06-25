@@ -107,7 +107,7 @@ function emptyDPIA() {
   };
 }
 
-export default function DPIA({ folderId }) {
+export default function DPIA() {
   const { token, logout } = useAuth();
   const [dpias, setDPIAs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -123,14 +123,13 @@ export default function DPIA({ folderId }) {
 
   // Load DPIAs
   useEffect(() => {
-    if (!folderId) return;
     setLoading(true);
     setError('');
-    fetch(`${API_BASE}/api/dpias?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_BASE}/api/dpias`, { headers: { Authorization: `Bearer ${token}` } })
       .then(async r => { if (r.status === 401 || r.status === 403) { logout(); throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); })
       .then(data => { setDPIAs(data); setLoading(false); })
       .catch((e) => { setLoading(false); setError(e.message || 'Erreur de connexion au serveur. Vérifiez votre connexion ou réessayez plus tard.'); });
-  }, [folderId, token, logout]);
+  }, [token, logout]);
 
   // Handle form change
   const handleChange = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -177,7 +176,7 @@ export default function DPIA({ folderId }) {
         res = await fetch(`${API_BASE}/api/dpias`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ ...form, folderId })
+          body: JSON.stringify({ ...form })
         });
         data = await res.json();
         if (data.success && data.id) setCurrentId(data.id);
@@ -186,7 +185,7 @@ export default function DPIA({ folderId }) {
         res = await fetch(`${API_BASE}/api/dpias/${currentId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ ...form, folderId })
+          body: JSON.stringify({ ...form })
         });
         data = await res.json();
       }
@@ -194,7 +193,7 @@ export default function DPIA({ folderId }) {
       else setSaveStatus("Erreur lors de l'enregistrement.");
     }, 700);
     return () => clearTimeout(saveTimeout.current);
-  }, [form, token, wizard, currentId, folderId]);
+  }, [form, token, wizard, currentId]);
 
   // Save DPIA
   const handleSave = async e => {
@@ -204,7 +203,7 @@ export default function DPIA({ folderId }) {
       const res = await fetch(`${API_BASE}/api/dpias`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ...form, folderId })
+        body: JSON.stringify({ ...form })
       });
       const data = await res.json();
       if (data.success) {
@@ -253,7 +252,6 @@ export default function DPIA({ folderId }) {
   };
 
   // Render
-  if (!folderId) return <div className="text-blue-700 font-semibold p-8">Veuillez sélectionner ou créer un dossier de conformité pour commencer.</div>;
   if (error) return <div className="text-red-600 font-semibold p-8">{error}</div>;
   return (
     <section>

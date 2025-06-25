@@ -141,7 +141,7 @@ function setChecklistState(userId, state) {
   localStorage.setItem('cndp_checklists_' + userId, JSON.stringify(state));
 }
 
-export default function Progress({ folderId }) {
+export default function Progress() {
   const { token, user, logout } = useAuth();
   const [assessment, setAssessment] = useState(null);
   const [registers, setRegisters] = useState([]);
@@ -153,13 +153,12 @@ export default function Progress({ folderId }) {
 
   // Load assessment and registers
   useEffect(() => {
-    if (!folderId) return;
     setLoading(true);
     setError(null);
     Promise.all([
-      fetch(`${API_BASE}/api/assessments?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } }).then(async r => { if (r.status === 401 || r.status === 403) { logout(); throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); }),
-      fetch(`${API_BASE}/api/registers?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } }).then(async r => { if (r.status === 401 || r.status === 403) { logout(); throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); }),
-      fetch(`${API_BASE}/api/dpias?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } }).then(async r => { if (r.status === 401 || r.status === 403) { logout(); throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); }),
+      fetch(`${API_BASE}/api/assessments`, { headers: { Authorization: `Bearer ${token}` } }).then(async r => { if (r.status === 401 || r.status === 403) { logout(); throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); }),
+      fetch(`${API_BASE}/api/registers`, { headers: { Authorization: `Bearer ${token}` } }).then(async r => { if (r.status === 401 || r.status === 403) { logout(); throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); }),
+      fetch(`${API_BASE}/api/dpias`, { headers: { Authorization: `Bearer ${token}` } }).then(async r => { if (r.status === 401 || r.status === 403) { logout(); throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); }),
     ]).then(([assess, regs, dpias]) => {
       setAssessment(Array.isArray(assess) && assess.length > 0 ? assess[assess.length - 1] : null);
       setRegisters(regs || []);
@@ -169,7 +168,7 @@ export default function Progress({ folderId }) {
       setLoading(false);
       setError(e.message || 'Erreur de connexion au serveur. Vérifiez votre connexion ou réessayez plus tard.');
     });
-  }, [token, folderId, logout]);
+  }, [token, logout]);
 
   // Load checklist state from localStorage
   useEffect(() => {
@@ -211,8 +210,6 @@ export default function Progress({ folderId }) {
   };
 
   if (error) return <div className="text-red-600 font-semibold p-8">{error}</div>;
-
-  if (!folderId) return <div className="text-blue-700 font-semibold p-8">Veuillez sélectionner ou créer un dossier de conformité pour commencer.</div>;
 
   return (
     <section>

@@ -292,7 +292,7 @@ function FolderSwitcher({ folderId, setFolderId, token, exposeOpenModal, renderB
         if (!r.ok) {
           let err = 'Erreur lors du renommage.';
           try { err = (await r.json()).error || err; } catch { try { err = await r.text(); } catch {} }
-          if (r.status === 404) err = 'Vous n’êtes pas autorisé à modifier ce dossier ou il n’existe pas.';
+          if (r.status === 404) err = 'Vous n'êtes pas autorisé à modifier ce dossier ou il n'existe pas.';
           throw new Error(err);
         }
         return r.json();
@@ -322,7 +322,7 @@ function FolderSwitcher({ folderId, setFolderId, token, exposeOpenModal, renderB
         if (!r.ok) {
           let err = 'Erreur lors de la suppression.';
           try { err = (await r.json()).error || err; } catch { try { err = await r.text(); } catch {} }
-          if (r.status === 404) err = 'Vous n’êtes pas autorisé à supprimer ce dossier ou il n’existe pas.';
+          if (r.status === 404) err = 'Vous n'êtes pas autorisé à supprimer ce dossier ou il n'existe pas.';
           throw new Error(err);
         }
         return r;
@@ -459,8 +459,6 @@ function App() {
   const [editAvatar, setEditAvatar] = useState(null);
   const location = window.location.pathname;
   const sidebarRef = useRef();
-  const [folderId, setFolderId] = useState(null);
-  const [openFolderModal, setOpenFolderModal] = useState(null);
 
   // Close mobile sidebar on route change
   useEffect(() => { setMobileOpen(false); }, [location]);
@@ -504,8 +502,6 @@ function App() {
         )}
         <div className="flex-1 flex flex-col min-h-screen">
           <Topbar user={user} onMenuClick={() => setMobileOpen(true)} folderId={folderId} setFolderId={setFolderId} token={token} openFolderModal={openFolderModal} />
-          {/* FolderSwitcher for modal control only (no button) */}
-          <FolderSwitcher folderId={folderId} setFolderId={setFolderId} token={token} exposeOpenModal={setOpenFolderModal} renderButton={false} />
           <main className="flex-1 p-4 md:p-8 min-h-screen bg-white" style={{ minHeight: 'calc(100vh - 56px)' }}>
             <div className="w-full bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6 md:p-10">
               {/* Show onboarding if no folder selected */}
@@ -513,11 +509,11 @@ function App() {
                 <NoFolder onCreate={() => openFolderModal && openFolderModal()} />
               ) : (
                 <Routes>
-                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard folderId={folderId} /></ProtectedRoute>} />
-                  <Route path="/progress" element={<ProtectedRoute><Progress folderId={folderId} /></ProtectedRoute>} />
-                  <Route path="/assessment" element={<ProtectedRoute><Assessment folderId={folderId} /></ProtectedRoute>} />
-                  <Route path="/register" element={<ProtectedRoute><Register folderId={folderId} /></ProtectedRoute>} />
-                  <Route path="/dpia" element={<ProtectedRoute><DPIA folderId={folderId} /></ProtectedRoute>} />
+                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                  <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
+                  <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
+                  <Route path="/register" element={<ProtectedRoute><Register /></ProtectedRoute>} />
+                  <Route path="/dpia" element={<ProtectedRoute><DPIA /></ProtectedRoute>} />
                   <Route path="/guide" element={<Guide />} />
                   <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
                   <Route path="/best-practices" element={<BestPractices />} />
