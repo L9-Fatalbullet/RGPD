@@ -160,10 +160,13 @@ function FolderSwitcher({ folderId, setFolderId, token }) {
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState('create'); // 'create' or 'rename'
   const [modalValue, setModalValue] = useState('');
   const [renamingId, setRenamingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const dropdownRef = useRef();
   const inputRef = useRef();
 
   // Fetch folders
@@ -188,7 +191,16 @@ function FolderSwitcher({ folderId, setFolderId, token }) {
       });
   }, [token]);
 
-  // Modal open/close helpers
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false);
+    }
+    if (dropdownOpen) document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [dropdownOpen]);
+
+  // Modal helpers
   function openCreateModal() {
     setModalType('create');
     setModalValue('');
@@ -207,6 +219,12 @@ function FolderSwitcher({ folderId, setFolderId, token }) {
     setModalValue('');
     setRenamingId(null);
   }
+  function openDeleteConfirm(id) {
+    setDeletingId(id);
+  }
+  function closeDeleteConfirm() {
+    setDeletingId(null);
+  }
 
   // Create folder
   function handleCreateFolder(e) {
@@ -224,6 +242,7 @@ function FolderSwitcher({ folderId, setFolderId, token }) {
         setFolderId(f.id);
         localStorage.setItem('cndp_folder', f.id);
         closeModal();
+        setDropdownOpen(false);
         setLoading(false);
       })
       .catch(() => { setError('Erreur lors de la création.'); setLoading(false); });
@@ -241,88 +260,106 @@ function FolderSwitcher({ folderId, setFolderId, token }) {
       .then(r => r.json())
       .then(f => {
         setFolders(prev => prev.map(folder => folder.id === renamingId ? f : folder));
+        if (folderId === renamingId) {
+          setFolderId(f.id);
+          localStorage.setItem('cndp_folder', f.id);
+        }
         closeModal();
+        setDropdownOpen(false);
         setLoading(false);
       })
       .catch(() => { setError('Erreur lors du renommage.'); setLoading(false); });
   }
   // Delete folder
-  function handleDeleteFolder(id) {
-    if (!window.confirm('Supprimer ce dossier de conformité ?')) return;
+  function handleDeleteFolder() {
+    if (!deletingId) return;
     setLoading(true);
-    fetch(`${API_BASE}/api/folders/${id}`, {
+    fetch(`${API_BASE}/api/folders/${deletingId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(() => {
-        const updated = folders.filter(f => f.id !== id);
+        const updated = folders.filter(f => f.id !== deletingId);
         setFolders(updated);
-        if (folderId === id && updated.length > 0) {
+        if (folderId === deletingId && updated.length > 0) {
           setFolderId(updated[0].id);
           localStorage.setItem('cndp_folder', updated[0].id);
         } else if (updated.length === 0) {
           setFolderId(null);
           localStorage.removeItem('cndp_folder');
         }
+        closeDeleteConfirm();
+        setDropdownOpen(false);
         setLoading(false);
       })
       .catch(() => { setError('Erreur lors de la suppression.'); setLoading(false); });
   }
 
   // UI
-  if (loading) return <div className="flex items-center gap-2 text-blue-700 text-sm mb-2"><svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg> Chargement des dossiers...</div>;
-  if (error) return <div className="text-red-600 font-semibold mb-2">{error}</div>;
+  if (loading) return <div className="flex items-center gap-2 text-blue-700 text-sm"><svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg> Chargement...</div>;
+  if (error) return <div className="text-red-600 font-semibold">{error}</div>;
   if (folders.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center my-8 animate-fade-in">
-        <svg width="80" height="80" fill="none" viewBox="0 0 80 80"><rect width="80" height="80" rx="16" fill="#facc15" fillOpacity="0.08"/><path d="M20 40h40M40 20v40" stroke="#2563eb" strokeWidth="4" strokeLinecap="round"/></svg>
-        <div className="text-blue-900 font-semibold mt-4 mb-2">Aucun dossier de conformité</div>
-        <button onClick={openCreateModal} className="bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded px-4 py-2 font-semibold shadow mt-2">Créer un dossier</button>
-        {modalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-            <form onSubmit={handleCreateFolder} className="bg-white rounded-xl shadow-lg p-6 flex flex-col gap-4 min-w-[260px]">
-              <div className="font-bold text-blue-900 text-lg">Créer un dossier</div>
-              <input ref={inputRef} value={modalValue} onChange={e => setModalValue(e.target.value)} className="rounded border px-3 py-2" placeholder="Nom du dossier" required aria-label="Nom du dossier" />
-              <div className="flex gap-2 mt-2">
-                <button type="button" onClick={closeModal} className="flex-1 bg-gray-200 hover:bg-gray-300 text-blue-900 rounded px-4 py-2 font-semibold">Annuler</button>
-                <button type="submit" className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded px-4 py-2 font-semibold">Créer</button>
-              </div>
-            </form>
-          </div>
-        )}
-      </div>
+      <button onClick={openCreateModal} className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded-full px-4 py-2 font-semibold shadow animate-fade-in">
+        <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><path d="M10 4v12M4 10h12" stroke="#2563eb" strokeWidth="2" strokeLinecap="round"/></svg>
+        Créer un dossier
+      </button>
     );
   }
+  const current = folders.find(f => f.id === folderId) || folders[0];
   return (
-    <div className="flex flex-wrap items-center gap-2 mb-4 animate-fade-in">
-      <span className="font-semibold text-blue-900">Dossier conformité :</span>
-      <div className="relative">
-        <select
-          value={folderId || ''}
-          onChange={e => setFolderId(Number(e.target.value))}
-          className="rounded border px-3 py-1 text-blue-900 bg-white shadow focus:ring-2 focus:ring-yellow-400"
-          aria-label="Sélectionner un dossier de conformité"
-        >
-          {folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-        </select>
-        <button
-          onClick={openCreateModal}
-          className="absolute right-[-38px] top-1/2 -translate-y-1/2 bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded-full w-8 h-8 flex items-center justify-center shadow"
-          title="Créer un dossier"
-          aria-label="Créer un dossier"
-        >
-          <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><path d="M10 4v12M4 10h12" stroke="#2563eb" strokeWidth="2" strokeLinecap="round"/></svg>
-        </button>
-      </div>
-      {folders.map(f => (
-        <span key={f.id} className={`flex items-center gap-1 ${folderId === f.id ? 'font-bold text-blue-900' : 'text-blue-700'}`}>
-          <button onClick={() => openRenameModal(f.id, f.name)} className="text-xs text-blue-700 underline" aria-label={`Renommer ${f.name}`}>Renommer</button>
-          <button onClick={() => handleDeleteFolder(f.id)} className="text-xs text-red-600 underline" aria-label={`Supprimer ${f.name}`}>Supprimer</button>
-        </span>
-      ))}
+    <div className="relative" ref={dropdownRef}>
+      <button
+        className="flex items-center gap-2 bg-white border border-blue-200 rounded-full px-4 py-2 shadow hover:shadow-lg transition font-semibold text-blue-900 focus:ring-2 focus:ring-yellow-400"
+        onClick={() => setDropdownOpen(v => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={dropdownOpen}
+      >
+        <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><rect x="2" y="4" width="16" height="12" rx="4" fill="#facc15" /><rect x="2" y="4" width="16" height="12" rx="4" stroke="#2563eb" strokeWidth="1.5" /></svg>
+        <span className="truncate max-w-[120px]">{current?.name}</span>
+        <svg width="16" height="16" fill="none" viewBox="0 0 20 20"><path d="M6 8l4 4 4-4" stroke="#2563eb" strokeWidth="2" strokeLinecap="round"/></svg>
+      </button>
+      {dropdownOpen && (
+        <div className="absolute left-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-blue-100 z-50 animate-fade-in">
+          <ul className="max-h-72 overflow-y-auto py-2" role="listbox">
+            {folders.map(f => (
+              <li key={f.id} className={`flex items-center group px-4 py-2 gap-2 cursor-pointer hover:bg-yellow-50 transition ${folderId === f.id ? 'bg-yellow-100/60 font-bold text-blue-900' : 'text-blue-900'}`}
+                onClick={() => { setFolderId(f.id); localStorage.setItem('cndp_folder', f.id); setDropdownOpen(false); }}
+                tabIndex={0}
+                aria-selected={folderId === f.id}
+              >
+                <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><rect x="2" y="4" width="16" height="12" rx="4" fill="#facc15" /><rect x="2" y="4" width="16" height="12" rx="4" stroke="#2563eb" strokeWidth="1.5" /></svg>
+                <span className="truncate flex-1">{f.name}</span>
+                <button
+                  className="opacity-0 group-hover:opacity-100 transition p-1 rounded hover:bg-blue-100"
+                  onClick={e => { e.stopPropagation(); openRenameModal(f.id, f.name); }}
+                  aria-label={`Renommer ${f.name}`}
+                  tabIndex={0}
+                >
+                  <svg width="16" height="16" fill="none" viewBox="0 0 20 20"><path d="M4 13.5V16h2.5l7.1-7.1-2.5-2.5L4 13.5zM14.7 6.3a1 1 0 0 0 0-1.4l-1.6-1.6a1 1 0 0 0-1.4 0l-1.1 1.1 2.5 2.5 1.1-1.1z" fill="#2563eb"/></svg>
+                </button>
+                <button
+                  className="opacity-0 group-hover:opacity-100 transition p-1 rounded hover:bg-red-100"
+                  onClick={e => { e.stopPropagation(); openDeleteConfirm(f.id); }}
+                  aria-label={`Supprimer ${f.name}`}
+                  tabIndex={0}
+                >
+                  <svg width="16" height="16" fill="none" viewBox="0 0 20 20"><path d="M6 7v7a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V7" stroke="#dc2626" strokeWidth="2"/><path d="M4 7h12M9 10v4M11 10v4" stroke="#dc2626" strokeWidth="1.5"/></svg>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div className="border-t border-blue-100 px-4 py-2">
+            <button onClick={openCreateModal} className="flex items-center gap-2 text-blue-900 hover:text-blue-700 font-semibold py-1 w-full">
+              <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><path d="M10 4v12M4 10h12" stroke="#2563eb" strokeWidth="2" strokeLinecap="round"/></svg>
+              Nouveau dossier
+            </button>
+          </div>
+        </div>
+      )}
       {/* Modal for create/rename */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 animate-fade-in">
           <form onSubmit={modalType === 'create' ? handleCreateFolder : handleRenameFolder} className="bg-white rounded-xl shadow-lg p-6 flex flex-col gap-4 min-w-[260px]">
             <div className="font-bold text-blue-900 text-lg">{modalType === 'create' ? 'Créer un dossier' : 'Renommer le dossier'}</div>
             <input ref={inputRef} value={modalValue} onChange={e => setModalValue(e.target.value)} className="rounded border px-3 py-2" placeholder="Nom du dossier" required aria-label="Nom du dossier" />
@@ -333,6 +370,23 @@ function FolderSwitcher({ folderId, setFolderId, token }) {
           </form>
         </div>
       )}
+      {/* Delete confirmation */}
+      {deletingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 animate-fade-in">
+          <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col gap-4 min-w-[260px]">
+            <div className="font-bold text-blue-900 text-lg">Supprimer ce dossier ?</div>
+            <div className="text-blue-900">Cette action est irréversible.</div>
+            <div className="flex gap-2 mt-2">
+              <button type="button" onClick={closeDeleteConfirm} className="flex-1 bg-gray-200 hover:bg-gray-300 text-blue-900 rounded px-4 py-2 font-semibold">Annuler</button>
+              <button type="button" onClick={handleDeleteFolder} className="flex-1 bg-red-500 hover:bg-red-600 text-white rounded px-4 py-2 font-semibold">Supprimer</button>
+            </div>
+          </div>
+        </div>
+      )}
+      <style>{`
+        @keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+        .animate-fade-in { animation: fade-in 0.5s cubic-bezier(.4,0,.2,1) both; }
+      `}</style>
     </div>
   );
 }
