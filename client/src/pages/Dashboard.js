@@ -76,6 +76,7 @@ const MoroccanPattern = () => (
 );
 
 export default function Dashboard({ folderId }) {
+  const { token, logout } = useAuth();
   const [assessment, setAssessment] = useState(null);
   const [registers, setRegisters] = useState([]);
   const [dpias, setDpias] = useState([]);
@@ -95,10 +96,11 @@ export default function Dashboard({ folderId }) {
   useEffect(() => {
     if (!folderId) return;
     setLoading(true);
+    setError(null);
     Promise.all([
-      fetch(`${API_BASE}/api/assessments?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } }).then(r => r.json()),
-      fetch(`${API_BASE}/api/registers?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } }).then(r => r.json()),
-      fetch(`${API_BASE}/api/dpias?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } }).then(r => r.json()),
+      fetch(`${API_BASE}/api/assessments?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } }).then(async r => { if (r.status === 401 || r.status === 403) { logout(); throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); }),
+      fetch(`${API_BASE}/api/registers?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } }).then(async r => { if (r.status === 401 || r.status === 403) { logout(); throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); }),
+      fetch(`${API_BASE}/api/dpias?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } }).then(async r => { if (r.status === 401 || r.status === 403) { logout(); throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); }),
     ]).then(([assess, regs, dpias]) => {
       const latest = Array.isArray(assess) && assess.length > 0 ? assess[assess.length - 1] : null;
       setAssessment(latest);
@@ -124,11 +126,11 @@ export default function Dashboard({ folderId }) {
       if (!regs || regs.length === 0) i.push({ icon: <DocumentCheckIcon className="w-5 h-5 text-yellow-600" />, text: "Aucun registre des traitements trouvé.", link: "/register", action: "Créer un registre" });
       setInsights(i);
       setLoading(false);
-    }).catch(() => {
+    }).catch((e) => {
       setLoading(false);
-      setError('Erreur de connexion au serveur. Vérifiez votre connexion ou réessayez plus tard.');
+      setError(e.message || 'Erreur de connexion au serveur. Vérifiez votre connexion ou réessayez plus tard.');
     });
-  }, [folderId]);
+  }, [folderId, token, logout]);
 
   if (error) return <div className="text-red-600 font-semibold p-8">{error}</div>;
 

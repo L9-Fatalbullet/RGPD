@@ -108,7 +108,7 @@ function emptyDPIA() {
 }
 
 export default function DPIA({ folderId }) {
-  const { token } = useAuth();
+  const { token, logout } = useAuth();
   const [dpias, setDPIAs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [wizard, setWizard] = useState(false);
@@ -125,14 +125,12 @@ export default function DPIA({ folderId }) {
   useEffect(() => {
     if (!folderId) return;
     setLoading(true);
-    fetch(`${API_BASE}/api/dpias?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } })
-      .then(r => r.json())
+    setError('');
+    fetch(`${API_BASE}/api/dpias?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(async r => { if (r.status === 401 || r.status === 403) { logout(); throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); })
       .then(data => { setDPIAs(data); setLoading(false); })
-      .catch(() => {
-        setLoading(false);
-        setError('Erreur de connexion au serveur. Vérifiez votre connexion ou réessayez plus tard.');
-      });
-  }, [folderId]);
+      .catch((e) => { setLoading(false); setError(e.message || 'Erreur de connexion au serveur. Vérifiez votre connexion ou réessayez plus tard.'); });
+  }, [folderId, token, logout]);
 
   // Handle form change
   const handleChange = (k, v) => setForm(f => ({ ...f, [k]: v }));

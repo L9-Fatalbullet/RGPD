@@ -142,7 +142,7 @@ function setChecklistState(userId, state) {
 }
 
 export default function Progress({ folderId }) {
-  const { token, user } = useAuth();
+  const { token, user, logout } = useAuth();
   const [assessment, setAssessment] = useState(null);
   const [registers, setRegisters] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -155,20 +155,21 @@ export default function Progress({ folderId }) {
   useEffect(() => {
     if (!folderId) return;
     setLoading(true);
+    setError(null);
     Promise.all([
-      fetch(`${API_BASE}/api/assessments?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-      fetch(`${API_BASE}/api/registers?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-      fetch(`${API_BASE}/api/dpias?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      fetch(`${API_BASE}/api/assessments?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } }).then(async r => { if (r.status === 401 || r.status === 403) { logout(); throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); }),
+      fetch(`${API_BASE}/api/registers?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } }).then(async r => { if (r.status === 401 || r.status === 403) { logout(); throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); }),
+      fetch(`${API_BASE}/api/dpias?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } }).then(async r => { if (r.status === 401 || r.status === 403) { logout(); throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); }),
     ]).then(([assess, regs, dpias]) => {
       setAssessment(Array.isArray(assess) && assess.length > 0 ? assess[assess.length - 1] : null);
       setRegisters(regs || []);
       setDpias(dpias || []);
       setLoading(false);
-    }).catch(() => {
+    }).catch((e) => {
       setLoading(false);
-      setError('Erreur de connexion au serveur. Vérifiez votre connexion ou réessayez plus tard.');
+      setError(e.message || 'Erreur de connexion au serveur. Vérifiez votre connexion ou réessayez plus tard.');
     });
-  }, [token, folderId]);
+  }, [token, folderId, logout]);
 
   // Load checklist state from localStorage
   useEffect(() => {
