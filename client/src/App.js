@@ -112,39 +112,19 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, set
         )}
       </nav>
       <div className={`relative w-full px-4 pb-6`} style={{zIndex:1}}>
-        {!collapsed && user && (
-          <div className="w-full flex flex-col items-center bg-white/10 rounded-xl p-4 shadow">
-            <div className="relative mb-2">
-              <img src={user?.avatar || '/default-avatar.png'} alt="Avatar" className="w-16 h-16 rounded-full border-2 border-yellow-400 shadow object-cover bg-white" />
-              {!user?.avatar && (
-                <span className="absolute inset-0 flex items-center justify-center">
-                  <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="#2563eb" strokeWidth="2"/><path d="M4 20c0-2.21 3.582-4 8-4s8 1.79 8 4" stroke="#2563eb" strokeWidth="2"/></svg>
-                </span>
-              )}
-            </div>
-            <div className="w-full text-center">
-              <div className="font-bold text-white text-base truncate">{user.name || user.email}</div>
-              <div className="text-xs text-yellow-100 truncate">{user.email}</div>
-              <div className="text-xs text-blue-100 mt-1">{user.role === 'admin' ? 'Administrateur' : 'Utilisateur'}</div>
-            </div>
-            <div className="flex gap-2 w-full mt-4">
-              <Link to="/profile" className="flex-1 bg-blue-700 hover:bg-blue-800 text-white rounded px-3 py-2 font-semibold transition shadow text-center">Mon profil</Link>
-              <button onClick={logout} className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded px-3 py-2 font-semibold transition shadow whitespace-nowrap" tabIndex={0}>
-                <ArrowLeftOnRectangleIcon className="w-5 h-5" /> Déconnexion
-              </button>
-            </div>
-          </div>
-        )}
-        {collapsed && (
-          <div className="relative mx-auto">
-            <img src={user?.avatar || '/default-avatar.png'} alt="Avatar" className="w-12 h-12 rounded-full border-2 border-yellow-400 shadow object-cover bg-white" />
+        <div className="flex flex-col items-center gap-2">
+          <Link to="/profile" className="relative group">
+            <img src={user?.avatar || '/default-avatar.png'} alt="Avatar" className="w-12 h-12 rounded-full border-2 border-yellow-400 shadow object-cover bg-white group-hover:scale-110 transition" />
             {!user?.avatar && (
               <span className="absolute inset-0 flex items-center justify-center">
                 <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="#2563eb" strokeWidth="2"/><path d="M4 20c0-2.21 3.582-4 8-4s8 1.79 8 4" stroke="#2563eb" strokeWidth="2"/></svg>
               </span>
             )}
-          </div>
-        )}
+          </Link>
+          <button onClick={logout} className="w-full bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded px-3 py-2 font-semibold transition shadow whitespace-nowrap mt-2 flex items-center justify-center gap-2" tabIndex={0}>
+            <ArrowLeftOnRectangleIcon className="w-5 h-5" /> Déconnexion
+          </button>
+        </div>
       </div>
     </aside>
   );
