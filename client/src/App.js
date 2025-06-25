@@ -257,6 +257,33 @@ function App() {
   );
 }
 
+// Add a global error boundary
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    // You can log errorInfo to an error reporting service here
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-red-50">
+          <h1 className="text-2xl font-bold text-red-700 mb-4">Une erreur est survenue</h1>
+          <pre className="bg-white text-red-800 p-4 rounded shadow max-w-xl overflow-x-auto mb-4">{this.state.error?.toString()}</pre>
+          <button onClick={() => window.location.reload()} className="bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded-full px-6 py-3 font-bold text-lg shadow">Recharger l'application</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// Wrap AppWithAuth export with ErrorBoundary
 export default function AppWithAuth() {
-  return <AuthProvider><App /></AuthProvider>;
+  return <ErrorBoundary><AuthProvider><App /></AuthProvider></ErrorBoundary>;
 } 
