@@ -16,9 +16,7 @@ const DPIAS_PATH = path.resolve('./data/dpias.json');
 const AUDIT_PATH = path.resolve('./data/audit.json');
 const FOLDERS_PATH = path.resolve('./data/folders.json');
 
-app.use(cors());
-app.options('*', cors());
-// Manual OPTIONS handler for CORS preflight
+// Manual OPTIONS handler for CORS preflight (must be first)
 app.use((req, res, next) => {
   if (req.method === 'OPTIONS') {
     res.header('Access-Control-Allow-Origin', '*');
@@ -28,6 +26,9 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+app.use(cors());
+app.options('*', cors());
 app.use(bodyParser.json());
 
 // Middleware d'authentification
