@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { HomeIcon, ChartBarIcon, ClipboardDocumentListIcon, BookOpenIcon, DocumentTextIcon, SparklesIcon, ArrowLeftOnRectangleIcon, DocumentCheckIcon, ArrowPathIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import Dashboard from './pages/Dashboard';
@@ -59,7 +59,7 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
-function Sidebar({ token, logout, user }) {
+function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath }) {
   const nav = [
     { to: '/dashboard', label: 'Accueil', icon: <HomeIcon className="w-6 h-6" /> },
     { to: '/progress', label: 'Progression', icon: <ArrowPathIcon className="w-6 h-6" /> },
@@ -71,58 +71,90 @@ function Sidebar({ token, logout, user }) {
     { to: '/best-practices', label: 'Bonnes pratiques', icon: <SparklesIcon className="w-6 h-6" /> },
   ];
   return (
-    <aside className="bg-gradient-to-b from-blue-900 to-blue-700 text-white w-64 min-h-screen flex flex-col shadow-xl fixed z-40 left-0 top-0 hidden md:flex">
-      <div className="flex items-center gap-2 px-6 py-6 border-b border-blue-800">
-        <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className="w-12 h-12 object-contain" />
-        <span className="text-xl font-bold tracking-tight">RGPD Compliance Maroc</span>
+    <aside aria-label="Navigation principale" className={`backdrop-blur-lg bg-white/60 shadow-xl border-r-4 border-yellow-400 ${collapsed ? 'w-20' : 'w-64'} min-h-screen flex flex-col fixed z-40 left-0 top-0 transition-all duration-300 rounded-tr-3xl rounded-br-3xl`}>
+      <div className={`flex flex-col items-center ${collapsed ? 'py-4' : 'gap-3 px-6 py-6'} border-b border-blue-100`}>
+        <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className={`transition-transform duration-300 ${collapsed ? 'w-10 h-10' : 'w-16 h-16'} object-contain rounded-full shadow-lg hover:scale-110`} />
+        {!collapsed && <span className="text-lg font-bold text-blue-900 text-center leading-tight mt-2">RGPD Compliance<br />Maroc</span>}
+        <button aria-label={collapsed ? 'Développer le menu' : 'Réduire le menu'} onClick={() => setCollapsed(!collapsed)} className="mt-2 p-1 rounded-full bg-yellow-400/80 hover:bg-yellow-400 transition" tabIndex={0}>
+          <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><path d="M7 5l5 5-5 5" stroke="#1e293b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
       </div>
-      <nav className="flex-1 px-4 py-6 flex flex-col gap-2">
+      <nav className="flex-1 px-2 py-6 flex flex-col gap-2" role="navigation">
         {nav.map(item => (
-          <Link key={item.to} to={item.to} className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-blue-800 transition text-base font-medium">
-            {item.icon} {item.label}
+          <Link key={item.to} to={item.to} aria-label={item.label} tabIndex={0}
+            className={`group flex items-center gap-3 px-3 py-2 my-1 rounded-full font-medium transition-all duration-200 outline-none focus:ring-2 focus:ring-yellow-400
+              ${activePath === item.to ? 'bg-yellow-400/80 text-blue-900 shadow-lg border-l-4 border-yellow-500' : 'hover:bg-yellow-100/80 hover:text-yellow-700 text-blue-900'}`}
+          >
+            <span className="transition-transform group-hover:scale-110">{item.icon}</span>
+            {!collapsed && item.label}
           </Link>
         ))}
-        {user && user.role === 'admin' && (
+        {user && user.role === 'admin' && !collapsed && (
           <li>
-            <Link to="/admin" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-blue-800 transition text-base font-medium">
+            <Link to="/admin" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-yellow-100/80 transition text-base font-medium">
               <span className="icon">🛡️</span> Admin
             </Link>
           </li>
         )}
       </nav>
-      <div className="px-6 pb-6 mt-auto">
-        {token ? (
-          <button onClick={logout} className="flex items-center gap-2 w-full bg-blue-800 hover:bg-blue-900 px-4 py-2 rounded text-xs font-semibold">
-            <ArrowLeftOnRectangleIcon className="w-5 h-5" /> Se déconnecter
+      <div className={`px-4 pb-6 mt-auto flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
+        <img src={user?.avatar || '/default-avatar.png'} alt="Avatar" className="w-8 h-8 rounded-full border-2 border-yellow-400 shadow" />
+        {!collapsed && user && (
+          <div>
+            <div className="font-semibold text-blue-900">{user.email}</div>
+            <div className="text-xs text-yellow-700">{user.role || 'Utilisateur'}</div>
+          </div>
+        )}
+        {token && !collapsed && (
+          <button onClick={logout} className="ml-auto flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 px-3 py-1 rounded text-xs font-semibold text-blue-900 transition" tabIndex={0}>
+            <ArrowLeftOnRectangleIcon className="w-5 h-5" /> Déconnexion
           </button>
-        ) : (
-          <Link to="/login" className="flex items-center gap-2 w-full bg-blue-800 hover:bg-blue-900 px-4 py-2 rounded text-xs font-semibold">Connexion</Link>
         )}
       </div>
     </aside>
   );
 }
 
-function Topbar({ user }) {
+function Topbar({ user, onMenuClick }) {
   return (
-    <header className="md:hidden sticky top-0 z-50 bg-gradient-to-r from-blue-900 to-blue-700 shadow text-white flex items-center justify-between px-4 py-3">
+    <header className="md:hidden sticky top-0 z-50 bg-white/80 backdrop-blur-lg shadow flex items-center justify-between px-4 py-3 border-b border-yellow-400">
+      <button aria-label="Ouvrir le menu" onClick={onMenuClick} className="p-2 rounded-full bg-yellow-400/80 hover:bg-yellow-400 transition md:hidden">
+        <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke="#1e293b" strokeWidth="2" strokeLinecap="round"/></svg>
+      </button>
       <span className="flex items-center gap-2">
         <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className="w-8 h-8 object-contain" />
-        <span className="text-lg font-bold tracking-tight">RGPD Compliance Maroc</span>
+        <span className="text-lg font-bold tracking-tight text-blue-900">RGPD Compliance Maroc</span>
       </span>
-      {user && <span className="text-xs">{user.email}</span>}
+      {user && <span className="text-xs text-blue-900">{user.email}</span>}
     </header>
   );
 }
 
 function App() {
   const { token, user, logout } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const location = window.location.pathname;
+  const sidebarRef = useRef();
+
+  // Close mobile sidebar on route change
+  useEffect(() => { setMobileOpen(false); }, [location]);
+
   return (
     <Router>
       <div className="font-sans min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex">
-        <Sidebar token={token} logout={logout} user={user} />
-        <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
-          <Topbar user={user} />
+        {/* Desktop Sidebar */}
+        <Sidebar token={token} logout={logout} user={user} collapsed={collapsed} setCollapsed={setCollapsed} activePath={location} />
+        {/* Mobile Sidebar Drawer */}
+        {mobileOpen && (
+          <div className="fixed inset-0 z-50 bg-black/40" onClick={() => setMobileOpen(false)} aria-label="Fermer le menu mobile">
+            <aside ref={sidebarRef} className="absolute left-0 top-0 h-full w-64 bg-white/90 backdrop-blur-lg shadow-xl border-r-4 border-yellow-400 rounded-tr-3xl rounded-br-3xl animate-fade-in">
+              <Sidebar token={token} logout={logout} user={user} collapsed={false} setCollapsed={() => {}} activePath={location} />
+            </aside>
+          </div>
+        )}
+        <div className={`flex-1 ${collapsed ? 'md:ml-20' : 'md:ml-64'} flex flex-col min-h-screen transition-all`}>
+          <Topbar user={user} onMenuClick={() => setMobileOpen(true)} />
           <main className="flex-1 p-4 md:p-8" style={{ minHeight: 'calc(100vh - 56px)' }}>
             <div className="max-w-5xl mx-auto bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6 md:p-10">
               <Routes>
@@ -147,6 +179,8 @@ function App() {
       </div>
       <style>{`
         body { font-family: 'Inter', 'Nunito', 'Open Sans', sans-serif; }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+        .animate-fade-in { animation: fade-in 0.7s cubic-bezier(.4,0,.2,1) both; }
       `}</style>
     </Router>
   );
