@@ -87,7 +87,7 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath }) {
       {/* Sidebar content */}
       <div className={`relative flex flex-col items-center ${collapsed ? 'py-4' : 'gap-3 px-6 py-6'} border-b border-blue-100`} style={{zIndex:1}}>
         <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className={`transition-transform duration-300 ${collapsed ? 'w-10 h-10' : 'w-16 h-16'} object-contain rounded-full shadow-lg hover:scale-110`} />
-        {!collapsed && <span className="text-lg font-bold text-blue-900 text-center leading-tight mt-2">RGPD Compliance<br />Maroc</span>}
+        {!collapsed && <span className="text-lg font-bold text-white text-center leading-tight mt-2">RGPD Compliance<br />Maroc</span>}
         <button aria-label={collapsed ? 'Développer le menu' : 'Réduire le menu'} onClick={() => setCollapsed(!collapsed)} className="mt-2 p-1 rounded-full bg-yellow-400/80 hover:bg-yellow-400 transition" tabIndex={0}>
           <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><path d="M7 5l5 5-5 5" stroke="#1e293b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
@@ -96,15 +96,15 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath }) {
         {nav.map(item => (
           <Link key={item.to} to={item.to} aria-label={item.label} tabIndex={0}
             className={`group flex items-center gap-3 px-3 py-2 my-1 rounded-full font-medium transition-all duration-200 outline-none focus:ring-2 focus:ring-yellow-400
-              ${activePath === item.to ? 'bg-yellow-400/80 text-blue-900 shadow-lg border-l-4 border-yellow-500' : 'hover:bg-yellow-100/80 hover:text-yellow-700 text-blue-900'}`}
+              ${activePath === item.to ? 'bg-yellow-400/80 text-blue-900 shadow-lg border-l-4 border-yellow-500' : 'hover:bg-yellow-100/80 hover:text-yellow-300 text-white'}`}
           >
-            <span className="transition-transform group-hover:scale-110">{item.icon}</span>
+            <span className="transition-transform group-hover:scale-110 text-white">{item.icon}</span>
             {!collapsed && item.label}
           </Link>
         ))}
         {user && user.role === 'admin' && !collapsed && (
           <li>
-            <Link to="/admin" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-yellow-100/80 transition text-base font-medium">
+            <Link to="/admin" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-yellow-100/80 transition text-base font-medium text-white">
               <span className="icon">🛡️</span> Admin
             </Link>
           </li>
@@ -114,8 +114,8 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath }) {
         <img src={user?.avatar || '/default-avatar.png'} alt="Avatar" className="w-8 h-8 rounded-full border-2 border-yellow-400 shadow" />
         {!collapsed && user && (
           <div>
-            <div className="font-semibold text-blue-900">{user.email}</div>
-            <div className="text-xs text-yellow-700">{user.role || 'Utilisateur'}</div>
+            <div className="font-semibold text-white">{user.email}</div>
+            <div className="text-xs text-yellow-100">{user.role || 'Utilisateur'}</div>
           </div>
         )}
         {token && !collapsed && (
