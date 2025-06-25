@@ -183,7 +183,7 @@ function App() {
         <div className={`flex-1 ${collapsed ? 'md:ml-20' : 'md:ml-64'} flex flex-col min-h-screen transition-all`}>
           <Topbar user={user} onMenuClick={() => setMobileOpen(true)} />
           <main className="flex-1 p-4 md:p-8" style={{ minHeight: 'calc(100vh - 56px)' }}>
-            <div className="max-w-5xl mx-auto bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6 md:p-10">
+            <div className="w-full bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6 md:p-10">
               <Routes>
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
