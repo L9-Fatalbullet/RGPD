@@ -107,7 +107,7 @@ function emptyDPIA() {
   };
 }
 
-export default function DPIA() {
+export default function DPIA({ folderId }) {
   const { token } = useAuth();
   const [dpias, setDPIAs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -122,13 +122,12 @@ export default function DPIA() {
 
   // Load DPIAs
   useEffect(() => {
-    if (!token) return;
+    if (!folderId) return;
     setLoading(true);
-    fetch(API_URL, { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => res.json())
-      .then(data => { setDPIAs(data); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [token, wizard]);
+    fetch(`/api/dpias?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } })
+      .then(r => r.json())
+      .then(data => { setDPIAs(data); setLoading(false); });
+  }, [folderId]);
 
   // Handle form change
   const handleChange = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -175,7 +174,7 @@ export default function DPIA() {
         res = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify(form)
+          body: JSON.stringify({ ...form, folderId })
         });
         data = await res.json();
         if (data.success && data.id) setCurrentId(data.id);
@@ -184,7 +183,7 @@ export default function DPIA() {
         res = await fetch(`${API_URL}/${currentId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify(form)
+          body: JSON.stringify({ ...form, folderId })
         });
         data = await res.json();
       }
@@ -192,7 +191,7 @@ export default function DPIA() {
       else setSaveStatus("Erreur lors de l'enregistrement.");
     }, 700);
     return () => clearTimeout(saveTimeout.current);
-  }, [form, token, wizard, currentId]);
+  }, [form, token, wizard, currentId, folderId]);
 
   // Save DPIA
   const handleSave = async e => {
@@ -202,7 +201,7 @@ export default function DPIA() {
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(form)
+        body: JSON.stringify({ ...form, folderId })
       });
       const data = await res.json();
       if (data.success) {
@@ -251,6 +250,7 @@ export default function DPIA() {
   };
 
   // Render
+  if (!folderId) return <div className="text-blue-700 font-semibold p-8">Veuillez sélectionner ou créer un dossier de conformité pour commencer.</div>;
   return (
     <section>
       {/* Hero/Intro Section */}

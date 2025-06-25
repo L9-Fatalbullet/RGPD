@@ -142,7 +142,7 @@ function setChecklistState(userId, state) {
   localStorage.setItem('cndp_checklists_' + userId, JSON.stringify(state));
 }
 
-export default function Progress() {
+export default function Progress({ folderId }) {
   const { token, user } = useAuth();
   const [assessment, setAssessment] = useState(null);
   const [registers, setRegisters] = useState([]);
@@ -153,19 +153,19 @@ export default function Progress() {
 
   // Load assessment and registers
   useEffect(() => {
-    if (!token) return;
+    if (!folderId) return;
     setLoading(true);
     Promise.all([
-      fetch(API_ASSESS, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-      fetch(API_REG, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-      fetch('https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/dpias', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      fetch(`/api/assessments?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      fetch(`/api/registers?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      fetch(`/api/dpias?folderId=${folderId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
     ]).then(([assess, regs, dpias]) => {
       setAssessment(Array.isArray(assess) && assess.length > 0 ? assess[assess.length - 1] : null);
       setRegisters(regs || []);
       setDpias(dpias || []);
       setLoading(false);
     }).catch(() => setLoading(false));
-  }, [token]);
+  }, [token, folderId]);
 
   // Load checklist state from localStorage
   useEffect(() => {
@@ -205,6 +205,8 @@ export default function Progress() {
     setChecklistState(user.id, state);
     setChecklists({ ...state });
   };
+
+  if (!folderId) return <div className="text-blue-700 font-semibold p-8">Veuillez sélectionner ou créer un dossier de conformité pour commencer.</div>;
 
   return (
     <section>

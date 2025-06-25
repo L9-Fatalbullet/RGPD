@@ -73,7 +73,7 @@ const MoroccanPattern = () => (
   </svg>
 );
 
-export default function Dashboard() {
+export default function Dashboard({ folderId }) {
   const [assessment, setAssessment] = useState(null);
   const [registers, setRegisters] = useState([]);
   const [dpias, setDpias] = useState([]);
@@ -90,11 +90,12 @@ export default function Dashboard() {
   const polygon = points.map(([x, y]) => `${x},${y}`).join(' ');
 
   useEffect(() => {
+    if (!folderId) return;
     setLoading(true);
     Promise.all([
-      fetch(API_ASSESS, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } }).then(r => r.json()),
-      fetch(API_REG, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } }).then(r => r.json()),
-      fetch(API_DPIA, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } }).then(r => r.json()),
+      fetch(`${API_ASSESS}?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } }).then(r => r.json()),
+      fetch(`${API_REG}?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } }).then(r => r.json()),
+      fetch(`${API_DPIA}?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } }).then(r => r.json()),
     ]).then(([assess, regs, dpias]) => {
       const latest = Array.isArray(assess) && assess.length > 0 ? assess[assess.length - 1] : null;
       setAssessment(latest);
@@ -121,7 +122,9 @@ export default function Dashboard() {
       setInsights(i);
       setLoading(false);
     }).catch(() => setLoading(false));
-  }, []);
+  }, [folderId]);
+
+  if (!folderId) return <div className="text-blue-700 font-semibold p-8">Veuillez sélectionner ou créer un dossier de conformité pour commencer.</div>;
 
   return (
     <section>

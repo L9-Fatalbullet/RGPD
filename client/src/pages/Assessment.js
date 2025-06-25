@@ -72,7 +72,7 @@ function exportPDF(answers, domainScores, missing) {
   doc.save('auto-evaluation_loi0908.pdf');
 }
 
-export default function Assessment() {
+export default function Assessment({ folderId }) {
   const { token } = useAuth();
   const [answers, setAnswers] = useState(() => Object.fromEntries(QUESTIONS.map(q => [q.key, 0])));
   const [show, setShow] = useState(false);
@@ -83,12 +83,10 @@ export default function Assessment() {
 
   // Load latest assessment on mount
   useEffect(() => {
-    if (!token) return;
+    if (!folderId) return;
     setLoading(true);
-    fetch(API_URL, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
+    fetch(`/api/assessments?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } })
+      .then(r => r.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
           const latest = data[data.length - 1];
@@ -97,19 +95,19 @@ export default function Assessment() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [token]);
+  }, [folderId]);
 
   // Auto-save on answers change (debounced)
   useEffect(() => {
-    if (!token) return;
+    if (!folderId) return;
     setSaveStatus('Enregistrement...');
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(() => {
-      fetch(API_URL, {
+      fetch(`/api/assessments?folderId=${folderId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${localStorage.getItem('cndp_token')}`
         },
         body: JSON.stringify({ answers, date: new Date().toISOString() })
       })
@@ -121,7 +119,7 @@ export default function Assessment() {
         .catch(() => setSaveStatus("Erreur réseau ou serveur."));
     }, 700);
     return () => clearTimeout(saveTimeout.current);
-  }, [answers, token]);
+  }, [answers, folderId]);
 
   const handleChange = (key, value) => {
     setAnswers(a => ({ ...a, [key]: Number(value) }));
@@ -151,6 +149,8 @@ export default function Assessment() {
 
   // Recommendations for unmet obligations
   const missing = QUESTIONS.filter(q => (answers[q.key] || 0) < 2);
+
+  if (!folderId) return <div className="text-blue-700 font-semibold p-8">Veuillez sélectionner ou créer un dossier de conformité pour commencer.</div>;
 
   return (
     <section>

@@ -309,11 +309,11 @@ function App() {
           <main className="flex-1 p-4 md:p-8 min-h-screen bg-white" style={{ minHeight: 'calc(100vh - 56px)' }}>
             <div className="w-full bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6 md:p-10">
               <Routes>
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
-                <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
-                <Route path="/register" element={<ProtectedRoute><Register /></ProtectedRoute>} />
-                <Route path="/dpia" element={<ProtectedRoute><DPIA /></ProtectedRoute>} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard folderId={folderId} /></ProtectedRoute>} />
+                <Route path="/progress" element={<ProtectedRoute><Progress folderId={folderId} /></ProtectedRoute>} />
+                <Route path="/assessment" element={<ProtectedRoute><Assessment folderId={folderId} /></ProtectedRoute>} />
+                <Route path="/register" element={<ProtectedRoute><Register folderId={folderId} /></ProtectedRoute>} />
+                <Route path="/dpia" element={<ProtectedRoute><DPIA folderId={folderId} /></ProtectedRoute>} />
                 <Route path="/guide" element={<Guide />} />
                 <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
                 <Route path="/best-practices" element={<BestPractices />} />

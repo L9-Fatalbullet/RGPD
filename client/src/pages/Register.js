@@ -18,7 +18,7 @@ function emptyRegister() {
   return Object.fromEntries(FIELDS.map(f => [f.key, '']));
 }
 
-export default function Register() {
+export default function Register({ folderId }) {
   const { token } = useAuth();
   const [registers, setRegisters] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -29,13 +29,12 @@ export default function Register() {
 
   // Load registers
   useEffect(() => {
-    if (!token) return;
+    if (!folderId) return;
     setLoading(true);
-    fetch(API_URL, { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => res.json())
-      .then(data => { setRegisters(data); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [token, modal]);
+    fetch(`${API_URL}?folderId=${folderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` } })
+      .then(r => r.json())
+      .then(data => { setRegisters(data); setLoading(false); });
+  }, [folderId]);
 
   // Open modal for add/edit
   const openModal = (reg = null) => {
@@ -58,8 +57,8 @@ export default function Register() {
     try {
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(form)
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('cndp_token')}` },
+        body: JSON.stringify({ ...form, folderId })
       });
       const data = await res.json();
       if (data.success) {
@@ -80,7 +79,7 @@ export default function Register() {
     try {
       const res = await fetch(`${API_URL}/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` }
       });
       const data = await res.json();
       if (data.success) setRegisters(r => r.filter(x => x.id !== id));
@@ -89,6 +88,8 @@ export default function Register() {
       setStatus("Erreur réseau ou serveur.");
     }
   };
+
+  if (!folderId) return <div className="text-blue-700 font-semibold p-8">Veuillez sélectionner ou créer un dossier de conformité pour commencer.</div>;
 
   return (
     <section>
