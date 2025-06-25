@@ -111,7 +111,7 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, set
           </li>
         )}
       </nav>
-      <div className={`relative w-full px-4 pb-6 mt-auto`} style={{zIndex:1}}>
+      <div className={`relative w-full px-4 pb-6`} style={{zIndex:1}}>
         {!collapsed && user && (
           <div className="w-full flex flex-col items-center bg-white/10 rounded-xl p-4 shadow">
             <div className="relative mb-2">
