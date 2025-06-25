@@ -72,7 +72,7 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, set
     { to: '/best-practices', label: 'Bonnes pratiques', icon: <SparklesIcon className="w-6 h-6" /> },
   ];
   return (
-    <aside aria-label="Navigation principale" className={`relative flex flex-col h-screen overflow-hidden backdrop-blur-lg bg-gradient-to-br from-blue-900 via-blue-700 to-yellow-400 shadow-xl border-r-4 border-yellow-400 ${collapsed ? 'w-20' : 'w-64'} fixed z-40 left-0 top-0 transition-all duration-300 rounded-tr-3xl rounded-br-3xl`}>
+    <aside aria-label="Navigation principale" className={`relative overflow-hidden backdrop-blur-lg bg-gradient-to-br from-blue-900 via-blue-700 to-yellow-400 shadow-xl border-r-4 border-yellow-400 ${collapsed ? 'w-20' : 'w-64'} min-h-screen flex flex-col fixed z-40 left-0 top-0 transition-all duration-300 rounded-tr-3xl rounded-br-3xl`}>
       {/* Moroccan Pattern Overlay */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{zIndex:0}} viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -93,7 +93,7 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, set
           <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><path d="M7 5l5 5-5 5" stroke="#1e293b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
       </div>
-      <nav className="flex-1 flex flex-col px-2 py-6 gap-2" role="navigation" style={{zIndex:1}}>
+      <nav className="relative flex-1 px-2 py-6 flex flex-col gap-2" role="navigation" style={{zIndex:1}}>
         {nav.map(item => (
           <Link key={item.to} to={item.to} aria-label={item.label} tabIndex={0}
             className={`group flex items-center gap-3 px-3 py-2 my-1 rounded-full font-medium transition-all duration-200 outline-none focus:ring-2 focus:ring-yellow-400
@@ -190,7 +190,7 @@ function App() {
 
   return (
     <Router>
-      <div className="font-sans h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex relative overflow-x-hidden">
+      <div className="font-sans min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex relative overflow-x-hidden">
         {/* Moroccan Mosaic Background */}
         <svg className="fixed inset-0 w-screen h-screen z-0 pointer-events-none" style={{opacity:0.22}} viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
           <defs>
