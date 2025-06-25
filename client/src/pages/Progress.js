@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { CheckCircleIcon, XCircleIcon, ArrowPathIcon, ArrowRightCircleIcon, SparklesIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../App';
 import { Link } from 'react-router-dom';
+import confetti from 'canvas-confetti';
 
 const API_ASSESS = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/assessments';
 const API_REG = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev/api/registers';
@@ -147,6 +148,18 @@ export default function Progress() {
   // Confetti placeholder (will be replaced with animation)
   const showConfetti = percent === 100;
 
+  // Confetti animation effect
+  useEffect(() => {
+    if (percent === 100) {
+      confetti({
+        particleCount: 120,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ['#facc15', '#2563eb', '#fff', '#22c55e'],
+      });
+    }
+  }, [percent]);
+
   // Checklist handlers
   const handleCheck = (stepKey, idx) => {
     if (!user || !user.id) return;
@@ -223,16 +236,26 @@ export default function Progress() {
           const checklist = CHECKLISTS[step.key] || [];
           const checked = checklists[step.key] || [];
           const checkedCount = checked.filter(Boolean).length;
+          const isDone = done[step.key];
           return (
-            <li key={step.key} className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-6 border-t-4 border-blue-100 hover:scale-[1.01] transition">
-              <div className="flex items-center gap-4 cursor-pointer" onClick={() => setExpanded(expanded === step.key ? null : step.key)}>
-                <span>
-                  {done[step.key] ? <CheckCircleIcon className="w-8 h-8 text-green-600" /> : <XCircleIcon className="w-8 h-8 text-yellow-500" />}
+            <li key={step.key} className={`bg-white/80 backdrop-blur rounded-xl shadow-lg p-6 border-t-4 ${isDone ? 'border-green-300' : 'border-blue-100'} hover:scale-[1.01] transition group`}>
+              <div
+                className={`flex items-center gap-4 cursor-pointer select-none ${isDone ? 'opacity-80' : ''}`}
+                onClick={() => setExpanded(expanded === step.key ? null : step.key)}
+                tabIndex={0}
+                aria-expanded={expanded === step.key}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setExpanded(expanded === step.key ? null : step.key); }}
+              >
+                <span className="transition-transform group-hover:scale-110">
+                  {isDone ? <CheckCircleIcon className="w-8 h-8 text-green-600" /> : <XCircleIcon className="w-8 h-8 text-yellow-500" />}
                 </span>
                 <div className="flex-1">
-                  <div className="font-bold text-blue-900 text-lg mb-1 flex items-center gap-2">{step.label}</div>
+                  <div className="font-bold text-blue-900 text-lg mb-1 flex items-center gap-2">
+                    {step.label}
+                    {isDone && <span className="ml-2 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-semibold animate-fade-in">Terminé</span>}
+                  </div>
                   <div className="text-gray-700 text-sm mb-2">{step.desc}</div>
-                  <Link to={step.link} className="inline-flex items-center text-blue-700 hover:underline text-sm font-semibold"><ArrowRightCircleIcon className="w-5 h-5 mr-1" /> Accéder</Link>
+                  <Link to={step.link} className="inline-flex items-center text-blue-700 hover:underline text-sm font-semibold group-hover:text-yellow-500 transition"><ArrowRightCircleIcon className="w-5 h-5 mr-1" /> Accéder</Link>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-blue-900">{checkedCount}/{checklist.length}</span>
@@ -243,7 +266,7 @@ export default function Progress() {
                 <ul className="mt-4 space-y-2">
                   {checklist.map((item, idx) => (
                     <li key={idx} className="flex items-center gap-2">
-                      <input type="checkbox" checked={!!checked[idx]} onChange={() => handleCheck(step.key, idx)} className="accent-blue-700 w-5 h-5" />
+                      <input type="checkbox" checked={!!checked[idx]} onChange={() => handleCheck(step.key, idx)} className="accent-blue-700 w-5 h-5 transition" />
                       <span className={checked[idx] ? 'line-through text-gray-400' : ''}>{item}</span>
                     </li>
                   ))}
