@@ -110,18 +110,17 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath }) {
           </li>
         )}
       </nav>
-      <div className={`relative px-4 pb-6 mt-auto flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`} style={{zIndex:1}}>
-        <img src={user?.avatar || '/default-avatar.png'} alt="Avatar" className="w-12 h-12 rounded-full border-2 border-yellow-400 shadow object-cover bg-white" />
+      <div className={`relative px-4 pb-6 mt-auto flex ${collapsed ? 'justify-center' : 'items-center'} gap-3`} style={{zIndex:1}}>
+        <img src={user?.avatar || '/default-avatar.png'} alt="Avatar" className="w-12 h-12 rounded-full border-2 border-yellow-400 shadow object-cover bg-white flex-shrink-0" />
         {!collapsed && user && (
-          <div className="flex flex-col flex-1 min-w-0">
-            <span className="font-bold text-white break-words whitespace-normal">{user.name || user.email}</span>
-            <span className="text-xs text-yellow-100 break-words whitespace-normal">{user.email}</span>
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="font-bold text-white truncate max-w-[10rem]">{user.name || user.email}</span>
+            <span className="text-xs text-yellow-100 truncate max-w-[10rem]">{user.email}</span>
             <span className="text-xs text-blue-100 mt-1">{user.role === 'admin' ? 'Administrateur' : 'Utilisateur'}</span>
-            {/* <button className="mt-2 w-fit px-3 py-1 rounded bg-white/10 hover:bg-yellow-400/80 text-xs text-white font-semibold transition-all shadow" disabled>Mon profil</button> */}
           </div>
         )}
         {token && !collapsed && (
-          <button onClick={logout} className="ml-2 flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 px-3 py-1 rounded text-xs font-semibold text-blue-900 transition shadow" tabIndex={0}>
+          <button onClick={logout} className="ml-2 flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 px-3 py-1 rounded text-xs font-semibold text-blue-900 transition shadow whitespace-nowrap" tabIndex={0}>
             <ArrowLeftOnRectangleIcon className="w-5 h-5" /> Déconnexion
           </button>
         )}
