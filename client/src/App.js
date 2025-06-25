@@ -150,6 +150,108 @@ function Topbar({ user, onMenuClick }) {
   );
 }
 
+// FolderSwitcher component
+function FolderSwitcher({ folderId, setFolderId, token }) {
+  const [folders, setFolders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [newName, setNewName] = useState('');
+  const [showCreate, setShowCreate] = useState(false);
+  const [renamingId, setRenamingId] = useState(null);
+  const [renameValue, setRenameValue] = useState('');
+
+  useEffect(() => {
+    if (!token) return;
+    fetch('/api/folders', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(f => { setFolders(f); setLoading(false); });
+  }, [token, folderId]);
+
+  function selectFolder(id) {
+    setFolderId(id);
+    localStorage.setItem('cndp_folder', id);
+  }
+  function createFolder() {
+    if (!newName.trim()) return;
+    fetch('/api/folders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ name: newName })
+    }).then(r => r.json()).then(f => {
+      setFolders([...folders, f]);
+      setFolderId(f.id);
+      localStorage.setItem('cndp_folder', f.id);
+      setNewName('');
+      setShowCreate(false);
+    });
+  }
+  function startRename(id, name) {
+    setRenamingId(id);
+    setRenameValue(name);
+  }
+  function renameFolder(id) {
+    if (!renameValue.trim()) return;
+    fetch(`/api/folders/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ name: renameValue })
+    }).then(r => r.json()).then(f => {
+      setFolders(folders.map(folder => folder.id === id ? f : folder));
+      setRenamingId(null);
+      setRenameValue('');
+    });
+  }
+  function deleteFolder(id) {
+    if (!window.confirm('Supprimer ce dossier de conformité ?')) return;
+    fetch(`/api/folders/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(() => {
+      const updated = folders.filter(f => f.id !== id);
+      setFolders(updated);
+      if (folderId === id && updated.length > 0) {
+        setFolderId(updated[0].id);
+        localStorage.setItem('cndp_folder', updated[0].id);
+      } else if (updated.length === 0) {
+        setFolderId(null);
+        localStorage.removeItem('cndp_folder');
+      }
+    });
+  }
+
+  if (loading) return <div className="text-blue-700 text-sm mb-2">Chargement des dossiers...</div>;
+  return (
+    <div className="flex flex-wrap items-center gap-2 mb-4">
+      <span className="font-semibold text-blue-900">Dossier conformité :</span>
+      <select value={folderId || ''} onChange={e => selectFolder(Number(e.target.value))} className="rounded border px-3 py-1 text-blue-900 bg-white shadow">
+        {folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+      </select>
+      <button onClick={() => setShowCreate(v => !v)} className="bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded px-2 py-1 text-xs font-semibold shadow">Nouveau dossier</button>
+      {showCreate && (
+        <span className="flex items-center gap-1">
+          <input value={newName} onChange={e => setNewName(e.target.value)} className="rounded border px-2 py-1 text-sm" placeholder="Nom du dossier" />
+          <button onClick={createFolder} className="bg-blue-700 text-white rounded px-2 py-1 text-xs font-semibold ml-1">Créer</button>
+        </span>
+      )}
+      {folders.map(f => (
+        <span key={f.id} className="flex items-center gap-1">
+          {renamingId === f.id ? (
+            <>
+              <input value={renameValue} onChange={e => setRenameValue(e.target.value)} className="rounded border px-2 py-1 text-sm" />
+              <button onClick={() => renameFolder(f.id)} className="bg-blue-700 text-white rounded px-2 py-1 text-xs font-semibold ml-1">Renommer</button>
+              <button onClick={() => setRenamingId(null)} className="text-xs ml-1">Annuler</button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => startRename(f.id, f.name)} className="text-xs text-blue-700 underline">Renommer</button>
+              <button onClick={() => deleteFolder(f.id)} className="text-xs text-red-600 underline">Supprimer</button>
+            </>
+          )}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function App() {
   const { token, user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
@@ -159,6 +261,7 @@ function App() {
   const [editAvatar, setEditAvatar] = useState(null);
   const location = window.location.pathname;
   const sidebarRef = useRef();
+  const [folderId, setFolderId] = useState(null);
 
   // Close mobile sidebar on route change
   useEffect(() => { setMobileOpen(false); }, [location]);
@@ -202,6 +305,7 @@ function App() {
         )}
         <div className={`flex-1 ${collapsed ? 'md:ml-20' : 'md:ml-64'} flex flex-col min-h-screen bg-white transition-all`}>
           <Topbar user={user} onMenuClick={() => setMobileOpen(true)} />
+          <FolderSwitcher folderId={folderId} setFolderId={setFolderId} token={token} />
           <main className="flex-1 p-4 md:p-8 min-h-screen bg-white" style={{ minHeight: 'calc(100vh - 56px)' }}>
             <div className="w-full bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6 md:p-10">
               <Routes>
