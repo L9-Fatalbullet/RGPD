@@ -291,8 +291,7 @@ function FolderSwitcher({ folderId, setFolderId, token, exposeOpenModal, renderB
       .then(async r => {
         if (!r.ok) {
           let err = 'Erreur lors du renommage.';
-          try { err = (await r.json()).error || err; } catch { try { err = await r.text(); } catch {} }
-          if (r.status === 404) err = 'Vous n'êtes pas autorisé à modifier ce dossier ou il n'existe pas.';
+          if (r.status === 404) err = "Vous n'êtes pas autorisé à modifier ce dossier ou il n'existe pas.";
           throw new Error(err);
         }
         return r.json();
