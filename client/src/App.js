@@ -156,100 +156,180 @@ const API_BASE = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev';
 function FolderSwitcher({ folderId, setFolderId, token }) {
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [newName, setNewName] = useState('');
-  const [showCreate, setShowCreate] = useState(false);
+  const [error, setError] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState('create'); // 'create' or 'rename'
+  const [modalValue, setModalValue] = useState('');
   const [renamingId, setRenamingId] = useState(null);
-  const [renameValue, setRenameValue] = useState('');
+  const inputRef = useRef();
 
+  // Fetch folders
   useEffect(() => {
     if (!token) return;
+    setLoading(true);
+    setError('');
     fetch(`${API_BASE}/api/folders`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
-      .then(f => { setFolders(f); setLoading(false); });
-  }, [token, folderId]);
+      .then(f => {
+        setFolders(f);
+        setLoading(false);
+        // Auto-select first folder if none selected
+        if (f.length > 0 && !folderId) {
+          setFolderId(f[0].id);
+          localStorage.setItem('cndp_folder', f[0].id);
+        }
+      })
+      .catch(() => {
+        setError('Erreur de connexion au serveur.');
+        setLoading(false);
+      });
+  }, [token]);
 
-  function selectFolder(id) {
-    setFolderId(id);
-    localStorage.setItem('cndp_folder', id);
+  // Modal open/close helpers
+  function openCreateModal() {
+    setModalType('create');
+    setModalValue('');
+    setModalOpen(true);
+    setTimeout(() => inputRef.current?.focus(), 100);
   }
-  function createFolder() {
-    if (!newName.trim()) return;
+  function openRenameModal(id, name) {
+    setModalType('rename');
+    setRenamingId(id);
+    setModalValue(name);
+    setModalOpen(true);
+    setTimeout(() => inputRef.current?.focus(), 100);
+  }
+  function closeModal() {
+    setModalOpen(false);
+    setModalValue('');
+    setRenamingId(null);
+  }
+
+  // Create folder
+  function handleCreateFolder(e) {
+    e.preventDefault();
+    if (!modalValue.trim()) return;
+    setLoading(true);
     fetch(`${API_BASE}/api/folders`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ name: newName })
-    }).then(r => r.json()).then(f => {
-      setFolders([...folders, f]);
-      setFolderId(f.id);
-      localStorage.setItem('cndp_folder', f.id);
-      setNewName('');
-      setShowCreate(false);
-    });
+      body: JSON.stringify({ name: modalValue })
+    })
+      .then(r => r.json())
+      .then(f => {
+        setFolders(prev => [...prev, f]);
+        setFolderId(f.id);
+        localStorage.setItem('cndp_folder', f.id);
+        closeModal();
+        setLoading(false);
+      })
+      .catch(() => { setError('Erreur lors de la création.'); setLoading(false); });
   }
-  function startRename(id, name) {
-    setRenamingId(id);
-    setRenameValue(name);
-  }
-  function renameFolder(id) {
-    if (!renameValue.trim()) return;
-    fetch(`${API_BASE}/api/folders/${id}`, {
+  // Rename folder
+  function handleRenameFolder(e) {
+    e.preventDefault();
+    if (!modalValue.trim() || !renamingId) return;
+    setLoading(true);
+    fetch(`${API_BASE}/api/folders/${renamingId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ name: renameValue })
-    }).then(r => r.json()).then(f => {
-      setFolders(folders.map(folder => folder.id === id ? f : folder));
-      setRenamingId(null);
-      setRenameValue('');
-    });
+      body: JSON.stringify({ name: modalValue })
+    })
+      .then(r => r.json())
+      .then(f => {
+        setFolders(prev => prev.map(folder => folder.id === renamingId ? f : folder));
+        closeModal();
+        setLoading(false);
+      })
+      .catch(() => { setError('Erreur lors du renommage.'); setLoading(false); });
   }
-  function deleteFolder(id) {
+  // Delete folder
+  function handleDeleteFolder(id) {
     if (!window.confirm('Supprimer ce dossier de conformité ?')) return;
+    setLoading(true);
     fetch(`${API_BASE}/api/folders/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
-    }).then(() => {
-      const updated = folders.filter(f => f.id !== id);
-      setFolders(updated);
-      if (folderId === id && updated.length > 0) {
-        setFolderId(updated[0].id);
-        localStorage.setItem('cndp_folder', updated[0].id);
-      } else if (updated.length === 0) {
-        setFolderId(null);
-        localStorage.removeItem('cndp_folder');
-      }
-    });
+    })
+      .then(() => {
+        const updated = folders.filter(f => f.id !== id);
+        setFolders(updated);
+        if (folderId === id && updated.length > 0) {
+          setFolderId(updated[0].id);
+          localStorage.setItem('cndp_folder', updated[0].id);
+        } else if (updated.length === 0) {
+          setFolderId(null);
+          localStorage.removeItem('cndp_folder');
+        }
+        setLoading(false);
+      })
+      .catch(() => { setError('Erreur lors de la suppression.'); setLoading(false); });
   }
 
-  if (loading) return <div className="text-blue-700 text-sm mb-2">Chargement des dossiers...</div>;
+  // UI
+  if (loading) return <div className="flex items-center gap-2 text-blue-700 text-sm mb-2"><svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg> Chargement des dossiers...</div>;
+  if (error) return <div className="text-red-600 font-semibold mb-2">{error}</div>;
+  if (folders.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center my-8 animate-fade-in">
+        <svg width="80" height="80" fill="none" viewBox="0 0 80 80"><rect width="80" height="80" rx="16" fill="#facc15" fillOpacity="0.08"/><path d="M20 40h40M40 20v40" stroke="#2563eb" strokeWidth="4" strokeLinecap="round"/></svg>
+        <div className="text-blue-900 font-semibold mt-4 mb-2">Aucun dossier de conformité</div>
+        <button onClick={openCreateModal} className="bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded px-4 py-2 font-semibold shadow mt-2">Créer un dossier</button>
+        {modalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+            <form onSubmit={handleCreateFolder} className="bg-white rounded-xl shadow-lg p-6 flex flex-col gap-4 min-w-[260px]">
+              <div className="font-bold text-blue-900 text-lg">Créer un dossier</div>
+              <input ref={inputRef} value={modalValue} onChange={e => setModalValue(e.target.value)} className="rounded border px-3 py-2" placeholder="Nom du dossier" required aria-label="Nom du dossier" />
+              <div className="flex gap-2 mt-2">
+                <button type="button" onClick={closeModal} className="flex-1 bg-gray-200 hover:bg-gray-300 text-blue-900 rounded px-4 py-2 font-semibold">Annuler</button>
+                <button type="submit" className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded px-4 py-2 font-semibold">Créer</button>
+              </div>
+            </form>
+          </div>
+        )}
+      </div>
+    );
+  }
   return (
-    <div className="flex flex-wrap items-center gap-2 mb-4">
+    <div className="flex flex-wrap items-center gap-2 mb-4 animate-fade-in">
       <span className="font-semibold text-blue-900">Dossier conformité :</span>
-      <select value={folderId || ''} onChange={e => selectFolder(Number(e.target.value))} className="rounded border px-3 py-1 text-blue-900 bg-white shadow">
-        {folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-      </select>
-      <button onClick={() => setShowCreate(v => !v)} className="bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded px-2 py-1 text-xs font-semibold shadow">Nouveau dossier</button>
-      {showCreate && (
-        <span className="flex items-center gap-1">
-          <input value={newName} onChange={e => setNewName(e.target.value)} className="rounded border px-2 py-1 text-sm" placeholder="Nom du dossier" />
-          <button onClick={createFolder} className="bg-blue-700 text-white rounded px-2 py-1 text-xs font-semibold ml-1">Créer</button>
-        </span>
-      )}
+      <div className="relative">
+        <select
+          value={folderId || ''}
+          onChange={e => setFolderId(Number(e.target.value))}
+          className="rounded border px-3 py-1 text-blue-900 bg-white shadow focus:ring-2 focus:ring-yellow-400"
+          aria-label="Sélectionner un dossier de conformité"
+        >
+          {folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+        </select>
+        <button
+          onClick={openCreateModal}
+          className="absolute right-[-38px] top-1/2 -translate-y-1/2 bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded-full w-8 h-8 flex items-center justify-center shadow"
+          title="Créer un dossier"
+          aria-label="Créer un dossier"
+        >
+          <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><path d="M10 4v12M4 10h12" stroke="#2563eb" strokeWidth="2" strokeLinecap="round"/></svg>
+        </button>
+      </div>
       {folders.map(f => (
-        <span key={f.id} className="flex items-center gap-1">
-          {renamingId === f.id ? (
-            <>
-              <input value={renameValue} onChange={e => setRenameValue(e.target.value)} className="rounded border px-2 py-1 text-sm" />
-              <button onClick={() => renameFolder(f.id)} className="bg-blue-700 text-white rounded px-2 py-1 text-xs font-semibold ml-1">Renommer</button>
-              <button onClick={() => setRenamingId(null)} className="text-xs ml-1">Annuler</button>
-            </>
-          ) : (
-            <>
-              <button onClick={() => startRename(f.id, f.name)} className="text-xs text-blue-700 underline">Renommer</button>
-              <button onClick={() => deleteFolder(f.id)} className="text-xs text-red-600 underline">Supprimer</button>
-            </>
-          )}
+        <span key={f.id} className={`flex items-center gap-1 ${folderId === f.id ? 'font-bold text-blue-900' : 'text-blue-700'}`}>
+          <button onClick={() => openRenameModal(f.id, f.name)} className="text-xs text-blue-700 underline" aria-label={`Renommer ${f.name}`}>Renommer</button>
+          <button onClick={() => handleDeleteFolder(f.id)} className="text-xs text-red-600 underline" aria-label={`Supprimer ${f.name}`}>Supprimer</button>
         </span>
       ))}
+      {/* Modal for create/rename */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <form onSubmit={modalType === 'create' ? handleCreateFolder : handleRenameFolder} className="bg-white rounded-xl shadow-lg p-6 flex flex-col gap-4 min-w-[260px]">
+            <div className="font-bold text-blue-900 text-lg">{modalType === 'create' ? 'Créer un dossier' : 'Renommer le dossier'}</div>
+            <input ref={inputRef} value={modalValue} onChange={e => setModalValue(e.target.value)} className="rounded border px-3 py-2" placeholder="Nom du dossier" required aria-label="Nom du dossier" />
+            <div className="flex gap-2 mt-2">
+              <button type="button" onClick={closeModal} className="flex-1 bg-gray-200 hover:bg-gray-300 text-blue-900 rounded px-4 py-2 font-semibold">Annuler</button>
+              <button type="submit" className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded px-4 py-2 font-semibold">{modalType === 'create' ? 'Créer' : 'Renommer'}</button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
