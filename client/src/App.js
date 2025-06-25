@@ -150,6 +150,8 @@ function Topbar({ user, onMenuClick }) {
   );
 }
 
+const API_BASE = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev';
+
 // FolderSwitcher component
 function FolderSwitcher({ folderId, setFolderId, token }) {
   const [folders, setFolders] = useState([]);
@@ -161,7 +163,7 @@ function FolderSwitcher({ folderId, setFolderId, token }) {
 
   useEffect(() => {
     if (!token) return;
-    fetch('/api/folders', { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_BASE}/api/folders`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(f => { setFolders(f); setLoading(false); });
   }, [token, folderId]);
@@ -172,7 +174,7 @@ function FolderSwitcher({ folderId, setFolderId, token }) {
   }
   function createFolder() {
     if (!newName.trim()) return;
-    fetch('/api/folders', {
+    fetch(`${API_BASE}/api/folders`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ name: newName })
@@ -190,7 +192,7 @@ function FolderSwitcher({ folderId, setFolderId, token }) {
   }
   function renameFolder(id) {
     if (!renameValue.trim()) return;
-    fetch(`/api/folders/${id}`, {
+    fetch(`${API_BASE}/api/folders/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ name: renameValue })
@@ -202,7 +204,7 @@ function FolderSwitcher({ folderId, setFolderId, token }) {
   }
   function deleteFolder(id) {
     if (!window.confirm('Supprimer ce dossier de conformité ?')) return;
-    fetch(`/api/folders/${id}`, {
+    fetch(`${API_BASE}/api/folders/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
     }).then(() => {
