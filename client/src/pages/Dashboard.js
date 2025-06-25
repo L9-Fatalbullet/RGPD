@@ -132,36 +132,6 @@ export default function Dashboard() {
             <SparklesIcon className="w-10 h-10 text-yellow-300 animate-spin-slow" /> Tableau de bord conformité
           </h1>
           <p className="text-lg md:text-xl font-light mb-4 drop-shadow">Suivi visuel de votre conformité à la Loi 09-08 et recommandations personnalisées.</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-            <div className="group bg-white/80 backdrop-blur rounded-xl shadow-lg p-4 flex flex-col items-center border-l-4 border-blue-700 hover:scale-105 hover:shadow-2xl transition animate-fade-in">
-              <DocumentCheckIcon className="w-8 h-8 text-blue-700 group-hover:text-yellow-500 transition" />
-              <div className="text-2xl font-bold text-blue-900 group-hover:text-yellow-700 transition">{registers.length}</div>
-              <div className="font-semibold text-blue-900 text-center">Traitements<br />enregistrés</div>
-            </div>
-            <div className="group bg-white/80 backdrop-blur rounded-xl shadow-lg p-4 flex flex-col items-center border-l-4 border-yellow-400 hover:scale-105 hover:shadow-2xl transition animate-fade-in">
-              <ShieldCheckIcon className="w-8 h-8 text-yellow-400 group-hover:text-blue-700 transition" />
-              <div className="text-2xl font-bold text-blue-900 group-hover:text-yellow-700 transition">{dpias.length}</div>
-              <div className="font-semibold text-blue-900 text-center">DPIA<br />réalisées</div>
-            </div>
-            <div className="group bg-white/80 backdrop-blur rounded-xl shadow-lg p-4 flex flex-col items-center border-l-4 border-green-500 hover:scale-105 hover:shadow-2xl transition animate-fade-in">
-              <ChartBarIcon className="w-8 h-8 text-green-500 group-hover:text-yellow-500 transition" />
-              <div className="text-2xl font-bold text-blue-900 group-hover:text-yellow-700 transition">{score}%</div>
-              <div className="font-semibold text-blue-900 text-center">Score<br />auto-évaluation</div>
-            </div>
-            <div className="group bg-white/80 backdrop-blur rounded-xl shadow-lg p-4 flex flex-col items-center border-l-4 border-blue-300 hover:scale-105 hover:shadow-2xl transition animate-fade-in">
-              <CheckCircleIcon className="w-8 h-8 text-blue-300 group-hover:text-yellow-500 transition" />
-              <div className="text-2xl font-bold text-blue-900 group-hover:text-yellow-700 transition">{(() => {
-                const dates = [];
-                if (assessment && assessment.date) dates.push(new Date(assessment.date));
-                if (registers && registers.length > 0) dates.push(...registers.map(r => new Date(r.date)));
-                if (dpias && dpias.length > 0) dates.push(...dpias.map(d => new Date(d.date)));
-                if (dates.length === 0) return '--';
-                const last = new Date(Math.max(...dates.map(d => d.getTime())));
-                return last.toLocaleDateString('fr-FR');
-              })()}</div>
-              <div className="font-semibold text-blue-900 text-center">Dernière<br />mise à jour</div>
-            </div>
-          </div>
           {/* Quick Actions */}
           <div className="flex flex-wrap gap-4 mt-6">
             <Link to="/assessment" className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-5 py-2 rounded-lg font-semibold shadow transition-all duration-200 hover:scale-105 animate-fade-in">Nouvelle évaluation</Link>
