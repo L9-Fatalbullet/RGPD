@@ -14,7 +14,6 @@ const SECRET = process.env.JWT_SECRET || 'secret_cndp';
 const REGISTERS_PATH = path.resolve('./data/registers.json');
 const DPIAS_PATH = path.resolve('./data/dpias.json');
 const AUDIT_PATH = path.resolve('./data/audit.json');
-const FOLDERS_PATH = path.resolve('./data/folders.json');
 
 // Manual OPTIONS handler for CORS preflight (must be first)
 app.use((req, res, next) => {
@@ -92,19 +91,16 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Backend opérationnel' });
 });
 
-// Load all assessments (protected, by folder)
+// Load all assessments (protected, no folder)
 app.get('/api/assessments', auth, (req, res) => {
-  const folderId = req.query.folderId;
-  if (!folderId) return res.status(400).json({ error: 'folderId requis' });
   if (!fs.existsSync(DATA_PATH)) return res.json([]);
   const data = JSON.parse(fs.readFileSync(DATA_PATH, 'utf-8'));
-  res.json(data.filter(a => a.userId === req.user.id && a.folderId === folderId));
+  res.json(data.filter(a => a.userId === req.user.id));
 });
 
-// Save a new assessment (protected, with folderId)
+// Save a new assessment (protected, no folderId)
 app.post('/api/assessments', auth, (req, res) => {
   const assessment = req.body;
-  if (!assessment.folderId) return res.status(400).json({ error: 'folderId requis' });
   let data = [];
   if (fs.existsSync(DATA_PATH)) {
     data = JSON.parse(fs.readFileSync(DATA_PATH, 'utf-8'));
@@ -126,13 +122,11 @@ app.get('/api/assessments/:id', auth, (req, res) => {
   res.json(found);
 });
 
-// CRUD Registre des traitements (protected, by folder)
+// CRUD Registre des traitements (protected, no folder)
 app.get('/api/registers', auth, (req, res) => {
-  const folderId = req.query.folderId;
-  if (!folderId) return res.status(400).json({ error: 'folderId requis' });
   if (!fs.existsSync(REGISTERS_PATH)) return res.json([]);
   const data = JSON.parse(fs.readFileSync(REGISTERS_PATH, 'utf-8'));
-  res.json(data.filter(r => r.userId === req.user.id && r.folderId === folderId));
+  res.json(data.filter(r => r.userId === req.user.id));
 });
 
 function logAudit({ user, action, type, itemId, details }) {
@@ -170,7 +164,6 @@ app.get('/api/audit/:type/:itemId', auth, (req, res) => {
 // --- Register audit ---
 app.post('/api/registers', auth, (req, res) => {
   const reg = req.body;
-  if (!reg.folderId) return res.status(400).json({ error: 'folderId requis' });
   let data = [];
   if (fs.existsSync(REGISTERS_PATH)) {
     data = JSON.parse(fs.readFileSync(REGISTERS_PATH, 'utf-8'));
@@ -207,18 +200,15 @@ app.delete('/api/registers/:id', auth, (req, res) => {
   res.json({ success: true });
 });
 
-// CRUD DPIA (protected, by folder)
+// CRUD DPIA (protected, no folder)
 app.get('/api/dpias', auth, (req, res) => {
-  const folderId = req.query.folderId;
-  if (!folderId) return res.status(400).json({ error: 'folderId requis' });
   if (!fs.existsSync(DPIAS_PATH)) return res.json([]);
   const data = JSON.parse(fs.readFileSync(DPIAS_PATH, 'utf-8'));
-  res.json(data.filter(d => d.userId === req.user.id && d.folderId === folderId));
+  res.json(data.filter(d => d.userId === req.user.id));
 });
 
 app.post('/api/dpias', auth, (req, res) => {
   const dpia = req.body;
-  if (!dpia.folderId) return res.status(400).json({ error: 'folderId requis' });
   let data = [];
   if (fs.existsSync(DPIAS_PATH)) {
     data = JSON.parse(fs.readFileSync(DPIAS_PATH, 'utf-8'));
@@ -305,55 +295,6 @@ app.put('/api/users/:id/role', auth, isAdmin, (req, res) => {
   users[idx].role = role;
   fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
   res.json({ success: true });
-});
-
-// --- Compliance Folders CRUD ---
-// List folders for current user
-app.get('/api/folders', auth, (req, res) => {
-  if (!fs.existsSync(FOLDERS_PATH)) return res.json([]);
-  const folders = JSON.parse(fs.readFileSync(FOLDERS_PATH, 'utf-8'));
-  res.json(folders.filter(f => f.owner === req.user.id));
-});
-// Create a new folder
-app.post('/api/folders', auth, (req, res) => {
-  const { name } = req.body;
-  if (!name) return res.status(400).json({ error: 'Nom du dossier requis' });
-  let folders = [];
-  if (fs.existsSync(FOLDERS_PATH)) {
-    folders = JSON.parse(fs.readFileSync(FOLDERS_PATH, 'utf-8'));
-  }
-  const folder = {
-    id: Date.now(),
-    name,
-    owner: req.user.id,
-    createdAt: new Date().toISOString(),
-  };
-  folders.push(folder);
-  fs.writeFileSync(FOLDERS_PATH, JSON.stringify(folders, null, 2));
-  res.json(folder);
-});
-// Rename/update a folder
-app.put('/api/folders/:id', auth, (req, res) => {
-  const { name } = req.body;
-  if (!name) return res.status(400).json({ error: 'Nom du dossier requis' });
-  if (!fs.existsSync(FOLDERS_PATH)) return res.status(404).json({ error: 'Not found' });
-  let folders = JSON.parse(fs.readFileSync(FOLDERS_PATH, 'utf-8'));
-  const idx = folders.findIndex(f => f.id === Number(req.params.id) && f.owner === req.user.id);
-  if (idx === -1) return res.status(404).json({ error: 'Not found' });
-  folders[idx].name = name;
-  fs.writeFileSync(FOLDERS_PATH, JSON.stringify(folders, null, 2));
-  res.json(folders[idx]);
-});
-// Delete a folder
-app.delete('/api/folders/:id', auth, (req, res) => {
-  if (!fs.existsSync(FOLDERS_PATH)) return res.status(404).json({ error: 'Not found' });
-  let folders = JSON.parse(fs.readFileSync(FOLDERS_PATH, 'utf-8'));
-  const idx = folders.findIndex(f => f.id === Number(req.params.id) && f.owner === req.user.id);
-  if (idx === -1) return res.status(404).json({ error: 'Not found' });
-  const deleted = folders[idx];
-  folders.splice(idx, 1);
-  fs.writeFileSync(FOLDERS_PATH, JSON.stringify(folders, null, 2));
-  res.json({ success: true, deleted });
 });
 
 app.listen(PORT, () => {

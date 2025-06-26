@@ -206,25 +206,20 @@ function App() {
           <Topbar user={user} onMenuClick={() => setMobileOpen(true)} />
           <main className="flex-1 p-4 md:p-8 min-h-screen bg-white" style={{ minHeight: 'calc(100vh - 56px)' }}>
             <div className="w-full bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6 md:p-10">
-              {/* Show onboarding if no folder selected */}
-              {!folderId ? (
-                <NoFolder onCreate={() => openFolderModal && openFolderModal()} />
-              ) : (
-                <Routes>
-                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                  <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
-                  <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
-                  <Route path="/register" element={<ProtectedRoute><Register /></ProtectedRoute>} />
-                  <Route path="/dpia" element={<ProtectedRoute><DPIA /></ProtectedRoute>} />
-                  <Route path="/guide" element={<Guide />} />
-                  <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
-                  <Route path="/best-practices" element={<BestPractices />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-                  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                  <Route path="/" element={<Navigate to="/dashboard" />} />
-                </Routes>
-              )}
+              <Routes>
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
+                <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
+                <Route path="/register" element={<ProtectedRoute><Register /></ProtectedRoute>} />
+                <Route path="/dpia" element={<ProtectedRoute><DPIA /></ProtectedRoute>} />
+                <Route path="/guide" element={<Guide />} />
+                <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
+                <Route path="/best-practices" element={<BestPractices />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/" element={<Navigate to="/dashboard" />} />
+              </Routes>
             </div>
           </main>
           <footer className="text-center text-xs text-blue-900 py-4 opacity-80">
