@@ -139,8 +139,8 @@ export default function Dashboard() {
           <p className="text-lg md:text-xl font-light mb-4 drop-shadow">Visualisez votre niveau de conformité Loi 09-08 par domaine clé.</p>
         </div>
         <div className="flex-1 flex flex-col items-center justify-center">
-          <ResponsiveContainer width="100%" height={300}>
-            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={domainScores}>
+          <ResponsiveContainer width="100%" height={200}>
+            <RadarChart cx="50%" cy="50%" outerRadius="60%" data={domainScores}>
               <PolarGrid strokeDasharray="4 4" />
               <PolarAngleAxis dataKey="domain" tick={{ fill: '#1e293b', fontWeight: 600 }} />
               <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#64748b' }} />
