@@ -196,7 +196,7 @@ function App() {
         </svg>
         {/* Desktop Sidebar */}
         <aside
-          className={`fixed left-0 top-0 h-screen z-40 sidebar-scroll transition-all duration-300 ${sidebarHovered ? 'w-64' : 'w-16'} bg-white`}
+          className={`fixed left-0 top-0 h-screen z-40 sidebar-scroll transition-all duration-300 ${sidebarHovered ? 'w-64' : 'w-16'} bg-gradient-to-br from-blue-900 via-blue-700 to-yellow-400`}
           onMouseEnter={() => setSidebarHovered(true)}
           onMouseLeave={() => setSidebarHovered(false)}
         >
@@ -225,7 +225,7 @@ function App() {
           </div>
           {/* Expanded content overlays collapsed content */}
           <div
-            className={`absolute inset-0 transition-opacity duration-200 ${sidebarHovered ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'} bg-gradient-to-br from-blue-900 via-blue-700 to-yellow-400`}
+            className={`absolute inset-0 transition-opacity duration-200 ${sidebarHovered ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
             style={{ width: '16rem' }}
           >
             <Sidebar
