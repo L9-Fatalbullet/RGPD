@@ -154,7 +154,7 @@ const API_BASE = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev';
 
 function App() {
   const { token, user, logout } = useAuth();
-  const [collapsed, setCollapsed] = useState(false);
+  const [sidebarHovered, setSidebarHovered] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [editName, setEditName] = useState(user?.name || '');
@@ -193,9 +193,21 @@ function App() {
           <rect width="100vw" height="100vh" fill="url(#mosaic)" />
         </svg>
         {/* Desktop Sidebar */}
-        <aside className={`fixed left-0 top-0 h-screen z-40 sidebar-scroll transition-all duration-300 ${collapsed ? 'w-0' : 'w-64'} overflow-hidden`}>
-          {!collapsed && (
-            <Sidebar token={token} logout={logout} user={user} collapsed={collapsed} setCollapsed={setCollapsed} activePath={location} setEditProfileOpen={setEditProfileOpen} />
+        <aside
+          className={`fixed left-0 top-0 h-screen z-40 sidebar-scroll transition-all duration-300 ${sidebarHovered ? 'w-64' : 'w-0'} overflow-hidden`}
+          onMouseEnter={() => setSidebarHovered(true)}
+          onMouseLeave={() => setSidebarHovered(false)}
+        >
+          {sidebarHovered && (
+            <Sidebar
+              token={token}
+              logout={logout}
+              user={user}
+              collapsed={!sidebarHovered}
+              setCollapsed={() => {}}
+              activePath={location}
+              setEditProfileOpen={setEditProfileOpen}
+            />
           )}
         </aside>
         {/* Mobile Sidebar Drawer */}
@@ -206,7 +218,7 @@ function App() {
             </aside>
           </div>
         )}
-        <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${collapsed ? 'ml-0' : 'ml-64'}`}>
+        <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidebarHovered ? 'ml-64' : 'ml-0'}`}>
           <div className="w-full">
             <Topbar user={user} onMenuClick={() => setMobileOpen(true)} />
           </div>
