@@ -196,7 +196,7 @@ function App() {
         </svg>
         {/* Desktop Sidebar */}
         <aside
-          className={`fixed left-0 top-0 h-screen z-40 sidebar-scroll transition-all duration-300 ${sidebarHovered ? 'w-64' : 'w-16'} bg-gradient-to-br from-blue-900 via-blue-700 to-yellow-400`}
+          className={`fixed left-0 top-0 h-screen z-40 sidebar-scroll transition-all duration-300 ${sidebarHovered ? 'w-64' : 'w-16'} bg-white`}
           onMouseEnter={() => setSidebarHovered(true)}
           onMouseLeave={() => setSidebarHovered(false)}
         >
@@ -210,7 +210,7 @@ function App() {
             <nav className="flex flex-col gap-4 flex-1 justify-center items-center">
               {nav.map(item => (
                 <Link key={item.to} to={item.to} aria-label={item.label} tabIndex={0}
-                  className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 outline-none focus:ring-2 focus:ring-yellow-400 text-white hover:bg-yellow-400/30 ${location === item.to ? 'bg-yellow-400/80 text-blue-900 shadow-lg' : ''}`}
+                  className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 outline-none focus:ring-2 focus:ring-yellow-400 text-blue-900 hover:bg-yellow-400/30 ${location === item.to ? 'bg-yellow-400/80 text-blue-900 shadow-lg' : ''}`}
                 >
                   {item.icon}
                 </Link>
@@ -225,7 +225,7 @@ function App() {
           </div>
           {/* Expanded content overlays collapsed content */}
           <div
-            className={`absolute inset-0 transition-opacity duration-200 ${sidebarHovered ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+            className={`absolute inset-0 transition-opacity duration-200 ${sidebarHovered ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'} bg-gradient-to-br from-blue-900 via-blue-700 to-yellow-400`}
             style={{ width: '16rem' }}
           >
             <Sidebar
