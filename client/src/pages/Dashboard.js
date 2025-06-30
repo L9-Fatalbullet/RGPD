@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { SparklesIcon, ChartBarIcon, ExclamationTriangleIcon, CheckCircleIcon, DocumentCheckIcon, ShieldCheckIcon, ArrowRightCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../App';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const API_BASE = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev';
 
@@ -105,13 +105,6 @@ export default function Dashboard() {
   }, [token]);
 
   const domainScores = computeDomainScores(assessment);
-  const overall = domainScores.length ? Math.round(domainScores.reduce((a, b) => a + b.score, 0) / domainScores.length) : 0;
-
-  // Donut chart data
-  const donutData = [
-    { name: 'Conformité', value: overall },
-    { name: 'Manquant', value: 100 - overall },
-  ];
 
   if (error) return <div className="text-red-600 font-semibold p-8">{error}</div>;
 
@@ -124,56 +117,23 @@ export default function Dashboard() {
           </h1>
           <p className="text-lg md:text-xl font-light mb-4 drop-shadow">Visualisez votre niveau de conformité Loi 09-08 par domaine clé.</p>
         </div>
-        <div className="flex-1 flex flex-col items-center justify-center gap-6">
-          {/* Donut Chart */}
-          <div className="relative flex items-center justify-center" style={{ width: 170, height: 170 }}>
-            <ResponsiveContainer width={170} height={170}>
-              <PieChart>
-                <Pie
-                  data={donutData}
-                  innerRadius={60}
-                  outerRadius={80}
-                  startAngle={90}
-                  endAngle={-270}
-                  dataKey="value"
-                  stroke="none"
-                  isAnimationActive
-                >
-                  <Cell key="conformite" fill="url(#donutGradient)" />
-                  <Cell key="manquant" fill="#e5e7eb" />
-                </Pie>
-                <defs>
-                  <linearGradient id="donutGradient" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stopColor="#facc15" />
-                    <stop offset="100%" stopColor="#2563eb" />
-                  </linearGradient>
-                </defs>
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-4xl font-extrabold text-blue-900 drop-shadow">{overall}%</span>
-              <span className="text-xs text-blue-700 font-semibold">Conformité globale</span>
-            </div>
-          </div>
-          {/* Bar Chart */}
-          <div className="w-full" style={{ maxWidth: 320 }}>
-            <ResponsiveContainer width="100%" height={120}>
-              <BarChart data={domainScores} layout="vertical" margin={{ left: 20, right: 20, top: 10, bottom: 10 }}>
-                <XAxis type="number" domain={[0, 100]} hide />
-                <YAxis type="category" dataKey="domain" tick={{ fill: '#1e293b', fontWeight: 600, fontSize: 14 }} width={120} />
-                <Bar dataKey="score" radius={[8, 8, 8, 8]} fill="url(#barGradient)" isAnimationActive>
-                  {domainScores.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Bar>
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="relative w-full" style={{maxWidth: 340}}>
+            <ResponsiveContainer width="100%" height={240}>
+              <RadarChart cx="50%" cy="50%" outerRadius="75%" data={domainScores}>
+                <PolarGrid strokeDasharray="4 4" />
+                <PolarAngleAxis dataKey="domain" tick={{ fill: '#1e293b', fontWeight: 700, fontSize: 14 }} />
+                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
+                <Radar name="Score" dataKey="score" stroke="#2563eb" strokeWidth={3} fill="url(#colorScore)" fillOpacity={0.7} dot r={5} isAnimationActive />
                 <Tooltip formatter={(value) => `${value}%`} contentStyle={{ borderRadius: 12, boxShadow: '0 2px 8px #0001', background: '#fff' }} />
+                <Legend iconType="circle" wrapperStyle={{ bottom: -10, left: 0, fontWeight: 600 }} />
                 <defs>
-                  <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
+                  <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#facc15" />
                     <stop offset="100%" stopColor="#2563eb" />
                   </linearGradient>
                 </defs>
-              </BarChart>
+              </RadarChart>
             </ResponsiveContainer>
           </div>
         </div>
