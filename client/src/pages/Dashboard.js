@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { SparklesIcon, ChartBarIcon, ExclamationTriangleIcon, CheckCircleIcon, DocumentCheckIcon, ShieldCheckIcon, ArrowRightCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../App';
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 
 const API_BASE = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev';
 
@@ -63,6 +63,8 @@ function computeDomainScores(assessment) {
   });
 }
 
+const COLORS = ['#facc15', '#2563eb', '#38bdf8', '#f59e42'];
+
 // Add a Moroccan geometric SVG pattern as a background accent
 const MoroccanPattern = () => (
   <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{zIndex:0}} viewBox="0 0 600 400" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -82,8 +84,6 @@ export default function Dashboard() {
   const [registers, setRegisters] = useState([]);
   const [dpias, setDpias] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [score, setScore] = useState(0);
-  const [insights, setInsights] = useState([]);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -94,29 +94,9 @@ export default function Dashboard() {
       fetch(`${API_BASE}/api/registers`, { headers: { Authorization: `Bearer ${token}` } }).then(async r => { if (r.status === 401 || r.status === 403) { throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); }),
       fetch(`${API_BASE}/api/dpias`, { headers: { Authorization: `Bearer ${token}` } }).then(async r => { if (r.status === 401 || r.status === 403) { throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); }),
     ]).then(([assess, regs, dpias]) => {
-      const latest = Array.isArray(assess) && assess.length > 0 ? assess[assess.length - 1] : null;
-      setAssessment(latest);
+      setAssessment(Array.isArray(assess) && assess.length > 0 ? assess[assess.length - 1] : null);
       setRegisters(regs || []);
       setDpias(dpias || []);
-      // Compute score
-      let total = 0, max = 0;
-      if (latest && latest.answers) {
-        Object.values(latest.answers).forEach(v => { total += v; max += 2; });
-      }
-      let s = max > 0 ? Math.round((total / max) * 70) : 0; // 70% from assessment
-      if (regs && regs.length > 0) s += 15; // 15% for register
-      if (latest && latest.answers && latest.answers.dpia === 2 && dpias && dpias.length > 0) s += 15; // 15% for DPIA if needed
-      setScore(s);
-      // Insights
-      const i = [];
-      if (!latest) i.push({ icon: <ChartBarIcon className="w-5 h-5 text-yellow-600" />, text: "Aucune auto-évaluation trouvée.", link: "/assessment", action: "Faire l'auto-évaluation" });
-      else {
-        const missing = Object.entries(latest.answers).filter(([k, v]) => v < 2);
-        if (missing.length > 0) i.push({ icon: <ExclamationTriangleIcon className="w-5 h-5 text-yellow-600" />, text: `${missing.length} obligation(s) non remplies dans l'auto-évaluation.`, link: "/assessment", action: "Compléter" });
-        if (latest.answers.dpia === 2 && (!dpias || dpias.length === 0)) i.push({ icon: <ExclamationTriangleIcon className="w-5 h-5 text-yellow-600" />, text: "DPIA requise mais non réalisée.", link: "/dpia", action: "Faire une DPIA" });
-      }
-      if (!regs || regs.length === 0) i.push({ icon: <DocumentCheckIcon className="w-5 h-5 text-yellow-600" />, text: "Aucun registre des traitements trouvé.", link: "/register", action: "Créer un registre" });
-      setInsights(i);
       setLoading(false);
     }).catch((e) => {
       setLoading(false);
@@ -125,7 +105,13 @@ export default function Dashboard() {
   }, [token]);
 
   const domainScores = computeDomainScores(assessment);
-  const max = 100;
+  const overall = domainScores.length ? Math.round(domainScores.reduce((a, b) => a + b.score, 0) / domainScores.length) : 0;
+
+  // Donut chart data
+  const donutData = [
+    { name: 'Conformité', value: overall },
+    { name: 'Manquant', value: 100 - overall },
+  ];
 
   if (error) return <div className="text-red-600 font-semibold p-8">{error}</div>;
 
@@ -138,32 +124,57 @@ export default function Dashboard() {
           </h1>
           <p className="text-lg md:text-xl font-light mb-4 drop-shadow">Visualisez votre niveau de conformité Loi 09-08 par domaine clé.</p>
         </div>
-        <div className="flex-1 flex flex-col items-center justify-center">
-          <div className="relative w-full" style={{maxWidth: 340}}>
-            <ResponsiveContainer width="100%" height={240}>
-              <RadarChart cx="50%" cy="50%" outerRadius="75%" data={domainScores}>
-                {/* Soft background circle */}
-                <circle cx="50%" cy="50%" r="90" fill="#f1f5f9" opacity="0.7" />
-                <PolarGrid strokeDasharray="4 4" />
-                <PolarAngleAxis dataKey="domain" tick={{ fill: '#1e293b', fontWeight: 700, fontSize: 14 }} />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <Radar name="Score" dataKey="score" stroke="#2563eb" strokeWidth={3} fill="url(#colorScore)" fillOpacity={0.7} dot r={5} isAnimationActive />
-                <Tooltip formatter={(value) => `${value}%`} contentStyle={{ borderRadius: 12, boxShadow: '0 2px 8px #0001', background: '#fff' }} />
-                <Legend iconType="circle" wrapperStyle={{ bottom: -10, left: 0, fontWeight: 600 }} />
+        <div className="flex-1 flex flex-col items-center justify-center gap-6">
+          {/* Donut Chart */}
+          <div className="relative flex items-center justify-center" style={{ width: 170, height: 170 }}>
+            <ResponsiveContainer width={170} height={170}>
+              <PieChart>
+                <Pie
+                  data={donutData}
+                  innerRadius={60}
+                  outerRadius={80}
+                  startAngle={90}
+                  endAngle={-270}
+                  dataKey="value"
+                  stroke="none"
+                  isAnimationActive
+                >
+                  <Cell key="conformite" fill="url(#donutGradient)" />
+                  <Cell key="manquant" fill="#e5e7eb" />
+                </Pie>
                 <defs>
-                  <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="donutGradient" x1="0" y1="0" x2="1" y2="1">
                     <stop offset="0%" stopColor="#facc15" />
                     <stop offset="100%" stopColor="#2563eb" />
                   </linearGradient>
                 </defs>
-                {/* Drop shadow effect */}
-                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#2563eb33" />
-                </filter>
-              </RadarChart>
+              </PieChart>
             </ResponsiveContainer>
-            {/* Soft drop shadow overlay */}
-            <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,pointerEvents:'none',filter:'blur(8px) opacity(0.2)'}}></div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-4xl font-extrabold text-blue-900 drop-shadow">{overall}%</span>
+              <span className="text-xs text-blue-700 font-semibold">Conformité globale</span>
+            </div>
+          </div>
+          {/* Bar Chart */}
+          <div className="w-full" style={{ maxWidth: 320 }}>
+            <ResponsiveContainer width="100%" height={120}>
+              <BarChart data={domainScores} layout="vertical" margin={{ left: 20, right: 20, top: 10, bottom: 10 }}>
+                <XAxis type="number" domain={[0, 100]} hide />
+                <YAxis type="category" dataKey="domain" tick={{ fill: '#1e293b', fontWeight: 600, fontSize: 14 }} width={120} />
+                <Bar dataKey="score" radius={[8, 8, 8, 8]} fill="url(#barGradient)" isAnimationActive>
+                  {domainScores.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
+                <Tooltip formatter={(value) => `${value}%`} contentStyle={{ borderRadius: 12, boxShadow: '0 2px 8px #0001', background: '#fff' }} />
+                <defs>
+                  <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#facc15" />
+                    <stop offset="100%" stopColor="#2563eb" />
+                  </linearGradient>
+                </defs>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
@@ -181,13 +192,13 @@ export default function Dashboard() {
       <div className="mb-10 animate-fade-in">
         <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><CheckCircleIcon className="w-7 h-7 text-blue-700" /> Actions à mener</h2>
         {loading ? <div className="text-blue-700">Chargement...</div> : (
-          insights.length === 0 ? <div className="text-green-700 font-semibold">Aucune action urgente. Bravo !</div> :
+          domainScores.length === 0 ? <div className="text-green-700 font-semibold">Aucune action urgente. Bravo !</div> :
           <ul className="space-y-4">
-            {insights.map((i, idx) => (
+            {domainScores.map((d, idx) => (
               <li key={idx} className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-4 flex items-center gap-4 border-l-4 border-yellow-400 animate-fade-in">
-                {i.icon}
-                <span className="flex-1 text-blue-900 font-semibold">{i.text}</span>
-                <Link to={i.link} className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-4 py-2 rounded font-semibold shadow">{i.action}</Link>
+                <ChartBarIcon className="w-5 h-5 text-yellow-400" />
+                <span className="flex-1 text-blue-900 font-semibold">{d.domain}</span>
+                <span className="text-gray-700 text-xs">{d.score}%</span>
               </li>
             ))}
           </ul>
@@ -209,30 +220,6 @@ export default function Dashboard() {
             <div className="text-2xl font-bold text-blue-900 group-hover:text-yellow-700 transition">{dpias.length}</div>
             <div className="font-semibold text-blue-900">DPIA réalisées</div>
             <div className="text-gray-700 text-xs">Analyses d'impact effectuées</div>
-          </div>
-        </div>
-        <div className="group border-l-4 border-green-500 rounded-xl shadow-lg p-6 flex items-center gap-4 hover:scale-105 hover:shadow-2xl transition">
-          <ChartBarIcon className="w-10 h-10 text-green-500 group-hover:text-yellow-500 transition" />
-          <div>
-            <div className="text-2xl font-bold text-blue-900 group-hover:text-yellow-700 transition">{score}%</div>
-            <div className="font-semibold text-blue-900">Score auto-évaluation</div>
-            <div className="text-gray-700 text-xs">Basé sur vos réponses à l'auto-évaluation</div>
-          </div>
-        </div>
-        <div className="group border-l-4 border-blue-300 rounded-xl shadow-lg p-6 flex items-center gap-4 hover:scale-105 hover:shadow-2xl transition">
-          <CheckCircleIcon className="w-10 h-10 text-blue-300 group-hover:text-yellow-500 transition" />
-          <div>
-            <div className="text-2xl font-bold text-blue-900 group-hover:text-yellow-700 transition">{(() => {
-              const dates = [];
-              if (assessment && assessment.date) dates.push(new Date(assessment.date));
-              if (registers && registers.length > 0) dates.push(...registers.map(r => new Date(r.date)));
-              if (dpias && dpias.length > 0) dates.push(...dpias.map(d => new Date(d.date)));
-              if (dates.length === 0) return '--';
-              const last = new Date(Math.max(...dates.map(d => d.getTime())));
-              return last.toLocaleDateString('fr-FR');
-            })()}</div>
-            <div className="font-semibold text-blue-900">Dernière mise à jour</div>
-            <div className="text-gray-700 text-xs">Date de la dernière action</div>
           </div>
         </div>
       </div>
