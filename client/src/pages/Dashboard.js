@@ -148,24 +148,8 @@ export default function Dashboard() {
         <Link to="/register" className="bg-gradient-to-r from-blue-700 via-yellow-400 to-blue-900 hover:from-yellow-400 hover:to-blue-900 text-white px-5 py-2 rounded-lg font-semibold shadow transition-all duration-200 hover:scale-105 animate-fade-in">Ajouter un traitement</Link>
         <Link to="/dpia" className="bg-gradient-to-r from-blue-900 via-blue-700 to-yellow-400 hover:from-yellow-400 hover:to-blue-900 text-white px-5 py-2 rounded-lg font-semibold shadow transition-all duration-200 hover:scale-105 animate-fade-in">Nouvelle DPIA</Link>
       </div>
-      {/* Actionable Insights */}
-      <div className="mb-10 animate-fade-in">
-        <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><CheckCircleIcon className="w-7 h-7 text-blue-700" /> Actions à mener</h2>
-        {loading ? <div className="text-blue-700">Chargement...</div> : (
-          domainScores.length === 0 ? <div className="text-green-700 font-semibold">Aucune action urgente. Bravo !</div> :
-          <ul className="space-y-4">
-            {domainScores.map((d, idx) => (
-              <li key={idx} className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-4 flex items-center gap-4 border-l-4 border-yellow-400 animate-fade-in">
-                <ChartBarIcon className="w-5 h-5 text-yellow-400" />
-                <span className="flex-1 text-blue-900 font-semibold">{d.domain}</span>
-                <span className="text-gray-700 text-xs">{d.score}%</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
       {/* Real Compliance Status Cards */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10 animate-fade-in">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10 animate-fade-in">
         {/* Auto-évaluation card */}
         <div className="group border-l-4 border-green-500 rounded-xl shadow-lg p-6 flex items-center gap-4 hover:scale-105 hover:shadow-2xl transition">
           <ChartBarIcon className="w-10 h-10 text-green-500 group-hover:text-yellow-500 transition" />
@@ -210,6 +194,16 @@ export default function Dashboard() {
             <div className="text-gray-700 text-xs">Analyses d'impact effectuées</div>
           </div>
         </div>
+      </div>
+      {/* Actionable Insights */}
+      <div className="mb-10 animate-fade-in">
+        <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><CheckCircleIcon className="w-7 h-7 text-blue-700" /> Actions à mener</h2>
+        {loading ? <div className="text-blue-700">Chargement...</div> : (
+          domainScores.length === 0 ? <div className="text-green-700 font-semibold">Aucune action urgente. Bravo !</div> :
+          <ul className="space-y-4">
+            {/* Removed domain score cards here */}
+          </ul>
+        )}
       </div>
       {/* Prochaines étapes (Next Steps) */}
       <div className="mb-10 animate-fade-in">
