@@ -212,7 +212,10 @@ function App() {
             />
           ) : (
             <div className="h-full flex flex-col items-center justify-between py-4">
-              <div />
+              {/* Logo at the top */}
+              <div className="flex flex-col items-center justify-center w-full mb-2">
+                <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className="w-10 h-10 object-contain rounded-full shadow-lg" />
+              </div>
               <nav className="flex flex-col gap-4 flex-1 justify-center items-center">
                 {nav.map(item => (
                   <Link key={item.to} to={item.to} aria-label={item.label} tabIndex={0}
