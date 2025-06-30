@@ -60,18 +60,20 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+// Sidebar nav for both expanded and collapsed states
+const nav = [
+  { to: '/dashboard', label: 'Accueil', icon: <HomeIcon className="w-6 h-6" /> },
+  { to: '/progress', label: 'Progression', icon: <ArrowPathIcon className="w-6 h-6" /> },
+  { to: '/assessment', label: 'Auto-évaluation', icon: <ChartBarIcon className="w-6 h-6" /> },
+  { to: '/register', label: 'Registre', icon: <DocumentCheckIcon className="w-6 h-6" /> },
+  { to: '/dpia', label: 'DPIA', icon: <ShieldCheckIcon className="w-6 h-6" /> },
+  { to: '/guide', label: 'Guide', icon: <BookOpenIcon className="w-6 h-6" /> },
+  { to: '/documents', label: 'Documents', icon: <ClipboardDocumentListIcon className="w-6 h-6" /> },
+  { to: '/best-practices', label: 'Bonnes pratiques', icon: <SparklesIcon className="w-6 h-6" /> },
+];
+
 function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, setEditProfileOpen }) {
   const [hovered, setHovered] = React.useState(false);
-  const nav = [
-    { to: '/dashboard', label: 'Accueil', icon: <HomeIcon className="w-6 h-6" /> },
-    { to: '/progress', label: 'Progression', icon: <ArrowPathIcon className="w-6 h-6" /> },
-    { to: '/assessment', label: 'Auto-évaluation', icon: <ChartBarIcon className="w-6 h-6" /> },
-    { to: '/register', label: 'Registre', icon: <DocumentCheckIcon className="w-6 h-6" /> },
-    { to: '/dpia', label: 'DPIA', icon: <ShieldCheckIcon className="w-6 h-6" /> },
-    { to: '/guide', label: 'Guide', icon: <BookOpenIcon className="w-6 h-6" /> },
-    { to: '/documents', label: 'Documents', icon: <ClipboardDocumentListIcon className="w-6 h-6" /> },
-    { to: '/best-practices', label: 'Bonnes pratiques', icon: <SparklesIcon className="w-6 h-6" /> },
-  ];
   const isExpanded = hovered;
   return (
     <aside
