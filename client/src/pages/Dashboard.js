@@ -139,22 +139,32 @@ export default function Dashboard() {
           <p className="text-lg md:text-xl font-light mb-4 drop-shadow">Visualisez votre niveau de conformité Loi 09-08 par domaine clé.</p>
         </div>
         <div className="flex-1 flex flex-col items-center justify-center">
-          <ResponsiveContainer width="100%" height={200}>
-            <RadarChart cx="50%" cy="50%" outerRadius="60%" data={domainScores}>
-              <PolarGrid strokeDasharray="4 4" />
-              <PolarAngleAxis dataKey="domain" tick={{ fill: '#1e293b', fontWeight: 600 }} />
-              <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#64748b' }} />
-              <Radar name="Score" dataKey="score" stroke="#2563eb" fill="url(#colorScore)" fillOpacity={0.7} />
-              <Tooltip formatter={(value) => `${value}%`} />
-              <Legend />
-              <defs>
-                <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#facc15" />
-                  <stop offset="100%" stopColor="#2563eb" />
-                </linearGradient>
-              </defs>
-            </RadarChart>
-          </ResponsiveContainer>
+          <div className="relative w-full" style={{maxWidth: 340}}>
+            <ResponsiveContainer width="100%" height={240}>
+              <RadarChart cx="50%" cy="50%" outerRadius="75%" data={domainScores}>
+                {/* Soft background circle */}
+                <circle cx="50%" cy="50%" r="90" fill="#f1f5f9" opacity="0.7" />
+                <PolarGrid strokeDasharray="4 4" />
+                <PolarAngleAxis dataKey="domain" tick={{ fill: '#1e293b', fontWeight: 700, fontSize: 14 }} />
+                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
+                <Radar name="Score" dataKey="score" stroke="#2563eb" strokeWidth={3} fill="url(#colorScore)" fillOpacity={0.7} dot r={5} isAnimationActive />
+                <Tooltip formatter={(value) => `${value}%`} contentStyle={{ borderRadius: 12, boxShadow: '0 2px 8px #0001', background: '#fff' }} />
+                <Legend iconType="circle" wrapperStyle={{ bottom: -10, left: 0, fontWeight: 600 }} />
+                <defs>
+                  <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#facc15" />
+                    <stop offset="100%" stopColor="#2563eb" />
+                  </linearGradient>
+                </defs>
+                {/* Drop shadow effect */}
+                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#2563eb33" />
+                </filter>
+              </RadarChart>
+            </ResponsiveContainer>
+            {/* Soft drop shadow overlay */}
+            <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,pointerEvents:'none',filter:'blur(8px) opacity(0.2)'}}></div>
+          </div>
         </div>
       </div>
       {/* Additional dashboard content (insights, tables, etc.) can go here */}
