@@ -194,11 +194,11 @@ function App() {
         </svg>
         {/* Desktop Sidebar */}
         <aside
-          className={`fixed left-0 top-0 h-screen z-40 sidebar-scroll transition-all duration-300 ${sidebarHovered ? 'w-64' : 'w-0'} overflow-hidden`}
+          className={`fixed left-0 top-0 h-screen z-40 sidebar-scroll transition-all duration-300 ${sidebarHovered ? 'w-64' : 'w-6'} bg-gradient-to-br from-blue-900 via-blue-700 to-yellow-400`}
           onMouseEnter={() => setSidebarHovered(true)}
           onMouseLeave={() => setSidebarHovered(false)}
         >
-          {sidebarHovered && (
+          {sidebarHovered ? (
             <Sidebar
               token={token}
               logout={logout}
@@ -208,6 +208,10 @@ function App() {
               activePath={location}
               setEditProfileOpen={setEditProfileOpen}
             />
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <div className="w-2 h-16 bg-yellow-400 rounded-full"></div>
+            </div>
           )}
         </aside>
         {/* Mobile Sidebar Drawer */}
@@ -218,7 +222,7 @@ function App() {
             </aside>
           </div>
         )}
-        <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidebarHovered ? 'ml-64' : 'ml-0'}`}>
+        <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidebarHovered ? 'ml-64' : 'ml-6'}`}>
           <div className="w-full">
             <Topbar user={user} onMenuClick={() => setMobileOpen(true)} />
           </div>
