@@ -193,7 +193,7 @@ function App() {
           <rect width="100vw" height="100vh" fill="url(#mosaic)" />
         </svg>
         {/* Desktop Sidebar */}
-        <aside className="fixed left-0 top-0 h-screen w-64 bg-white/90 backdrop-blur-lg shadow-xl border-r-4 border-yellow-400 rounded-tr-3xl rounded-br-3xl z-40 overflow-y-auto">
+        <aside className="fixed left-0 top-0 h-screen w-64 bg-white/90 backdrop-blur-lg shadow-xl border-r-4 border-yellow-400 rounded-tr-3xl rounded-br-3xl z-40 sidebar-scroll">
           <Sidebar token={token} logout={logout} user={user} collapsed={collapsed} setCollapsed={setCollapsed} activePath={location} setEditProfileOpen={setEditProfileOpen} />
         </aside>
         {/* Mobile Sidebar Drawer */}
@@ -249,6 +249,23 @@ function App() {
         body { font-family: 'Inter', 'Nunito', 'Open Sans', sans-serif; }
         @keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
         .animate-fade-in { animation: fade-in 0.7s cubic-bezier(.4,0,.2,1) both; }
+        .sidebar-scroll {
+          overflow-y: hidden;
+        }
+        .sidebar-scroll:hover, .sidebar-scroll:focus-within {
+          overflow-y: auto;
+        }
+        .sidebar-scroll::-webkit-scrollbar {
+          width: 8px;
+          background: transparent;
+        }
+        .sidebar-scroll:hover::-webkit-scrollbar, .sidebar-scroll:focus-within::-webkit-scrollbar {
+          background: #e5e7eb;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 6px;
+        }
       `}</style>
     </Router>
   );
