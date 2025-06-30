@@ -207,7 +207,9 @@ function App() {
           </div>
         )}
         <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${collapsed ? 'ml-0' : 'ml-64'}`}>
-          <Topbar user={user} onMenuClick={() => setMobileOpen(true)} />
+          <div className="w-full">
+            <Topbar user={user} onMenuClick={() => setMobileOpen(true)} />
+          </div>
           <main className="flex-1 p-4 md:p-8 min-h-screen bg-white" style={{ minHeight: 'calc(100vh - 56px)' }}>
             <div className="w-full bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6 md:p-10">
               <Routes>
