@@ -200,44 +200,48 @@ function App() {
           onMouseEnter={() => setSidebarHovered(true)}
           onMouseLeave={() => setSidebarHovered(false)}
         >
-          {/* Collapsed content (always visible) */}
-          <div className="h-full flex flex-col items-center justify-between py-4">
-            {/* Logo */}
-            <div className="flex flex-col items-center justify-center w-full mb-2">
-              <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className="w-10 h-10 object-contain rounded-full shadow-lg" />
-            </div>
-            {/* Icons */}
-            <nav className="flex flex-col gap-4 flex-1 justify-center items-center">
-              {nav.map(item => (
-                <Link key={item.to} to={item.to} aria-label={item.label} tabIndex={0}
-                  className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 outline-none focus:ring-2 focus:ring-yellow-400 text-white hover:bg-yellow-400/30 ${location === item.to ? 'bg-yellow-400/80 text-white shadow-lg' : ''}`}
-                >
-                  {item.icon}
+          {/* Only show collapsed content when not hovered */}
+          {!sidebarHovered && (
+            <div className="h-full flex flex-col items-center justify-between py-4">
+              {/* Logo */}
+              <div className="flex flex-col items-center justify-center w-full mb-2">
+                <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className="w-10 h-10 object-contain rounded-full shadow-lg" />
+              </div>
+              {/* Icons */}
+              <nav className="flex flex-col gap-4 flex-1 justify-center items-center">
+                {nav.map(item => (
+                  <Link key={item.to} to={item.to} aria-label={item.label} tabIndex={0}
+                    className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 outline-none focus:ring-2 focus:ring-yellow-400 text-white hover:bg-yellow-400/30 ${location === item.to ? 'bg-yellow-400/80 text-white shadow-lg' : ''}`}
+                  >
+                    {item.icon}
+                  </Link>
+                ))}
+              </nav>
+              {/* Profile */}
+              <div className="mb-2">
+                <Link to="/profile" aria-label="Profil" className="flex items-center justify-center w-12 h-12 rounded-full border-2 border-yellow-400 bg-white text-blue-900 shadow">
+                  <img src={user?.avatar || '/default-avatar.png'} alt="Avatar" className="w-8 h-8 rounded-full object-cover" />
                 </Link>
-              ))}
-            </nav>
-            {/* Profile */}
-            <div className="mb-2">
-              <Link to="/profile" aria-label="Profil" className="flex items-center justify-center w-12 h-12 rounded-full border-2 border-yellow-400 bg-white text-blue-900 shadow">
-                <img src={user?.avatar || '/default-avatar.png'} alt="Avatar" className="w-8 h-8 rounded-full object-cover" />
-              </Link>
+              </div>
             </div>
-          </div>
-          {/* Expanded content overlays collapsed content */}
-          <div
-            className={`absolute inset-0 transition-opacity duration-200 ${sidebarHovered ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
-            style={{ width: '16rem' }}
-          >
-            <Sidebar
-              token={token}
-              logout={logout}
-              user={user}
-              collapsed={!sidebarHovered}
-              setCollapsed={() => {}}
-              activePath={location}
-              setEditProfileOpen={setEditProfileOpen}
-            />
-          </div>
+          )}
+          {/* Only show expanded content when hovered */}
+          {sidebarHovered && (
+            <div
+              className="absolute inset-0 transition-opacity duration-200 opacity-100 pointer-events-auto"
+              style={{ width: '16rem' }}
+            >
+              <Sidebar
+                token={token}
+                logout={logout}
+                user={user}
+                collapsed={!sidebarHovered}
+                setCollapsed={() => {}}
+                activePath={location}
+                setEditProfileOpen={setEditProfileOpen}
+              />
+            </div>
+          )}
         </aside>
         {/* Mobile Sidebar Drawer */}
         {mobileOpen && (
