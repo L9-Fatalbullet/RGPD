@@ -194,7 +194,7 @@ function App() {
         </svg>
         {/* Desktop Sidebar */}
         <aside
-          className={`fixed left-0 top-0 h-screen z-40 sidebar-scroll transition-all duration-300 ${sidebarHovered ? 'w-64' : 'w-6'} bg-gradient-to-br from-blue-900 via-blue-700 to-yellow-400`}
+          className={`fixed left-0 top-0 h-screen z-40 sidebar-scroll transition-all duration-300 ${sidebarHovered ? 'w-64' : 'w-16'} bg-gradient-to-br from-blue-900 via-blue-700 to-yellow-400`}
           onMouseEnter={() => setSidebarHovered(true)}
           onMouseLeave={() => setSidebarHovered(false)}
         >
@@ -209,8 +209,22 @@ function App() {
               setEditProfileOpen={setEditProfileOpen}
             />
           ) : (
-            <div className="h-full flex items-center justify-center">
-              <div className="w-2 h-16 bg-yellow-400 rounded-full"></div>
+            <div className="h-full flex flex-col items-center justify-between py-4">
+              <div />
+              <nav className="flex flex-col gap-4 flex-1 justify-center items-center">
+                {nav.map(item => (
+                  <Link key={item.to} to={item.to} aria-label={item.label} tabIndex={0}
+                    className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 outline-none focus:ring-2 focus:ring-yellow-400 text-white hover:bg-yellow-400/30 ${location === item.to ? 'bg-yellow-400/80 text-blue-900 shadow-lg' : ''}`}
+                  >
+                    {item.icon}
+                  </Link>
+                ))}
+              </nav>
+              <div className="mb-2">
+                <Link to="/profile" aria-label="Profil" className="flex items-center justify-center w-12 h-12 rounded-full border-2 border-yellow-400 bg-white text-blue-900 shadow">
+                  <img src={user?.avatar || '/default-avatar.png'} alt="Avatar" className="w-8 h-8 rounded-full object-cover" />
+                </Link>
+              </div>
             </div>
           )}
         </aside>
@@ -222,7 +236,7 @@ function App() {
             </aside>
           </div>
         )}
-        <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidebarHovered ? 'ml-64' : 'ml-6'}`}>
+        <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidebarHovered ? 'ml-64' : 'ml-16'}`}>
           <div className="w-full">
             <Topbar user={user} onMenuClick={() => setMobileOpen(true)} />
           </div>
