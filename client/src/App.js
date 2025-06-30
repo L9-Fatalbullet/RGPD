@@ -210,7 +210,7 @@ function App() {
             <nav className="flex flex-col gap-4 flex-1 justify-center items-center">
               {nav.map(item => (
                 <Link key={item.to} to={item.to} aria-label={item.label} tabIndex={0}
-                  className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 outline-none focus:ring-2 focus:ring-yellow-400 text-blue-900 hover:bg-yellow-400/30 ${location === item.to ? 'bg-yellow-400/80 text-blue-900 shadow-lg' : ''}`}
+                  className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 outline-none focus:ring-2 focus:ring-yellow-400 text-white hover:bg-yellow-400/30 ${location === item.to ? 'bg-yellow-400/80 text-white shadow-lg' : ''}`}
                 >
                   {item.icon}
                 </Link>
@@ -248,7 +248,7 @@ function App() {
           </div>
         )}
         <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidebarHovered ? 'ml-64' : 'ml-16'}`}>
-          <div className="w-full">
+          <div>
             <Topbar user={user} onMenuClick={() => setMobileOpen(true)} />
           </div>
           <main className="flex-1 p-4 md:p-8 min-h-screen bg-white" style={{ minHeight: 'calc(100vh - 56px)' }}>
