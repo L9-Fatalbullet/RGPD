@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { SparklesIcon, ChartBarIcon, ExclamationTriangleIcon, CheckCircleIcon, DocumentCheckIcon, ShieldCheckIcon, ArrowRightCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../App';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const API_BASE = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev';
 
@@ -83,14 +84,6 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [score, setScore] = useState(0);
   const [insights, setInsights] = useState([]);
-  const domainScores = computeDomainScores(assessment);
-  const max = 100;
-  const points = domainScores.map((d, i, arr) => {
-    const angle = (Math.PI * 2 * i) / arr.length - Math.PI / 2;
-    const r = 60 * (d.score / max);
-    return [70 + r * Math.cos(angle), 70 + r * Math.sin(angle)];
-  });
-  const polygon = points.map(([x, y]) => `${x},${y}`).join(' ');
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -131,70 +124,48 @@ export default function Dashboard() {
     });
   }, [token]);
 
+  const domainScores = computeDomainScores(assessment);
+  const max = 100;
+
   if (error) return <div className="text-red-600 font-semibold p-8">{error}</div>;
 
   return (
     <section>
-      {/* Compliance Score Card + Radar Chart */}
       <div className="relative overflow-hidden rounded-2xl mb-10 shadow-lg bg-gradient-to-br from-blue-900 via-blue-700 to-yellow-400 text-white p-8 flex flex-col md:flex-row items-center gap-8 animate-fade-in">
-        <div className="flex-1 flex flex-col gap-6">
+        <div className="flex-1">
           <h1 className="text-3xl md:text-4xl font-extrabold mb-2 tracking-tight drop-shadow flex items-center gap-2">
-            <SparklesIcon className="w-10 h-10 text-yellow-300 animate-spin-slow" /> Tableau de bord conformité
+            <SparklesIcon className="w-10 h-10 text-yellow-300" /> Tableau de bord conformité
           </h1>
-          <p className="text-lg md:text-xl font-light mb-4 drop-shadow">Suivi visuel de votre conformité à la Loi 09-08 et recommandations personnalisées.</p>
-          {/* Quick Actions */}
-          <div className="flex flex-wrap gap-4 mt-6">
-            <Link to="/assessment" className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-5 py-2 rounded-lg font-semibold shadow transition-all duration-200 hover:scale-105 animate-fade-in">Nouvelle évaluation</Link>
-            <Link to="/register" className="bg-gradient-to-r from-blue-700 via-yellow-400 to-blue-900 hover:from-yellow-400 hover:to-blue-900 text-white px-5 py-2 rounded-lg font-semibold shadow transition-all duration-200 hover:scale-105 animate-fade-in">Ajouter un traitement</Link>
-            <Link to="/dpia" className="bg-gradient-to-r from-blue-900 via-blue-700 to-yellow-400 hover:from-yellow-400 hover:to-blue-900 text-white px-5 py-2 rounded-lg font-semibold shadow transition-all duration-200 hover:scale-105 animate-fade-in">Nouvelle DPIA</Link>
-          </div>
+          <p className="text-lg md:text-xl font-light mb-4 drop-shadow">Visualisez votre niveau de conformité Loi 09-08 par domaine clé.</p>
         </div>
-        {/* Animated Radar Chart */}
         <div className="flex-1 flex flex-col items-center justify-center">
-          <div className="font-bold text-blue-900 mb-2">Radar de conformité</div>
-          <svg width="180" height="180" viewBox="0 0 140 140" className="mb-2 animate-fade-in">
-            <circle cx="70" cy="70" r="60" fill="#f1f5f9" />
-            <polygon points="70,10 134,70 70,130 6,70" fill="#2563eb" fillOpacity="0.08" />
-            <polygon points={polygon} fill="#facc15" fillOpacity="0.5" stroke="#2563eb" strokeWidth="2" />
-            {domainScores.map((d, i) => {
-              const angle = (Math.PI * 2 * i) / domainScores.length - Math.PI / 2;
-              const r = 60 * (d.score / max);
-              const x = 70 + r * Math.cos(angle);
-              const y = 70 + r * Math.sin(angle);
-              return <circle key={i} cx={x} cy={y} r="4" fill="#2563eb" stroke="#fff" strokeWidth="2" />;
-            })}
-          </svg>
-          <div className="flex flex-wrap gap-2 justify-center">
-            {domainScores.map((d, i) => (
-              <span key={i} className="px-3 py-1 rounded-full bg-blue-900/10 text-blue-900 font-semibold text-xs animate-fade-in">{d.domain}: {d.score}%</span>
-            ))}
-          </div>
-          {/* Personalized Recommendations */}
-          <div className="w-full max-w-xl mt-6 animate-fade-in">
-            {assessment && Object.values(assessment.answers || {}).some(v => v < 2) ? (
-              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded shadow flex flex-col gap-2">
-                <div className="font-semibold text-yellow-800 flex items-center gap-2 mb-1">
-                  <ExclamationTriangleIcon className="w-5 h-5 text-yellow-500 animate-bounce" /> Recommandations personnalisées
-                </div>
-                <ul className="list-disc pl-6 text-yellow-900">
-                  {Object.entries(assessment.answers || {}).filter(([k, v]) => v < 2).map(([k]) => (
-                    <li key={k} className="mb-1">
-                      {k === 'registre' && <span>Mettez à jour ou créez votre <Link to='/register' className='text-blue-700 underline'>registre des traitements</Link>.</span>}
-                      {k === 'dpia' && <span>Réalisez une <Link to='/dpia' className='text-blue-700 underline'>DPIA</Link> pour les traitements à risque élevé.</span>}
-                      {k === 'declaration' && <span>Déclarez vos traitements à la CNDP. <Link to='/guide' className='text-blue-700 underline'>Voir le guide</Link>.</span>}
-                      {k !== 'registre' && k !== 'dpia' && k !== 'declaration' && <span>Complétez l'obligation : <span className='font-semibold'>{k}</span> dans l'auto-évaluation.</span>}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded shadow flex items-center gap-2">
-                <CheckCircleIcon className="w-5 h-5 text-green-500 animate-pulse" />
-                <span className="text-green-700 font-semibold">Bravo ! Toutes les obligations principales sont remplies.</span>
-              </div>
-            )}
-          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={domainScores}>
+              <PolarGrid strokeDasharray="4 4" />
+              <PolarAngleAxis dataKey="domain" tick={{ fill: '#1e293b', fontWeight: 600 }} />
+              <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#64748b' }} />
+              <Radar name="Score" dataKey="score" stroke="#2563eb" fill="url(#colorScore)" fillOpacity={0.7} />
+              <Tooltip formatter={(value) => `${value}%`} />
+              <Legend />
+              <defs>
+                <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#facc15" />
+                  <stop offset="100%" stopColor="#2563eb" />
+                </linearGradient>
+              </defs>
+            </RadarChart>
+          </ResponsiveContainer>
         </div>
+      </div>
+      {/* Additional dashboard content (insights, tables, etc.) can go here */}
+      {loading ? (
+        <div className="text-center text-blue-700">Chargement...</div>
+      ) : null}
+      {/* Quick Actions */}
+      <div className="flex flex-wrap gap-4 mt-6">
+        <Link to="/assessment" className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-5 py-2 rounded-lg font-semibold shadow transition-all duration-200 hover:scale-105 animate-fade-in">Nouvelle évaluation</Link>
+        <Link to="/register" className="bg-gradient-to-r from-blue-700 via-yellow-400 to-blue-900 hover:from-yellow-400 hover:to-blue-900 text-white px-5 py-2 rounded-lg font-semibold shadow transition-all duration-200 hover:scale-105 animate-fade-in">Ajouter un traitement</Link>
+        <Link to="/dpia" className="bg-gradient-to-r from-blue-900 via-blue-700 to-yellow-400 hover:from-yellow-400 hover:to-blue-900 text-white px-5 py-2 rounded-lg font-semibold shadow transition-all duration-200 hover:scale-105 animate-fade-in">Nouvelle DPIA</Link>
       </div>
       {/* Actionable Insights */}
       <div className="mb-10 animate-fade-in">
