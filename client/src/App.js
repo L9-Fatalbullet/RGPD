@@ -193,7 +193,7 @@ function App() {
           <rect width="100vw" height="100vh" fill="url(#mosaic)" />
         </svg>
         {/* Desktop Sidebar */}
-        <aside className="fixed left-0 top-0 h-screen w-64 bg-white/90 backdrop-blur-lg shadow-xl border-r-4 border-yellow-400 rounded-tr-3xl rounded-br-3xl z-40">
+        <aside className="fixed left-0 top-0 h-screen w-64 bg-white/90 backdrop-blur-lg shadow-xl border-r-4 border-yellow-400 rounded-tr-3xl rounded-br-3xl z-40 overflow-y-auto">
           <Sidebar token={token} logout={logout} user={user} collapsed={collapsed} setCollapsed={setCollapsed} activePath={location} setEditProfileOpen={setEditProfileOpen} />
         </aside>
         {/* Mobile Sidebar Drawer */}
