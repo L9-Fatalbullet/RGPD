@@ -165,7 +165,34 @@ export default function Dashboard() {
         )}
       </div>
       {/* Real Compliance Status Cards */}
-      <div className="grid md:grid-cols-2 gap-6 mb-10 animate-fade-in">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10 animate-fade-in">
+        {/* Auto-évaluation card */}
+        <div className="group border-l-4 border-green-500 rounded-xl shadow-lg p-6 flex items-center gap-4 hover:scale-105 hover:shadow-2xl transition">
+          <ChartBarIcon className="w-10 h-10 text-green-500 group-hover:text-yellow-500 transition" />
+          <div>
+            <div className="text-2xl font-bold text-blue-900 group-hover:text-yellow-700 transition">{assessment ? new Date(assessment.date).toLocaleDateString('fr-FR') : '--'}</div>
+            <div className="font-semibold text-blue-900">Auto-évaluation</div>
+            <div className="text-gray-700 text-xs">Date de la dernière auto-évaluation</div>
+          </div>
+        </div>
+        {/* Dernière mise à jour card */}
+        <div className="group border-l-4 border-blue-300 rounded-xl shadow-lg p-6 flex items-center gap-4 hover:scale-105 hover:shadow-2xl transition">
+          <ArrowPathIcon className="w-10 h-10 text-blue-300 group-hover:text-yellow-500 transition" />
+          <div>
+            <div className="text-2xl font-bold text-blue-900 group-hover:text-yellow-700 transition">{(() => {
+              const dates = [];
+              if (assessment && assessment.date) dates.push(new Date(assessment.date));
+              if (registers && registers.length > 0) dates.push(...registers.map(r => new Date(r.date)));
+              if (dpias && dpias.length > 0) dates.push(...dpias.map(d => new Date(d.date)));
+              if (dates.length === 0) return '--';
+              const last = new Date(Math.max(...dates.map(d => d.getTime())));
+              return last.toLocaleDateString('fr-FR');
+            })()}</div>
+            <div className="font-semibold text-blue-900">Dernière mise à jour</div>
+            <div className="text-gray-700 text-xs">Date de la dernière action</div>
+          </div>
+        </div>
+        {/* Traitements enregistrés card */}
         <div className="group border-l-4 border-blue-700 rounded-xl shadow-lg p-6 flex items-center gap-4 hover:scale-105 hover:shadow-2xl transition">
           <DocumentCheckIcon className="w-10 h-10 text-blue-700 group-hover:text-yellow-500 transition" />
           <div>
@@ -174,6 +201,7 @@ export default function Dashboard() {
             <div className="text-gray-700 text-xs">Nombre total de traitements dans le registre</div>
           </div>
         </div>
+        {/* DPIA réalisées card */}
         <div className="group border-l-4 border-yellow-400 rounded-xl shadow-lg p-6 flex items-center gap-4 hover:scale-105 hover:shadow-2xl transition">
           <ShieldCheckIcon className="w-10 h-10 text-yellow-400 group-hover:text-blue-700 transition" />
           <div>
