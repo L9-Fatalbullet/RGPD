@@ -193,7 +193,9 @@ function App() {
           <rect width="100vw" height="100vh" fill="url(#mosaic)" />
         </svg>
         {/* Desktop Sidebar */}
-        <Sidebar token={token} logout={logout} user={user} collapsed={collapsed} setCollapsed={setCollapsed} activePath={location} setEditProfileOpen={setEditProfileOpen} />
+        <aside className="fixed left-0 top-0 h-screen w-64 bg-white/90 backdrop-blur-lg shadow-xl border-r-4 border-yellow-400 rounded-tr-3xl rounded-br-3xl z-40">
+          <Sidebar token={token} logout={logout} user={user} collapsed={collapsed} setCollapsed={setCollapsed} activePath={location} setEditProfileOpen={setEditProfileOpen} />
+        </aside>
         {/* Mobile Sidebar Drawer */}
         {mobileOpen && (
           <div className="fixed inset-0 z-50 bg-black/40" onClick={() => setMobileOpen(false)} aria-label="Fermer le menu mobile">
@@ -202,7 +204,7 @@ function App() {
             </aside>
           </div>
         )}
-        <div className="flex-1 flex flex-col min-h-screen">
+        <div className="flex-1 flex flex-col min-h-screen ml-64">
           <Topbar user={user} onMenuClick={() => setMobileOpen(true)} />
           <main className="flex-1 p-4 md:p-8 min-h-screen bg-white" style={{ minHeight: 'calc(100vh - 56px)' }}>
             <div className="w-full bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6 md:p-10">
