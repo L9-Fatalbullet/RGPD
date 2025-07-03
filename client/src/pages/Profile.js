@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useAuth } from '../App';
 
 export default function Profile() {
+  const { user } = useAuth();
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
@@ -25,6 +27,7 @@ export default function Profile() {
         <input type="text" className="rounded border px-3 py-2" value={name} onChange={e => setName(e.target.value)} />
         <label className="font-semibold text-blue-900">Email</label>
         <input type="email" className="rounded border px-3 py-2" value={email} onChange={e => setEmail(e.target.value)} />
+        <div className="text-sm text-blue-700 font-semibold mb-2">Rôle : {user?.role === 'admin' ? 'Administrateur' : user?.role === 'dpo' ? 'DPO' : user?.role === 'representant' ? 'Représentant légal' : user?.role}</div>
         <label className="font-semibold text-blue-900">Mot de passe</label>
         <input type="password" className="rounded border px-3 py-2" value={password} onChange={e => setPassword(e.target.value)} />
         <label className="font-semibold text-blue-900">Confirmer le mot de passe</label>

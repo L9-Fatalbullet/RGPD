@@ -50,21 +50,50 @@ function isAdmin(req, res, next) {
   return res.status(403).json({ error: 'Accès réservé aux administrateurs' });
 }
 
-// Enregistrement utilisateur (first user is admin, else user)
-app.post('/api/auth/register', (req, res) => {
-  const { email, password, organizationId } = req.body;
-  if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis' });
+// Middleware for DPO
+function isDPO(req, res, next) {
+  if (req.user && req.user.role === 'dpo') return next();
+  return res.status(403).json({ error: 'Accès réservé au DPO' });
+}
+
+// Middleware for Représentant légal
+function isRepresentant(req, res, next) {
+  if (req.user && req.user.role === 'representant') return next();
+  return res.status(403).json({ error: 'Accès réservé au représentant légal' });
+}
+
+// Register user (admin can assign role, else default to 'user' or 'admin' for first user)
+app.post('/api/auth/register', auth, isAdmin, (req, res) => {
+  const { email, password, role, organizationId } = req.body;
+  if (!email || !password || !role) return res.status(400).json({ error: 'Email, mot de passe et rôle requis' });
   let users = [];
   if (fs.existsSync(USERS_PATH)) {
     users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
   }
   if (users.find(u => u.email === email)) return res.status(400).json({ error: 'Utilisateur déjà existant' });
   const hash = bcrypt.hashSync(password, 10);
-  let role = 'user';
   let orgId = organizationId;
-  if (users.length === 0) { role = 'admin'; orgId = Date.now(); } // first user is admin/org creator
+  if (users.length === 0) { orgId = Date.now(); } // first user is admin/org creator
   if (!orgId) orgId = Date.now();
   const user = { id: Date.now(), email, password: hash, role, organizationId: orgId };
+  users.push(user);
+  fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
+  const token = jwt.sign({ id: user.id, email: user.email, role: user.role, organizationId: user.organizationId }, SECRET, { expiresIn: '7d' });
+  res.json({ token });
+});
+
+// Public registration (first user only)
+app.post('/api/auth/public-register', (req, res) => {
+  const { email, password } = req.body;
+  let users = [];
+  if (fs.existsSync(USERS_PATH)) {
+    users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+  }
+  if (users.length > 0) return res.status(403).json({ error: 'Inscription publique désactivée' });
+  if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis' });
+  const hash = bcrypt.hashSync(password, 10);
+  const orgId = Date.now();
+  const user = { id: Date.now(), email, password: hash, role: 'admin', organizationId: orgId };
   users.push(user);
   fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role, organizationId: user.organizationId }, SECRET, { expiresIn: '7d' });
@@ -259,11 +288,9 @@ app.get('/api/users/me', auth, (req, res) => {
 
 // List all users (admin only)
 app.get('/api/users', auth, isAdmin, (req, res) => {
-  let users = [];
-  if (fs.existsSync(USERS_PATH)) {
-    users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
-  }
-  res.json(users.map(u => { const { password, ...info } = u; return info; }));
+  if (!fs.existsSync(USERS_PATH)) return res.json([]);
+  const users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+  res.json(users.map(u => ({ id: u.id, email: u.email, role: u.role, organizationId: u.organizationId })));
 });
 
 // Invite/add user to org (admin only)
@@ -285,7 +312,7 @@ app.post('/api/users/invite', auth, isAdmin, (req, res) => {
 // Change user role (admin only)
 app.put('/api/users/:id/role', auth, isAdmin, (req, res) => {
   const { role } = req.body;
-  if (!role) return res.status(400).json({ error: 'Role requis' });
+  if (!['admin', 'dpo', 'representant'].includes(role)) return res.status(400).json({ error: 'Rôle invalide' });
   let users = [];
   if (fs.existsSync(USERS_PATH)) {
     users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));

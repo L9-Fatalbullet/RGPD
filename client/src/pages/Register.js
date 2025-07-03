@@ -19,7 +19,7 @@ function emptyRegister() {
 }
 
 export default function Register() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [registers, setRegisters] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState(false);
@@ -27,6 +27,7 @@ export default function Register() {
   const [form, setForm] = useState(emptyRegister());
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
+  const [role, setRole] = useState('dpo');
 
   // Load registers
   useEffect(() => {
@@ -62,7 +63,7 @@ export default function Register() {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('cndp_token')}` },
-        body: JSON.stringify({ ...form })
+        body: JSON.stringify({ ...form, role })
       });
       const data = await res.json();
       if (data.success) {
@@ -92,6 +93,10 @@ export default function Register() {
       setStatus("Erreur réseau ou serveur.");
     }
   };
+
+  if (!user || user.role !== 'admin') {
+    return <div className="text-red-600 font-semibold p-8">Accès réservé à l'administrateur.</div>;
+  }
 
   if (error) return <div className="text-red-600 font-semibold p-8">{error}</div>;
 
@@ -160,6 +165,14 @@ export default function Register() {
                   <input className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400" value={form[f.key]} onChange={e => handleChange(f.key, e.target.value)} required={f.required} />
                 </div>
               ))}
+              <div>
+                <label className="font-semibold text-blue-900">Rôle</label>
+                <select className="rounded border px-3 py-2" value={role} onChange={e => setRole(e.target.value)} required>
+                  <option value="dpo">DPO (Délégué à la protection des données)</option>
+                  <option value="representant">Représentant légal</option>
+                  <option value="admin">Administrateur</option>
+                </select>
+              </div>
             </div>
             <button type="submit" className="mt-6 w-full bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow">{editId ? 'Enregistrer les modifications' : 'Ajouter'}</button>
             {status && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{status}</div>}
