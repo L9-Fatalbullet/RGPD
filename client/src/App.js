@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
-import { HomeIcon, ChartBarIcon, ClipboardDocumentListIcon, BookOpenIcon, DocumentTextIcon, SparklesIcon, ArrowLeftOnRectangleIcon, DocumentCheckIcon, ArrowPathIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, ChartBarIcon, ClipboardDocumentListIcon, BookOpenIcon, DocumentTextIcon, SparklesIcon, ArrowLeftOnRectangleIcon, DocumentCheckIcon, ArrowPathIcon, ShieldCheckIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { Menu } from '@headlessui/react';
 import Dashboard from './pages/Dashboard';
 import Assessment from './pages/Assessment';
 import Guide from './pages/Guide';
@@ -117,37 +118,43 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, set
           </li>
         )}
       </nav>
-      <div className={`relative w-full px-4 pb-6`} style={{zIndex:1}}>
-        <div className="flex flex-col items-center gap-2">
-          <Link to="/profile" className="relative group">
-            <img src={user?.avatar || '/default-avatar.png'} alt="Avatar" className="w-12 h-12 rounded-full border-2 border-yellow-400 shadow object-cover bg-white group-hover:scale-110 transition" />
-            {!user?.avatar && (
-              <span className="absolute inset-0 flex items-center justify-center">
-                <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="#2563eb" strokeWidth="2"/><path d="M4 20c0-2.21 3.582-4 8-4s8 1.79 8 4" stroke="#2563eb" strokeWidth="2"/></svg>
-              </span>
-            )}
-          </Link>
-          <button onClick={logout} className={`w-full bg-yellow-400 hover:bg-yellow-500 text-blue-900 rounded px-3 py-2 font-semibold transition shadow whitespace-nowrap mt-2 flex items-center justify-center gap-2`} tabIndex={0}>
-            <img src="/logout.svg" alt="Déconnexion" className="w-6 h-6" />
-            {isExpanded && <span>Déconnexion</span>}
-          </button>
-        </div>
-      </div>
     </aside>
   );
 }
 
-function Topbar({ user, onMenuClick }) {
+function Topbar({ user, logout }) {
   return (
     <header className="z-50 bg-white/80 backdrop-blur-lg shadow flex items-center justify-between px-4 py-3 border-b border-yellow-400">
-      <button aria-label="Ouvrir le menu" onClick={onMenuClick} className="p-2 rounded-full bg-yellow-400/80 hover:bg-yellow-400 transition md:hidden">
-        <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke="#1e293b" strokeWidth="2" strokeLinecap="round"/></svg>
-      </button>
       <span className="flex items-center gap-4">
         <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className="w-8 h-8 object-contain" />
         <span className="text-lg font-bold tracking-tight text-blue-900">RGPD Compliance Maroc</span>
       </span>
-      {user && <span className="text-xs text-blue-900">{user.email}</span>}
+      <div className="flex items-center gap-4">
+        {user && (
+          <Menu as="div" className="relative inline-block text-left">
+            <Menu.Button className="flex items-center gap-2 focus:outline-none">
+              <img src={user.avatar || '/default-avatar.png'} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-yellow-400 shadow object-cover bg-white" />
+              <ChevronDownIcon className="w-5 h-5 text-blue-900" />
+            </Menu.Button>
+            <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right bg-white divide-y divide-gray-100 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+              <div className="px-4 py-3">
+                <div className="font-semibold text-blue-900">{user.email}</div>
+                <div className="text-xs text-blue-700">{user.role === 'admin' ? 'Administrateur' : user.role === 'dpo' ? 'DPO' : user.role === 'representant' ? 'Représentant légal' : user.role}</div>
+              </div>
+              <Menu.Item>
+                {({ active }) => (
+                  <Link to="/profile" className={`block px-4 py-2 text-sm ${active ? 'bg-blue-50 text-blue-900' : 'text-blue-900'}`}>Mon profil</Link>
+                )}
+              </Menu.Item>
+              <Menu.Item>
+                {({ active }) => (
+                  <button onClick={logout} className={`block w-full text-left px-4 py-2 text-sm ${active ? 'bg-yellow-100 text-blue-900' : 'text-blue-900'}`}>Déconnexion</button>
+                )}
+              </Menu.Item>
+            </Menu.Items>
+          </Menu>
+        )}
+      </div>
     </header>
   );
 }
@@ -217,12 +224,6 @@ function App() {
                   </Link>
                 ))}
               </nav>
-              {/* Profile */}
-              <div className="mb-2">
-                <Link to="/profile" aria-label="Profil" className="flex items-center justify-center w-12 h-12 rounded-full border-2 border-yellow-400 bg-white text-blue-900 shadow">
-                  <img src={user?.avatar || '/default-avatar.png'} alt="Avatar" className="w-8 h-8 rounded-full object-cover" />
-                </Link>
-              </div>
             </div>
           )}
           {/* Only show expanded content when hovered */}
@@ -253,7 +254,7 @@ function App() {
         )}
         <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidebarHovered ? 'ml-64' : 'ml-16'}`}>
           <div>
-            <Topbar user={user} onMenuClick={() => setMobileOpen(true)} />
+            <Topbar user={user} logout={logout} />
           </div>
           <main className="flex-1 p-4 md:p-8 min-h-screen bg-white" style={{ minHeight: 'calc(100vh - 56px)' }}>
             <div className="w-full bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6 md:p-10">
