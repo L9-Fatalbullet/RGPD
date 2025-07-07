@@ -124,7 +124,7 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, set
 
 function Topbar({ user, logout }) {
   return (
-    <header className="z-50 bg-white/80 backdrop-blur-lg shadow flex items-center justify-between px-4 py-3 border-b border-yellow-400">
+    <header className="z-[100] bg-white/80 backdrop-blur-lg shadow flex items-center justify-between px-4 py-3 border-b border-yellow-400 sticky top-0">
       <span className="flex items-center gap-4">
         <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className="w-8 h-8 object-contain" />
         <span className="text-lg font-bold tracking-tight text-blue-900">RGPD Compliance Maroc</span>
@@ -136,7 +136,7 @@ function Topbar({ user, logout }) {
               <img src={user.avatar || '/default-avatar.png'} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-yellow-400 shadow object-cover bg-white" />
               <ChevronDownIcon className="w-5 h-5 text-blue-900" />
             </Menu.Button>
-            <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right bg-white divide-y divide-gray-100 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+            <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right bg-white divide-y divide-gray-100 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-[200]">
               <div className="px-4 py-3">
                 <div className="font-semibold text-blue-900">{user.email}</div>
                 <div className="text-xs text-blue-700">{user.role === 'admin' ? 'Administrateur' : user.role === 'dpo' ? 'DPO' : user.role === 'representant' ? 'Représentant légal' : user.role}</div>
@@ -186,7 +186,7 @@ function App() {
 
   return (
     <Router>
-      <div className="font-sans min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex relative overflow-x-hidden">
+      <div className="font-sans min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex relative">
         {/* Moroccan Mosaic Background */}
         <svg className="fixed inset-0 w-screen h-screen z-0 pointer-events-none" style={{opacity:0.22}} viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
           <defs>
