@@ -1,18 +1,20 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { HomeIcon, ChartBarIcon, ClipboardDocumentListIcon, BookOpenIcon, DocumentTextIcon, SparklesIcon, ArrowLeftOnRectangleIcon, DocumentCheckIcon, ArrowPathIcon, ShieldCheckIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { Menu } from '@headlessui/react';
-import Dashboard from './pages/Dashboard';
-import Assessment from './pages/Assessment';
-import Guide from './pages/Guide';
-import Documents from './pages/Documents';
-import BestPractices from './pages/BestPractices';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Progress from './pages/Progress';
-import DPIA from './pages/DPIA';
-import Admin from './pages/Admin';
-import Profile from './pages/Profile';
+
+// Replace direct imports with lazy imports for main pages
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Assessment = lazy(() => import('./pages/Assessment'));
+const Guide = lazy(() => import('./pages/Guide'));
+const Documents = lazy(() => import('./pages/Documents'));
+const BestPractices = lazy(() => import('./pages/BestPractices'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const Progress = lazy(() => import('./pages/Progress'));
+const DPIA = lazy(() => import('./pages/DPIA'));
+const Admin = lazy(() => import('./pages/Admin'));
+const Profile = lazy(() => import('./pages/Profile'));
 
 // AuthContext
 const AuthContext = createContext();
@@ -258,20 +260,22 @@ function App() {
           </div>
           <main className="flex-1 p-4 md:p-8 min-h-screen bg-white" style={{ minHeight: 'calc(100vh - 56px)' }}>
             <div className="w-full bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6 md:p-10">
-              <Routes>
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
-                <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
-                <Route path="/register" element={<ProtectedRoute><Register /></ProtectedRoute>} />
-                <Route path="/dpia" element={<ProtectedRoute><DPIA /></ProtectedRoute>} />
-                <Route path="/guide" element={<Guide />} />
-                <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
-                <Route path="/best-practices" element={<BestPractices />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                <Route path="/" element={<Navigate to="/dashboard" />} />
-              </Routes>
+              <Suspense fallback={<div className="text-center py-12 text-lg text-blue-900">Chargement...</div>}>
+                <Routes>
+                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                  <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
+                  <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
+                  <Route path="/register" element={<ProtectedRoute><Register /></ProtectedRoute>} />
+                  <Route path="/dpia" element={<ProtectedRoute><DPIA /></ProtectedRoute>} />
+                  <Route path="/guide" element={<Guide />} />
+                  <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
+                  <Route path="/best-practices" element={<BestPractices />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+                  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                  <Route path="/" element={<Navigate to="/dashboard" />} />
+                </Routes>
+              </Suspense>
             </div>
           </main>
           <footer className="text-center text-xs text-blue-900 py-4 opacity-80">
