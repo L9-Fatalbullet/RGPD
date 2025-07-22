@@ -14,6 +14,91 @@ const SECRET = process.env.JWT_SECRET || 'secret_cndp';
 const REGISTERS_PATH = path.resolve('./data/registers.json');
 const DPIAS_PATH = path.resolve('./data/dpias.json');
 const AUDIT_PATH = path.resolve('./data/audit.json');
+const PROGRESSION_PATH = path.resolve('./data/progression.json');
+
+// Default compliance roadmap
+const DEFAULT_STEPS = [
+  {
+    step: 1,
+    title: 'Identifier les activités de traitement',
+    completed: false,
+    completedAt: null,
+    subTasks: [
+      { label: 'Lister toutes les activités', completed: false },
+      { label: 'Décrire chaque activité', completed: false }
+    ]
+  },
+  {
+    step: 2,
+    title: 'Créer le registre',
+    completed: false,
+    completedAt: null,
+    subTasks: [
+      { label: 'Compléter le registre pour chaque activité', completed: false }
+    ]
+  },
+  {
+    step: 3,
+    title: 'Déclarer à la CNDP',
+    completed: false,
+    completedAt: null,
+    subTasks: [
+      { label: 'Préparer la déclaration', completed: false },
+      { label: 'Téléverser la preuve', completed: false }
+    ]
+  },
+  {
+    step: 4,
+    title: 'Réaliser la DPIA (si nécessaire)',
+    completed: false,
+    completedAt: null,
+    subTasks: [
+      { label: 'Identifier les activités à risque', completed: false },
+      { label: 'Compléter la DPIA', completed: false },
+      { label: 'Téléverser la DPIA', completed: false }
+    ]
+  },
+  {
+    step: 5,
+    title: 'Mettre en place les mesures de sécurité',
+    completed: false,
+    completedAt: null,
+    subTasks: [
+      { label: 'Documenter les mesures techniques/organisationnelles', completed: false },
+      { label: 'Plan de gestion des incidents', completed: false }
+    ]
+  },
+  {
+    step: 6,
+    title: 'Informer et former le personnel',
+    completed: false,
+    completedAt: null,
+    subTasks: [
+      { label: 'Former le personnel', completed: false },
+      { label: 'Partager la politique interne', completed: false }
+    ]
+  },
+  {
+    step: 7,
+    title: 'Gestion des droits',
+    completed: false,
+    completedAt: null,
+    subTasks: [
+      { label: 'Procédures pour accès/rectification/opposition', completed: false },
+      { label: 'Modèles de communication', completed: false }
+    ]
+  }
+];
+
+// Helper to read progression data
+function readProgression() {
+  if (!fs.existsSync(PROGRESSION_PATH)) return [];
+  return JSON.parse(fs.readFileSync(PROGRESSION_PATH, 'utf-8'));
+}
+// Helper to write progression data
+function writeProgression(data) {
+  fs.writeFileSync(PROGRESSION_PATH, JSON.stringify(data, null, 2));
+}
 
 // Manual OPTIONS handler for CORS preflight (must be first)
 app.use((req, res, next) => {
@@ -272,6 +357,44 @@ app.delete('/api/dpias/:id', auth, (req, res) => {
   fs.writeFileSync(DPIAS_PATH, JSON.stringify(data, null, 2));
   logAudit({ user: req.user, action: 'delete', type: 'dpia', itemId: req.params.id, details: deleted });
   res.json({ success: true });
+});
+
+// GET /api/progression - get current user's progression
+app.get('/api/progression', auth, (req, res) => {
+  const userId = req.user.id;
+  let progression = readProgression();
+  let userProg = progression.find(p => p.userId === userId);
+  if (!userProg) {
+    userProg = { userId, steps: JSON.parse(JSON.stringify(DEFAULT_STEPS)) };
+    progression.push(userProg);
+    writeProgression(progression);
+  }
+  res.json(userProg.steps);
+});
+
+// PUT /api/progression - update a sub-task
+app.put('/api/progression', auth, (req, res) => {
+  const userId = req.user.id;
+  const { step, subTask, completed } = req.body;
+  if (typeof step !== 'number' || typeof subTask !== 'number' || typeof completed !== 'boolean') {
+    return res.status(400).json({ error: 'step, subTask, completed requis' });
+  }
+  let progression = readProgression();
+  let userProg = progression.find(p => p.userId === userId);
+  if (!userProg) {
+    userProg = { userId, steps: JSON.parse(JSON.stringify(DEFAULT_STEPS)) };
+    progression.push(userProg);
+  }
+  const stepObj = userProg.steps.find(s => s.step === step);
+  if (!stepObj || !stepObj.subTasks[subTask]) {
+    return res.status(404).json({ error: 'Étape ou sous-tâche introuvable' });
+  }
+  stepObj.subTasks[subTask].completed = completed;
+  // Recalculate step completion
+  stepObj.completed = stepObj.subTasks.every(st => st.completed);
+  stepObj.completedAt = stepObj.completed ? new Date().toISOString() : null;
+  writeProgression(progression);
+  res.json(userProg.steps);
 });
 
 // Get current user info
