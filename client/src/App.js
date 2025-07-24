@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, Suspense
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { HomeIcon, ChartBarIcon, ClipboardDocumentListIcon, BookOpenIcon, DocumentTextIcon, SparklesIcon, ArrowLeftOnRectangleIcon, DocumentCheckIcon, ArrowPathIcon, ShieldCheckIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { Menu } from '@headlessui/react';
+import ISO27001 from './pages/ISO27001';
 
 // Replace direct imports with lazy imports for main pages
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -73,6 +74,7 @@ const nav = [
   { to: '/guide', label: 'Guide', icon: <BookOpenIcon className="w-6 h-6" /> },
   { to: '/documents', label: 'Documents', icon: <ClipboardDocumentListIcon className="w-6 h-6" /> },
   { to: '/best-practices', label: 'Bonnes pratiques', icon: <SparklesIcon className="w-6 h-6" /> },
+  { to: '/iso27001', label: 'ISO 27001', icon: <DocumentTextIcon className="w-6 h-6" /> },
 ];
 
 function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, setEditProfileOpen }) {
@@ -270,6 +272,7 @@ function App() {
                   <Route path="/guide" element={<Guide />} />
                   <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
                   <Route path="/best-practices" element={<BestPractices />} />
+                  <Route path="/iso27001" element={<ProtectedRoute><ISO27001 /></ProtectedRoute>} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
