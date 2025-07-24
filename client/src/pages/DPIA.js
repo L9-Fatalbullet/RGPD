@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon, SparklesIcon, ShieldCheckIcon, ArrowRightCircleIcon, ArrowLeftCircleIcon, CheckCircleIcon, InformationCircleIcon, DocumentArrowDownIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, SparklesIcon, ShieldCheckIcon, ArrowRightCircleIcon, ArrowLeftCircleIcon, CheckCircleIcon, InformationCircleIcon, DocumentArrowDownIcon, ExclamationTriangleIcon, EyeIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../App';
 import jsPDF from 'jspdf';
 
@@ -121,6 +121,7 @@ export default function DPIA() {
   const [currentId, setCurrentId] = useState(null);
   const [error, setError] = useState('');
   const [viewOnly, setViewOnly] = useState(false);
+  const [viewModal, setViewModal] = useState(null); // holds the DPIA to view
 
   // Load DPIAs
   useEffect(() => {
@@ -347,12 +348,44 @@ export default function DPIA() {
                       <td className="px-4 py-2 flex gap-2">
                         <button className="text-blue-700 hover:text-yellow-500" title="Modifier" onClick={() => handleEdit(dpia)}><PencilIcon className="w-5 h-5" /></button>
                         <button className="text-red-600 hover:text-red-800" title="Supprimer" onClick={() => handleDelete(dpia.id)}><TrashIcon className="w-5 h-5" /></button>
+                        <button className="text-blue-900 hover:text-yellow-500" title="Voir les résultats" onClick={() => setViewModal(dpia)}><EyeIcon className="w-5 h-5" /></button>
                       </td>
                     </tr>
                   ))}
-                  {dpias.length === 0 && <tr><td colSpan={3} className="text-center text-gray-500 py-8">Aucune DPIA enregistrée.</td></tr>}
+                  {dpias.length === 0 && <tr><td colSpan={4} className="text-center text-gray-500 py-8">Aucune DPIA enregistrée.</td></tr>}
                 </tbody>
               </table>
+            </div>
+          )}
+          {/* DPIA View Modal */}
+          {viewModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-fade-in">
+              <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-2xl relative">
+                <button className="absolute top-4 right-4 text-blue-900 hover:text-red-600" onClick={() => setViewModal(null)} title="Fermer"><XMarkIcon className="w-6 h-6" /></button>
+                <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><EyeIcon className="w-6 h-6 text-blue-700" /> Résultats DPIA</h3>
+                <ul className="mb-6 space-y-2">
+                  {STEPS.map(s => s.fields.map(f => (
+                    <li key={f.key} className="flex gap-2"><span className="font-semibold text-blue-900">{f.label}:</span> <span>{viewModal[f.key]}</span></li>
+                  )))}
+                  {/* Show selected risks and details */}
+                  {viewModal.risques_selectionnes && viewModal.risques_selectionnes.length > 0 && (
+                    <li className="flex flex-col gap-1">
+                      <span className="font-semibold text-blue-900">Risques analysés :</span>
+                      <ul className="list-disc pl-6">
+                        {viewModal.risques_selectionnes.map(idx => (
+                          <li key={idx} className="mb-1">
+                            <span className="font-semibold text-yellow-700"><ExclamationTriangleIcon className="w-4 h-4 inline mr-1" /> {COMMON_RISKS[idx].label}</span>
+                            {viewModal.risques_details && viewModal.risques_details[idx] && (
+                              <span className="ml-2 text-xs text-gray-600">(Gravité: {viewModal.risques_details[idx].gravite || '-'}, Probabilité: {viewModal.risques_details[idx].probabilite || '-'})</span>
+                            )}
+                            <div className="text-xs text-blue-700">Mesures: {COMMON_RISKS[idx].mesures}</div>
+                          </li>
+                        ))}
+                      </ul>
+                    </li>
+                  )}
+                </ul>
+              </div>
             </div>
           )}
         </>
