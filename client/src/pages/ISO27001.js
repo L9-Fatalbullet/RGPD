@@ -1,34 +1,153 @@
 import React, { useState } from 'react';
 import { CheckCircleIcon, ExclamationTriangleIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 
-// Example Annexe A controls (add more as needed)
-const ANNEXE_A = [
+// Official ISO 27001:2022 Annexe A controls (subset for demo; expand as needed)
+const ISO_CONTROLS = {
+  'A.5.1': {
+    title: 'Policies for information security',
+    description: 'Information security policies shall be defined, approved by management, published and communicated to employees and relevant external parties.'
+  },
+  'A.5.2': { title: 'Information security roles and responsibilities', description: 'All information security responsibilities shall be defined and allocated.' },
+  'A.5.3': { title: 'Segregation of duties', description: 'Conflicting duties and areas of responsibility shall be segregated to reduce opportunities for unauthorized or unintentional modification or misuse of the organization’s assets.' },
+  'A.5.4': { title: 'Contact with authorities', description: 'Appropriate contacts with relevant authorities shall be maintained.' },
+  'A.5.5': { title: 'Contact with special interest groups', description: 'Appropriate contacts with special interest groups or other specialist security forums and professional associations shall be maintained.' },
+  'A.5.6': { title: 'Information security in project management', description: 'Information security shall be addressed in project management, regardless of the type of the project.' },
+  'A.5.7': { title: 'Threat intelligence', description: 'Information relating to information security threats shall be collected and analyzed to produce threat intelligence.' },
+  'A.5.8': { title: 'Information security in change management', description: 'Changes to the organization, business processes, information processing facilities and systems that affect information security shall be controlled.' },
+  'A.5.9': { title: 'Inventory of information and other associated assets', description: 'An inventory of information and other associated assets, including owners, shall be developed and maintained.' },
+  'A.5.10': { title: 'Acceptable use of information and other associated assets', description: 'Rules for the acceptable use and procedures for handling information and other associated assets shall be identified, documented and implemented.' },
+  'A.5.11': { title: 'Return of assets', description: 'Employees and external party users shall return all of the organization’s assets in their possession upon termination of their employment, contract or agreement.' },
+  'A.5.12': { title: 'Classification of information', description: 'Information shall be classified in terms of legal requirements, value, criticality and sensitivity to unauthorized disclosure or modification.' },
+  'A.5.13': { title: 'Labelling of information', description: 'An appropriate set of procedures for information labelling shall be developed and implemented.' },
+  'A.5.14': { title: 'Information transfer', description: 'Formal transfer policies, procedures and controls shall be in place to protect the transfer of information through the use of all types of communication facilities.' },
+  'A.5.15': { title: 'Access control policy', description: 'An access control policy shall be established, documented and reviewed based on business and information security requirements.' },
+  'A.5.16': { title: 'Access rights', description: 'Access rights to information and other associated assets shall be provided based on business and information security requirements.' },
+  'A.5.17': { title: 'User access provisioning', description: 'A formal user access provisioning process shall be implemented to assign or revoke access rights for all user types to all systems and services.' },
+  'A.5.18': { title: 'Management of privileged access rights', description: 'The allocation and use of privileged access rights shall be restricted and controlled.' },
+  'A.5.19': { title: 'Information security in supplier relationships', description: 'Information security requirements for mitigating the risks associated with supplier’s access to the organization’s assets shall be agreed with the supplier and documented.' },
+  'A.5.20': { title: 'Addressing information security within supplier agreements', description: 'All relevant information security requirements shall be established and agreed with each supplier that may access, process, store, communicate or provide IT infrastructure components for the organization’s information.' },
+  'A.5.21': { title: 'Managing information security in the ICT supply chain', description: 'The organization shall monitor and review the information security practices of suppliers.' },
+  'A.5.22': { title: 'Monitoring and review of supplier services', description: 'The organization shall regularly monitor, review and audit supplier service delivery.' },
+  'A.5.23': { title: 'Information security for use of cloud services', description: 'Processes for the acquisition, use, management and exit from cloud services shall be established.' },
+  'A.5.24': { title: 'Information security incident management planning and preparation', description: 'The organization shall plan and prepare for information security incidents.' },
+  'A.5.25': { title: 'Assessment and decision on information security events', description: 'Information security events shall be assessed and it shall be decided if they are to be classified as information security incidents.' },
+  'A.5.26': { title: 'Response to information security incidents', description: 'Information security incidents shall be responded to in accordance with the documented procedures.' },
+  'A.5.27': { title: 'Learning from information security incidents', description: 'Knowledge gained from information security incidents shall be used to reduce the likelihood or impact of future incidents.' },
+  'A.5.28': { title: 'Collection of evidence', description: 'The organization shall define and apply procedures for the identification, collection, acquisition and preservation of information, which can serve as evidence.' },
+  'A.5.29': { title: 'Information security continuity', description: 'The organization shall plan, implement, maintain and test processes for information security continuity.' },
+  'A.5.30': { title: 'ICT readiness for business continuity', description: 'ICT readiness for business continuity shall be planned, implemented, maintained and tested.' },
+  'A.6.1': { title: 'Screening', description: 'Background verification checks on all candidates for employment shall be carried out in accordance with relevant laws, regulations and ethics and proportional to the business requirements, the classification of the information to be accessed and the perceived risks.' },
+  'A.6.2': { title: 'Terms and conditions of employment', description: 'The contractual agreements with employees and contractors shall state their and the organization’s responsibilities for information security.' },
+  'A.6.3': { title: 'Information security awareness, education and training', description: 'All employees of the organization and, where relevant, contractors shall receive appropriate awareness education and training and regular updates in organizational policies and procedures, as relevant for their job function.' },
+  'A.6.4': { title: 'Disciplinary process', description: 'There shall be a formal and communicated disciplinary process in place to take action against employees who have committed an information security breach.' },
+  'A.6.5': { title: 'Responsibilities after termination or change of employment', description: 'Information security responsibilities and duties that remain valid after termination or change of employment shall be defined, communicated to the employee or contractor and enforced.' },
+  'A.6.6': { title: 'Confidentiality or non-disclosure agreements', description: 'Requirements for confidentiality or non-disclosure agreements reflecting the organization’s needs for the protection of information shall be identified, regularly reviewed and documented.' },
+  'A.6.7': { title: 'Remote working', description: 'The organization shall implement and communicate a policy and supporting security measures to protect information accessed, processed or stored at remote working locations.' },
+  'A.6.8': { title: 'Information security event reporting by employees', description: 'Employees and contractors shall be required to note and report any observed or suspected information security events.' },
+  'A.7.1': { title: 'Physical security perimeter', description: 'Security perimeters shall be defined and used to protect areas that contain either sensitive or critical information and information processing facilities.' },
+  'A.7.2': { title: 'Physical entry controls', description: 'Secure areas shall be protected by appropriate entry controls to ensure that only authorized personnel are allowed access.' },
+  'A.7.3': { title: 'Securing offices, rooms and facilities', description: 'Physical security for offices, rooms and facilities shall be designed and applied.' },
+  'A.7.4': { title: 'Protecting against physical and environmental threats', description: 'Protection against physical and environmental threats, such as fire, flood, earthquake, explosion, civil unrest, shall be designed and applied.' },
+  'A.7.5': { title: 'Working in secure areas', description: 'Procedures for working in secure areas shall be designed and applied.' },
+  'A.7.6': { title: 'Visitor access', description: 'Procedures for visitor access shall be designed and applied.' },
+  'A.7.7': { title: 'Physical security monitoring', description: 'Physical security monitoring shall be implemented to detect and respond to physical security incidents.' },
+  'A.7.8': { title: 'Equipment security', description: 'Equipment shall be protected to reduce the risks from environmental threats and hazards, and opportunities for unauthorized access.' },
+  'A.7.9': { title: 'Secure disposal or re-use of equipment', description: 'Equipment, information and software shall be disposed of securely when no longer required.' },
+  'A.7.10': { title: 'Clear desk and clear screen policy', description: 'A clear desk and clear screen policy for information processing facilities shall be adopted.' },
+  'A.7.11': { title: 'Cabling security', description: 'Power and telecommunications cabling carrying data or supporting information services shall be protected from interception, interference or damage.' },
+  'A.7.12': { title: 'Equipment maintenance', description: 'Equipment shall be correctly maintained to ensure its continued availability and integrity.' },
+  'A.7.13': { title: 'Removal of assets', description: 'Removal of assets from the organization’s premises shall be authorized and controlled.' },
+  'A.7.14': { title: 'Security of assets off-premises', description: 'Security shall be applied to off-site assets.' },
+  'A.8.1': { title: 'User access management', description: 'A formal user access management process shall be implemented to assign or revoke access rights for all user types to all systems and services.' },
+  'A.8.2': { title: 'Information access restriction', description: 'Access to information and other associated assets shall be restricted in accordance with the established access control policy.' },
+  'A.8.3': { title: 'User registration and de-registration', description: 'A formal user registration and de-registration process shall be implemented to enable assignment of access rights.' },
+  'A.8.4': { title: 'Management of secret authentication information', description: 'The allocation and management of secret authentication information shall be controlled.' },
+  'A.8.5': { title: 'Review of user access rights', description: 'User access rights to systems and services shall be reviewed at regular intervals.' },
+  'A.8.7': { title: 'Password management system', description: 'Password management systems shall be interactive and shall ensure quality passwords.' },
+  'A.8.8': { title: 'Use of privileged utility programs', description: 'The use of utility programs that might be capable of overriding system and application controls shall be restricted and tightly controlled.' },
+  'A.8.9': { title: 'Access control to program source code', description: 'Access to program source code shall be restricted.' },
+  'A.8.10': { title: 'Storage media handling', description: 'Procedures for the management of removable media shall be implemented in accordance with the classification scheme adopted by the organization.' },
+  'A.8.11': { title: 'Data backup', description: 'Backup copies of information, software and systems shall be maintained and regularly tested.' },
+  'A.8.12': { title: 'Data masking', description: 'Data masking shall be used, where appropriate, to protect sensitive information.' },
+  'A.8.13': { title: 'Data leakage prevention', description: 'Data leakage prevention measures shall be implemented to protect sensitive information.' },
+  'A.8.14': { title: 'Monitoring activities', description: 'Systems shall be monitored to detect deviation from access control policy and record events to provide evidence and to ensure information security incidents can be detected and reported.' },
+  'A.8.15': { title: 'Logging', description: 'Logging facilities and log information shall be protected against tampering and unauthorized access.' },
+  'A.8.16': { title: 'Monitoring system use', description: 'Procedures for monitoring use of information processing facilities shall be established and the results of the monitoring activities reviewed regularly.' },
+  'A.8.17': { title: 'Clock synchronization', description: 'The clocks of all relevant information processing systems within an organization or security domain shall be synchronized to a single reference time source.' },
+  'A.8.18': { title: 'Network security management', description: 'Networks shall be managed and controlled to protect information in systems and applications.' },
+  'A.8.19': { title: 'Security of network services', description: 'Security features, service levels and management requirements of all network services shall be identified and included in network services agreements.' },
+  'A.8.20': { title: 'Segregation in networks', description: 'Groups of information services, users and information systems shall be segregated on networks.' },
+  'A.8.21': { title: 'Information transfer policies and procedures', description: 'Formal transfer policies, procedures and controls shall be in place to protect the transfer of information through the use of all types of communication facilities.' },
+  'A.8.22': { title: 'Electronic messaging', description: 'Information involved in electronic messaging shall be appropriately protected.' },
+  'A.8.23': { title: 'Confidentiality or non-disclosure agreements', description: 'Requirements for confidentiality or non-disclosure agreements reflecting the organization’s needs for the protection of information shall be identified, regularly reviewed and documented.' },
+  'A.8.24': { title: 'Protection of information systems during audit and review', description: 'Audit requirements and activities involving verification of operational systems shall be carefully planned and agreed to minimize disruptions to business processes.' },
+  'A.8.13': { title: 'Data leakage prevention', description: 'Data leakage prevention measures shall be implemented to protect sensitive information.' },
+  'A.8.14': { title: 'Monitoring activities', description: 'Systems shall be monitored to detect deviation from access control policy and record events to provide evidence and to ensure information security incidents can be detected and reported.' },
+};
+
+// Custom categories mapped to ISO controls
+const CATEGORIES = [
   {
-    domain: 'A.5 Politiques de sécurité de l’information',
+    label: 'I - MESURES DE GESTION DE LA SECURITE',
     controls: [
-      {
-        number: 'A.5.1.1',
-        title: 'Politiques pour la sécurité de l’information',
-        description: 'Des politiques pour la sécurité de l’information doivent être définies, approuvées par la direction, publiées et communiquées aux employés et aux parties concernées.',
-      },
-      {
-        number: 'A.5.1.2',
-        title: 'Revue des politiques pour la sécurité de l’information',
-        description: 'Les politiques pour la sécurité de l’information doivent être revues à intervalles planifiés ou si des changements significatifs surviennent.',
-      },
+      'A.5.1', 'A.5.2', 'A.5.3', 'A.5.4', 'A.5.5', 'A.5.6', // Rôles et responsabilités
+      'A.5.15', 'A.5.16', 'A.5.17', 'A.5.18', // Politique de contrôle d’accès
+      'A.5.9', 'A.5.10', 'A.5.11', 'A.5.12', 'A.5.13', 'A.5.14', // Gestion des actifs
+      'A.5.8', // Gestion du changement
+      'A.5.19', 'A.5.20', 'A.5.21', 'A.5.22', // Sous-traitants
     ],
   },
   {
-    domain: 'A.6 Organisation de la sécurité de l’information',
+    label: 'II - REPONSES AUX INCIDENTS ET MESURES DE CONTINUITE D’ACTIVITE',
     controls: [
-      {
-        number: 'A.6.1.1',
-        title: 'Rôles et responsabilités en matière de sécurité de l’information',
-        description: 'Tous les rôles et responsabilités en matière de sécurité de l’information doivent être définis et attribués.',
-      },
+      'A.5.24', 'A.5.25', 'A.5.26', 'A.5.27', 'A.5.28', 'A.5.29', // Gestion des incidents
+      'A.5.30', // Continuité d’activité
+      'A.5.23', 'A.5.7', // Cloud et menaces
     ],
   },
-  // ... add all domains and controls as needed ...
+  {
+    label: 'III - MESURES LIÉES AUX PERSONNES',
+    controls: [
+      'A.6.1', 'A.6.2', 'A.6.3', 'A.6.4', 'A.6.5', 'A.6.6', 'A.6.7', 'A.6.8',
+    ],
+  },
+  {
+    label: 'IV - CONTRÔLE D’ACCÈS ET AUTHENTIFICATION',
+    controls: [
+      'A.8.1', 'A.8.2', 'A.8.3', 'A.8.4', 'A.8.5',
+    ],
+  },
+  {
+    label: 'V - ENREGISTREMENT ET CONTRÔLE',
+    controls: [
+      'A.8.15', 'A.8.16', 'A.8.17', 'A.8.18', // Enregistrement et contrôle
+      'A.8.10', 'A.8.11', 'A.8.12', 'A.8.24', // Sécurité du serveur/base de données
+    ],
+  },
+  {
+    label: 'VI - SÉCURITÉ DES DONNÉES AU REPOS',
+    controls: [
+      'A.8.1', 'A.8.7', 'A.8.8', 'A.8.9', 'A.8.19',
+    ],
+  },
+  {
+    label: 'VII - SÉCURITÉ DU RÉSEAU/DE LA COMMUNICATION',
+    controls: [
+      'A.8.20', 'A.8.21', 'A.8.22', 'A.8.23',
+    ],
+  },
+  {
+    label: 'VIII - SAUVEGARDES',
+    controls: [
+      'A.8.13', 'A.8.14',
+    ],
+  },
+  {
+    label: 'IX - SÉCURITÉ PHYSIQUE',
+    controls: [
+      'A.7.1', 'A.7.2', 'A.7.3', 'A.7.4', 'A.7.5', 'A.7.6', 'A.7.7', 'A.7.8', 'A.7.9', 'A.7.10', 'A.7.11', 'A.7.12', 'A.7.13', 'A.7.14',
+    ],
+  },
 ];
 
 const STATUS_OPTIONS = [
@@ -38,12 +157,11 @@ const STATUS_OPTIONS = [
 ];
 
 export default function ISO27001() {
-  // State: compliance status and comments for each control
   const [answers, setAnswers] = useState({});
   const [expanded, setExpanded] = useState({});
 
   // Progress calculation
-  const total = ANNEXE_A.reduce((sum, d) => sum + d.controls.length, 0);
+  const total = CATEGORIES.reduce((sum, cat) => sum + cat.controls.length, 0);
   const completed = Object.values(answers).filter(a => a && a.status === 'yes').length;
   const percent = total ? Math.round((completed / total) * 100) : 0;
 
@@ -71,9 +189,9 @@ export default function ISO27001() {
         </div>
       </div>
       <div className="space-y-6">
-        {ANNEXE_A.map(domain => (
-          <div key={domain.domain} className="bg-blue-50 rounded-xl shadow p-4">
-            <h2 className="text-xl font-bold text-blue-800 mb-2">{domain.domain}</h2>
+        {CATEGORIES.map(cat => (
+          <div key={cat.label} className="bg-blue-50 rounded-xl shadow p-4">
+            <h2 className="text-xl font-bold text-blue-800 mb-2">{cat.label}</h2>
             <table className="min-w-full text-xs bg-white rounded shadow border">
               <thead>
                 <tr className="bg-blue-100 text-blue-900">
@@ -84,13 +202,14 @@ export default function ISO27001() {
                 </tr>
               </thead>
               <tbody>
-                {domain.controls.map(control => {
-                  const key = domain.domain + '-' + control.number;
+                {cat.controls.map(controlNum => {
+                  const control = ISO_CONTROLS[controlNum] || { title: 'Contrôle inconnu', description: '' };
+                  const key = cat.label + '-' + controlNum;
                   const answer = answers[key] || {};
                   return (
-                    <React.Fragment key={control.number}>
+                    <React.Fragment key={controlNum}>
                       <tr className="border-b last:border-0 hover:bg-blue-50/40 transition">
-                        <td className="px-3 py-2 font-medium text-blue-900">{control.number}</td>
+                        <td className="px-3 py-2 font-medium text-blue-900">{controlNum}</td>
                         <td className="px-3 py-2">
                           <div className="font-semibold text-blue-900">{control.title}</div>
                           {expanded[key] && (
