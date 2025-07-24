@@ -403,43 +403,70 @@ export default function DPIA() {
                 <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><EyeIcon className="w-6 h-6 text-blue-700" /> Matrice des risques</h3>
                 {/* Risk matrix table for the selected DPIA */}
                 {viewMatrixDPIA.risques_details && viewMatrixDPIA.risques_details.filter(details => details.gravite && details.probabilite).length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full text-xs bg-white rounded shadow border">
-                      <thead>
-                        <tr className="bg-blue-50 text-blue-900">
-                          <th className="px-3 py-2 text-left font-semibold">Risque</th>
-                          <th className="px-3 py-2 font-semibold">Gravité</th>
-                          <th className="px-3 py-2 font-semibold">Probabilité</th>
-                          <th className="px-3 py-2 font-semibold">Score</th>
-                          <th className="px-3 py-2 font-semibold">Niveau</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {viewMatrixDPIA.risques_details.map((details, i) => {
-                          if (!(details.gravite && details.probabilite)) return null;
-                          const isCustom = i >= COMMON_RISKS.length;
-                          const risk = isCustom ? viewMatrixDPIA.custom_risks[i - COMMON_RISKS.length] : COMMON_RISKS[i];
-                          const gravite = details.gravite;
-                          const probabilite = details.probabilite;
-                          const score = (g => (g === 'faible' ? 1 : g === 'moyenne' ? 2 : g === 'élevée' ? 3 : 0))(gravite) * (p => (p === 'faible' ? 1 : p === 'moyenne' ? 2 : p === 'élevée' ? 3 : 0))(probabilite);
-                          let niveau = '';
-                          let badge = '';
-                          if (score >= 7) { niveau = 'Élevé'; badge = 'bg-red-100 text-red-700 border-red-300'; }
-                          else if (score >= 4) { niveau = 'Moyen'; badge = 'bg-yellow-100 text-yellow-700 border-yellow-300'; }
-                          else if (score > 0) { niveau = 'Faible'; badge = 'bg-green-100 text-green-700 border-green-300'; }
-                          return (
-                            <tr key={isCustom ? 'custom_' + (i - COMMON_RISKS.length) : i} className="border-b last:border-0 hover:bg-blue-50/40 transition">
-                              <td className="px-3 py-2 font-medium text-blue-900">{risk?.label}</td>
-                              <td className="px-3 py-2">{gravite || '-'}</td>
-                              <td className="px-3 py-2">{probabilite || '-'}</td>
-                              <td className="px-3 py-2 font-bold text-center">{score > 0 ? score : '-'}</td>
-                              <td className="px-3 py-2 text-center">{niveau ? <span className={`px-2 py-0.5 rounded-full border text-xs font-semibold ${badge}`}>{niveau}</span> : '-'}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full text-xs bg-white rounded shadow border">
+                        <thead>
+                          <tr className="bg-blue-50 text-blue-900">
+                            <th className="px-3 py-2 text-left font-semibold">Risque</th>
+                            <th className="px-3 py-2 font-semibold">Gravité</th>
+                            <th className="px-3 py-2 font-semibold">Probabilité</th>
+                            <th className="px-3 py-2 font-semibold">Score</th>
+                            <th className="px-3 py-2 font-semibold">Niveau</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {viewMatrixDPIA.risques_details.map((details, i) => {
+                            if (!(details.gravite && details.probabilite)) return null;
+                            const isCustom = i >= COMMON_RISKS.length;
+                            const risk = isCustom ? viewMatrixDPIA.custom_risks[i - COMMON_RISKS.length] : COMMON_RISKS[i];
+                            const gravite = details.gravite;
+                            const probabilite = details.probabilite;
+                            const score = (g => (g === 'faible' ? 1 : g === 'moyenne' ? 2 : g === 'élevée' ? 3 : 0))(gravite) * (p => (p === 'faible' ? 1 : p === 'moyenne' ? 2 : p === 'élevée' ? 3 : 0))(probabilite);
+                            let niveau = '';
+                            let badge = '';
+                            if (score >= 7) { niveau = 'Élevé'; badge = 'bg-red-100 text-red-700 border-red-300'; }
+                            else if (score >= 4) { niveau = 'Moyen'; badge = 'bg-yellow-100 text-yellow-700 border-yellow-300'; }
+                            else if (score > 0) { niveau = 'Faible'; badge = 'bg-green-100 text-green-700 border-green-300'; }
+                            return (
+                              <tr key={isCustom ? 'custom_' + (i - COMMON_RISKS.length) : i} className="border-b last:border-0 hover:bg-blue-50/40 transition">
+                                <td className="px-3 py-2 font-medium text-blue-900">{risk?.label}</td>
+                                <td className="px-3 py-2">{gravite || '-'}</td>
+                                <td className="px-3 py-2">{probabilite || '-'}</td>
+                                <td className="px-3 py-2 font-bold text-center">{score > 0 ? score : '-'}</td>
+                                <td className="px-3 py-2 text-center">{niveau ? <span className={`px-2 py-0.5 rounded-full border text-xs font-semibold ${badge}`}>{niveau}</span> : '-'}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    {/* Final score summary */}
+                    {(() => {
+                      const scores = viewMatrixDPIA.risques_details
+                        .map(details => {
+                          if (!(details.gravite && details.probabilite)) return 0;
+                          return (g => (g === 'faible' ? 1 : g === 'moyenne' ? 2 : g === 'élevée' ? 3 : 0))(details.gravite) * (p => (p === 'faible' ? 1 : p === 'moyenne' ? 2 : p === 'élevée' ? 3 : 0))(details.probabilite);
+                        })
+                        .filter(score => score > 0);
+                      if (scores.length === 0) return null;
+                      const maxScore = Math.max(...scores);
+                      const avgScore = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1);
+                      let niveau = '';
+                      let badge = '';
+                      if (maxScore >= 7) { niveau = 'Élevé'; badge = 'bg-red-100 text-red-700 border-red-300'; }
+                      else if (maxScore >= 4) { niveau = 'Moyen'; badge = 'bg-yellow-100 text-yellow-700 border-yellow-300'; }
+                      else if (maxScore > 0) { niveau = 'Faible'; badge = 'bg-green-100 text-green-700 border-green-300'; }
+                      return (
+                        <div className="mt-6 flex flex-col gap-2 items-start">
+                          <div className="text-base font-semibold text-blue-900 flex items-center gap-2">
+                            Score final (max) : <span className="font-bold">{maxScore}</span> {niveau && <span className={`px-2 py-0.5 rounded-full border text-xs font-semibold ${badge}`}>{niveau}</span>}
+                          </div>
+                          <div className="text-base text-blue-900">Score moyen : <span className="font-bold">{avgScore}</span></div>
+                        </div>
+                      );
+                    })()}
+                  </>
                 ) : (
                   <div className="text-blue-700">Aucune analyse de risque renseignée pour cette DPIA.</div>
                 )}
