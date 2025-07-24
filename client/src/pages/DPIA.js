@@ -520,7 +520,7 @@ export default function DPIA() {
                     </div>
                     <button type="button" className="bg-blue-700 text-white px-4 py-2 rounded font-semibold shadow" onClick={handleAddCustomRisk}>Ajouter</button>
                   </div>
-                  {/* Minimal risk analysis table */}
+                  {/* Minimal risk analysis table with score/level */}
                   <div className="overflow-x-auto">
                     <table className="min-w-full text-xs bg-white rounded shadow border">
                       <thead>
@@ -528,6 +528,8 @@ export default function DPIA() {
                           <th className="px-3 py-2 font-semibold">Risque</th>
                           <th className="px-3 py-2 font-semibold">Gravité</th>
                           <th className="px-3 py-2 font-semibold">Probabilité</th>
+                          <th className="px-3 py-2 font-semibold">Score</th>
+                          <th className="px-3 py-2 font-semibold">Niveau</th>
                           <th className="px-3 py-2 font-semibold">""</th>
                         </tr>
                       </thead>
@@ -535,6 +537,14 @@ export default function DPIA() {
                         {[...COMMON_RISKS, ...(form.custom_risks || [])].map((risk, idx) => {
                           const isCustom = idx >= COMMON_RISKS.length;
                           const details = form.risques_details && form.risques_details[idx] ? form.risques_details[idx] : {};
+                          const gravite = details.gravite;
+                          const probabilite = details.probabilite;
+                          const score = (g => (g === 'faible' ? 1 : g === 'moyenne' ? 2 : g === 'élevée' ? 3 : 0))(gravite) * (p => (p === 'faible' ? 1 : p === 'moyenne' ? 2 : p === 'élevée' ? 3 : 0))(probabilite);
+                          let niveau = '';
+                          let badge = '';
+                          if (score >= 7) { niveau = 'Élevé'; badge = 'bg-red-100 text-red-700 border-red-300'; }
+                          else if (score >= 4) { niveau = 'Moyen'; badge = 'bg-yellow-100 text-yellow-700 border-yellow-300'; }
+                          else if (score > 0) { niveau = 'Faible'; badge = 'bg-green-100 text-green-700 border-green-300'; }
                           return (
                             <tr key={isCustom ? 'custom_' + (idx - COMMON_RISKS.length) : idx}>
                               <td className="px-3 py-2 font-medium text-blue-900">
@@ -551,7 +561,7 @@ export default function DPIA() {
                                 ) : risk.label}
                               </td>
                               <td className="px-3 py-2">
-                                <select className="rounded border px-2 py-1 text-xs" value={details.gravite || ''} onChange={e => handleRiskDetail(idx, 'gravite', e.target.value)}>
+                                <select className="rounded border px-2 py-1 text-xs" value={gravite || ''} onChange={e => handleRiskDetail(idx, 'gravite', e.target.value)}>
                                   <option value="">-</option>
                                   <option value="faible">Faible</option>
                                   <option value="moyenne">Moyenne</option>
@@ -559,12 +569,16 @@ export default function DPIA() {
                                 </select>
                               </td>
                               <td className="px-3 py-2">
-                                <select className="rounded border px-2 py-1 text-xs" value={details.probabilite || ''} onChange={e => handleRiskDetail(idx, 'probabilite', e.target.value)}>
+                                <select className="rounded border px-2 py-1 text-xs" value={probabilite || ''} onChange={e => handleRiskDetail(idx, 'probabilite', e.target.value)}>
                                   <option value="">-</option>
                                   <option value="faible">Faible</option>
                                   <option value="moyenne">Moyenne</option>
                                   <option value="élevée">Élevée</option>
                                 </select>
+                              </td>
+                              <td className="px-3 py-2 font-bold text-center">{score > 0 ? score : '-'}</td>
+                              <td className="px-3 py-2 text-center">
+                                {niveau ? <span className={`px-2 py-0.5 rounded-full border text-xs font-semibold ${badge}`}>{niveau}</span> : '-'}
                               </td>
                               <td className="px-3 py-2">
                                 {isCustom && (
@@ -577,6 +591,49 @@ export default function DPIA() {
                       </tbody>
                     </table>
                   </div>
+                  {/* Summary table of evaluated risks */}
+                  {form.risques_details && form.risques_details.filter(details => details.gravite && details.probabilite).length > 0 && (
+                    <div className="mt-10">
+                      <div className="font-semibold text-blue-900 mb-3 text-base">Résumé des risques évalués :</div>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full text-xs bg-white rounded shadow border">
+                          <thead>
+                            <tr className="bg-blue-50 text-blue-900">
+                              <th className="px-3 py-2 text-left font-semibold">Risque</th>
+                              <th className="px-3 py-2 font-semibold">Gravité</th>
+                              <th className="px-3 py-2 font-semibold">Probabilité</th>
+                              <th className="px-3 py-2 font-semibold">Score</th>
+                              <th className="px-3 py-2 font-semibold">Niveau</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {form.risques_details.map((details, i) => {
+                              if (!(details.gravite && details.probabilite)) return null;
+                              const isCustom = i >= COMMON_RISKS.length;
+                              const risk = isCustom ? form.custom_risks[i - COMMON_RISKS.length] : COMMON_RISKS[i];
+                              const gravite = details.gravite;
+                              const probabilite = details.probabilite;
+                              const score = (g => (g === 'faible' ? 1 : g === 'moyenne' ? 2 : g === 'élevée' ? 3 : 0))(gravite) * (p => (p === 'faible' ? 1 : p === 'moyenne' ? 2 : p === 'élevée' ? 3 : 0))(probabilite);
+                              let niveau = '';
+                              let badge = '';
+                              if (score >= 7) { niveau = 'Élevé'; badge = 'bg-red-100 text-red-700 border-red-300'; }
+                              else if (score >= 4) { niveau = 'Moyen'; badge = 'bg-yellow-100 text-yellow-700 border-yellow-300'; }
+                              else if (score > 0) { niveau = 'Faible'; badge = 'bg-green-100 text-green-700 border-green-300'; }
+                              return (
+                                <tr key={isCustom ? 'custom_' + (i - COMMON_RISKS.length) : i} className="border-b last:border-0 hover:bg-blue-50/40 transition">
+                                  <td className="px-3 py-2 font-medium text-blue-900">{risk?.label}</td>
+                                  <td className="px-3 py-2">{gravite || '-'}</td>
+                                  <td className="px-3 py-2">{probabilite || '-'}</td>
+                                  <td className="px-3 py-2 font-bold text-center">{score > 0 ? score : '-'}</td>
+                                  <td className="px-3 py-2 text-center">{niveau ? <span className={`px-2 py-0.5 rounded-full border text-xs font-semibold ${badge}`}>{niveau}</span> : '-'}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
               <div className="flex gap-4 mt-6">
