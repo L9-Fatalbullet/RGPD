@@ -162,11 +162,22 @@ export default function ISO27001() {
   const [answers, setAnswers] = useState({});
   const [expanded, setExpanded] = useState({});
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
+  const [showResults, setShowResults] = useState(false);
 
   // Progress calculation
   const total = CATEGORIES.reduce((sum, cat) => sum + cat.controls.length, 0);
   const completed = Object.values(answers).filter(a => a && a.status === 'yes').length;
   const percent = total ? Math.round((completed / total) * 100) : 0;
+
+  // Per-category stats
+  const categoryStats = CATEGORIES.map(cat => {
+    const catTotal = cat.controls.length;
+    const catCompleted = cat.controls.filter(controlNum => {
+      const key = cat.label + '-' + controlNum;
+      return answers[key] && answers[key].status === 'yes';
+    }).length;
+    return { label: cat.label, total: catTotal, completed: catCompleted, percent: catTotal ? Math.round((catCompleted / catTotal) * 100) : 0 };
+  });
 
   const handleStatus = (key, status) => {
     setAnswers(a => ({ ...a, [key]: { ...a[key], status } }));
@@ -280,6 +291,60 @@ export default function ISO27001() {
 
   const currentCategory = CATEGORIES[currentCategoryIndex];
 
+  // French translations
+  const statusLabels = {
+    yes: 'Oui',
+    partial: 'En cours',
+    no: 'Non',
+    '': 'Non renseigné',
+  };
+
+  // UI
+  if (showResults) {
+    return (
+      <section className="max-w-4xl mx-auto p-6">
+        <h1 className="text-3xl font-bold text-blue-900 mb-2 flex items-center gap-2"><EyeIcon className="w-8 h-8 text-blue-700" /> Résultats de l’auto-évaluation ISO 27001</h1>
+        <div className="mb-6">
+          <div className="flex items-center gap-4 mb-2">
+            <span className="font-semibold text-blue-900">Progression :</span>
+            <div className="flex-1 h-4 bg-blue-100 rounded-full overflow-hidden">
+              <div className="h-4 bg-gradient-to-r from-green-400 via-yellow-400 to-red-400" style={{ width: percent + '%' }}></div>
+            </div>
+            <span className="font-semibold text-blue-900">{percent}%</span>
+          </div>
+          <div className="text-blue-900 font-semibold mb-2">{completed} contrôles conformes sur {total}</div>
+        </div>
+        <div className="mb-8">
+          <table className="min-w-full text-xs bg-white rounded shadow border">
+            <thead>
+              <tr className="bg-blue-100 text-blue-900">
+                <th className="px-3 py-2 text-left font-semibold">Catégorie</th>
+                <th className="px-3 py-2 text-left font-semibold">Conformes</th>
+                <th className="px-3 py-2 text-left font-semibold">Total</th>
+                <th className="px-3 py-2 text-left font-semibold">% Conforme</th>
+              </tr>
+            </thead>
+            <tbody>
+              {categoryStats.map(stat => (
+                <tr key={stat.label} className="border-b last:border-0 hover:bg-blue-50/40 transition">
+                  <td className="px-3 py-2 font-medium text-blue-900">{stat.label}</td>
+                  <td className="px-3 py-2">{stat.completed}</td>
+                  <td className="px-3 py-2">{stat.total}</td>
+                  <td className="px-3 py-2">{stat.percent}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="mt-8 flex gap-4">
+          <button className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow flex items-center gap-2" onClick={handleExportPDF}>
+            <DocumentArrowDownIcon className="w-5 h-5" /> Exporter l’auto-évaluation
+          </button>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="max-w-4xl mx-auto p-6">
       <h1 className="text-3xl font-bold text-blue-900 mb-2 flex items-center gap-2"><EyeIcon className="w-8 h-8 text-blue-700" /> ISO 27001 - Annexe A Contrôles</h1>
@@ -333,7 +398,7 @@ export default function ISO27001() {
                             onClick={() => handleStatus(key, opt.value)}
                             type="button"
                           >
-                            {opt.icon} {opt.label}
+                            {opt.icon} {statusLabels[opt.value]}
                           </button>
                         ))}
                       </div>
@@ -381,9 +446,9 @@ export default function ISO27001() {
         ) : (
           <button
             className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow flex items-center gap-2"
-            onClick={handleExportPDF}
+            onClick={() => setShowResults(true)}
           >
-            <DocumentArrowDownIcon className="w-5 h-5" /> Exporter l’auto-évaluation
+            Terminer
           </button>
         )}
       </div>
