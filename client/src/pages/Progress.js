@@ -161,21 +161,42 @@ export default function Progress() {
               {expanded === i ? <ChevronUpIcon className="w-6 h-6 text-blue-900" /> : <ChevronDownIcon className="w-6 h-6 text-blue-900" />}
             </div>
             {expanded === i && (
-              <ul className="mt-4 space-y-2">
-                {s.subTasks.map((st, j) => (
-                  <li key={j} className="flex items-center gap-3">
-                    <button
-                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition ${st.completed ? 'bg-green-400 border-green-500' : 'bg-white border-blue-300'}`}
-                      aria-label={st.label}
-                      onClick={() => handleCheck(i, j)}
-                      disabled={s.completed}
-                    >
-                      {st.completed ? <CheckCircleIcon className="w-4 h-4 text-white" /> : null}
-                    </button>
-                    <span className={`text-sm ${st.completed ? 'line-through text-gray-400' : 'text-blue-900'}`}>{st.label}</span>
-                  </li>
-                ))}
-              </ul>
+              <>
+                <ul className="mt-4 space-y-2">
+                  {s.subTasks.map((st, j) => (
+                    <li key={j} className="flex items-center gap-3">
+                      <button
+                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition ${st.completed ? 'bg-green-400 border-green-500' : 'bg-white border-blue-300'}`}
+                        aria-label={st.label}
+                        onClick={() => handleCheck(i, j)}
+                        disabled={s.completed}
+                      >
+                        {st.completed ? <CheckCircleIcon className="w-4 h-4 text-white" /> : null}
+                      </button>
+                      <span className={`text-sm ${st.completed ? 'line-through text-gray-400' : 'text-blue-900'}`}>{st.label}</span>
+                    </li>
+                  ))}
+                </ul>
+                {s.documents && s.documents.length > 0 && (
+                  <div className="mt-6">
+                    <div className="font-semibold text-blue-900 mb-2">Documents utiles :</div>
+                    <ul className="space-y-2">
+                      {s.documents.map((doc, k) => (
+                        <li key={k}>
+                          <a
+                            href={doc.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center text-blue-700 hover:underline text-sm font-semibold group-hover:text-yellow-500 transition"
+                          >
+                            {doc.label}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
             )}
           </li>
         ))}

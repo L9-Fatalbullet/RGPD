@@ -45,6 +45,16 @@ const DEFAULT_STEPS = [
     subTasks: [
       { label: 'Préparer la déclaration', completed: false },
       { label: 'Téléverser la preuve', completed: false }
+    ],
+    documents: [
+      {
+        label: 'Déclaration simplifiée (F214) préalable du traitement',
+        url: 'https://www.cndp.ma/wp-content/uploads/2025/01/CNDP-Declaration-Normale-Conformement-Decision_F214_20210318_Fr.pdf'
+      },
+      {
+        label: 'Déclaration normale (F211) préalable de traitement',
+        url: 'https://www.cndp.ma/wp-content/uploads/2025/01/CNDP-Declaration-Normale-Conformement-Decision_F214_20210318_Fr.pdf'
+      }
     ]
   },
   {
