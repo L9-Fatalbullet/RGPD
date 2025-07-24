@@ -39,6 +39,16 @@ const CNDP_DECLARATIONS = [
     url: "https://www.cndp.ma/wp-content/uploads/2025/01/CNDP-Declaration-Normale_F211_20210318_Fr.pdf",
     desc: "Formulaire officiel CNDP pour la déclaration normale des traitements.",
   },
+  {
+    name: "Demande d’autorisation simplifiée (F113) préalable de traitement",
+    url: "https://www.cndp.ma/wp-content/uploads/2025/01/CNDP-Autorisation-Prealable-Conformement-Decision-F113.pdf",
+    desc: "Formulaire officiel CNDP pour la demande d'autorisation simplifiée préalable de traitement.",
+  },
+  {
+    name: "Demande d’autorisation normale (F112) préalable de traitement",
+    url: "https://www.cndp.ma/wp-content/uploads/2025/01/CNDP-Autorisation-Prealable-F112.pdf",
+    desc: "Formulaire officiel CNDP pour la demande d'autorisation normale préalable de traitement.",
+  },
 ];
 
 export default function Documents() {
