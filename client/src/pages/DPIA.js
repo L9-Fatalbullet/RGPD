@@ -316,44 +316,130 @@ export default function DPIA() {
             <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><CheckCircleIcon className="w-6 h-6 text-green-600" /> Étape {step + 1} : {STEPS[step].label}</h3>
             <p className="text-gray-700 mb-4">{STEPS[step].help}</p>
             <div className="grid gap-4">
-              {STEPS[step].fields.map(f => (
-                <div key={f.key} className="flex flex-col gap-1">
-                  <label htmlFor={f.key} className="text-sm font-semibold text-blue-900">{f.label} {f.required ? '*' : ''}</label>
-                  {f.help && <p className="text-xs text-gray-600">{f.help}</p>}
-                  {f.type === 'select' ? (
+              {STEPS[step].fields.map(f => {
+                // Catégories de données
+                if (f.key === 'categories_donnees') return (
+                  <div key={f.key}>
+                    <label className="block text-blue-900 font-semibold mb-1">{f.label}{f.required && ' *'}</label>
+                    <div className="text-xs text-blue-700 mb-1">{f.help}</div>
                     <select
-                      id={f.key}
-                      value={form[f.key]}
-                      onChange={e => handleChange(f.key, e.target.value)}
-                      className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400"
+                      value={CATEGORIES_DONNEES.includes(form.categories_donnees) ? form.categories_donnees : (form.categories_donnees.startsWith('Autre:') ? 'Autre...' : '')}
+                      onChange={e => {
+                        if (e.target.value === 'Autre...') {
+                          setForm(fm => ({ ...fm, categories_donnees: 'Autre:' }));
+                        } else {
+                          setForm(fm => ({ ...fm, categories_donnees: e.target.value }));
+                        }
+                      }}
+                      required={f.required}
                     >
-                      <option value="">Sélectionnez une option</option>
-                      {f.options.map(option => (
-                        <option key={option} value={option}>{option}</option>
-                      ))}
+                      <option value="">Sélectionner...</option>
+                      {CATEGORIES_DONNEES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                     </select>
-                  ) : (
-                    <input
-                      type={f.type || 'text'}
-                      id={f.key}
-                      value={form[f.key]}
-                      onChange={e => handleChange(f.key, e.target.value)}
-                      className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder={f.help}
-                    />
-                  )}
-                </div>
-              ))}
-              {step < STEPS.length - 1 && (
-                <button type="button" className="w-full bg-gradient-to-r from-blue-700 to-blue-900 hover:from-blue-900 hover:to-blue-700 text-white px-6 py-2 rounded font-semibold shadow" onClick={next}>Suivant</button>
-              )}
-              {step > 0 && (
-                <button type="button" className="w-full bg-gray-200 text-gray-800 px-6 py-2 rounded font-semibold shadow" onClick={prev}>Précédent</button>
-              )}
+                    {form.categories_donnees.startsWith('Autre:') && (
+                      <input
+                        className="mt-2 w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400"
+                        type="text"
+                        placeholder="Précisez la catégorie"
+                        value={form.categories_donnees.replace('Autre:', '')}
+                        onChange={e => setForm(fm => ({ ...fm, categories_donnees: 'Autre:' + e.target.value }))}
+                        required={f.required}
+                      />
+                    )}
+                  </div>
+                );
+                // Personnes concernées
+                if (f.key === 'personnes_concernees') return (
+                  <div key={f.key}>
+                    <label className="block text-blue-900 font-semibold mb-1">{f.label}{f.required && ' *'}</label>
+                    <div className="text-xs text-blue-700 mb-1">{f.help}</div>
+                    <select
+                      className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400"
+                      value={PERSONNES_CONCERNEES.includes(form.personnes_concernees) ? form.personnes_concernees : (form.personnes_concernees.startsWith('Autre:') ? 'Autre...' : '')}
+                      onChange={e => {
+                        if (e.target.value === 'Autre...') {
+                          setForm(fm => ({ ...fm, personnes_concernees: 'Autre:' }));
+                        } else {
+                          setForm(fm => ({ ...fm, personnes_concernees: e.target.value }));
+                        }
+                      }}
+                      required={f.required}
+                    >
+                      <option value="">Sélectionner...</option>
+                      {PERSONNES_CONCERNEES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                    {form.personnes_concernees.startsWith('Autre:') && (
+                      <input
+                        className="mt-2 w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400"
+                        type="text"
+                        placeholder="Précisez la personne concernée"
+                        value={form.personnes_concernees.replace('Autre:', '')}
+                        onChange={e => setForm(fm => ({ ...fm, personnes_concernees: 'Autre:' + e.target.value }))}
+                        required={f.required}
+                      />
+                    )}
+                  </div>
+                );
+                // Finalités
+                if (f.key === 'finalites') return (
+                  <div key={f.key}>
+                    <label className="block text-blue-900 font-semibold mb-1">{f.label}{f.required && ' *'}</label>
+                    <div className="text-xs text-blue-700 mb-1">{f.help}</div>
+                    <select
+                      className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400"
+                      value={FINALITES.includes(form.finalites) ? form.finalites : (form.finalites.startsWith('Autre:') ? 'Autre...' : '')}
+                      onChange={e => {
+                        if (e.target.value === 'Autre...') {
+                          setForm(fm => ({ ...fm, finalites: 'Autre:' }));
+                        } else {
+                          setForm(fm => ({ ...fm, finalites: e.target.value }));
+                        }
+                      }}
+                      required={f.required}
+                    >
+                      <option value="">Sélectionner...</option>
+                      {FINALITES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                    {form.finalites.startsWith('Autre:') && (
+                      <input
+                        className="mt-2 w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400"
+                        type="text"
+                        placeholder="Précisez la finalité"
+                        value={form.finalites.replace('Autre:', '')}
+                        onChange={e => setForm(fm => ({ ...fm, finalites: 'Autre:' + e.target.value }))}
+                        required={f.required}
+                      />
+                    )}
+                  </div>
+                );
+                // Default: text/textarea
+                return (
+                  <div key={f.key}>
+                    <label className="block text-blue-900 font-semibold mb-1">{f.label}{f.required && ' *'}</label>
+                    <div className="text-xs text-blue-700 mb-1">{f.help}</div>
+                    {f.key === 'description' || f.key === 'mesures' || f.key === 'necessite' ? (
+                      <textarea className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400" value={form[f.key]} onChange={e => handleChange(f.key, e.target.value)} required={f.required} />
+                    ) : (
+                      <input className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400" value={form[f.key]} onChange={e => handleChange(f.key, e.target.value)} required={f.required} />
+                    )}
+                  </div>
+                );
+              })}
+              <div className="flex gap-4 mt-6">
+                {step > 0 && (
+                  <button type="button" className="bg-blue-100 text-blue-900 px-6 py-2 rounded font-semibold shadow flex items-center gap-2" onClick={prev}><ArrowLeftCircleIcon className="w-5 h-5" /> Précédent</button>
+                )}
+                {step < STEPS.length - 1 && (
+                  <button type="button" className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow flex items-center gap-2" onClick={next}>Suivant <ArrowRightCircleIcon className="w-5 h-5" /></button>
+                )}
+                {step === STEPS.length - 1 && (
+                  <button type="submit" className="w-full bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow mb-2">Enregistrer la DPIA</button>
+                )}
+              </div>
+              {status && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{status}</div>}
+              {saveStatus && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{saveStatus}</div>}
             </div>
-            <button type="button" className="w-full bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow mb-2" onClick={() => setReview(true)}>Revue finale</button>
-            {status && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{status}</div>}
-            {saveStatus && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{saveStatus}</div>}
           </form>
         ) : (
           <form className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-8 max-w-2xl mx-auto animate-fade-in" onSubmit={handleSave}>
