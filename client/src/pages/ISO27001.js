@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CheckCircleIcon, ExclamationTriangleIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 // Official ISO 27001:2022 Annexe A controls (subset for demo; expand as needed)
 const ISO_CONTROLS = {
@@ -176,42 +177,96 @@ export default function ISO27001() {
     setExpanded(e => ({ ...e, [key]: !e[key] }));
   };
 
-  // Export to PDF
-  const handleExportPDF = () => {
+  // Helper for status color
+  const statusColor = status => {
+    if (status === 'yes') return '#22c55e'; // green
+    if (status === 'partial') return '#facc15'; // yellow
+    if (status === 'no') return '#ef4444'; // red
+    return '#e5e7eb'; // gray
+  };
+
+  // Export to PDF with logo and styled tables
+  const handleExportPDF = async () => {
     const doc = new jsPDF();
-    let y = 15;
-    doc.setFontSize(18);
-    doc.text('Auto-évaluation ISO 27001 - Annexe A', 10, y);
-    y += 10;
+    let y = 20;
+    // Add logo (must be base64 or external, here we use a placeholder)
+    // If you want to use your real logo, convert it to base64 and replace below
+    const logoUrl = '/logo.png';
+    try {
+      const img = new window.Image();
+      img.src = logoUrl;
+      await new Promise(resolve => { img.onload = resolve; });
+      doc.addImage(img, 'PNG', 10, 10, 30, 30);
+      y = 45;
+    } catch {
+      // If logo fails, just skip
+    }
+    doc.setFontSize(20);
+    doc.setTextColor('#1e3a8a');
+    doc.text('Auto-évaluation ISO 27001 - Annexe A', 50, 25);
     doc.setFontSize(12);
-    doc.text(`Progression: ${percent}% (${completed}/${total} contrôles conformes)`, 10, y);
+    doc.setTextColor('#0e172a');
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 50, 33);
+    doc.text(`Progression: ${percent}% (${completed}/${total} conformes)`, 50, 41);
     y += 10;
+    // Progress bar
+    doc.setFillColor(229, 231, 235);
+    doc.rect(50, y, 100, 6, 'F');
+    doc.setFillColor(34, 197, 94);
+    doc.rect(50, y, percent, 6, 'F');
+    y += 16;
+    // For each category, add a styled table
     CATEGORIES.forEach(cat => {
-      doc.setFontSize(14);
+      doc.setFontSize(15);
+      doc.setTextColor('#1e40af');
       doc.text(cat.label, 10, y);
-      y += 8;
-      cat.controls.forEach(controlNum => {
+      y += 6;
+      // Prepare table data
+      const tableData = cat.controls.map(controlNum => {
         const control = ISO_CONTROLS[controlNum] || { title: 'Contrôle inconnu', description: '' };
         const key = cat.label + '-' + controlNum;
         const answer = answers[key] || {};
-        doc.setFontSize(11);
-        doc.text(`- ${controlNum}: ${control.title}`, 12, y);
-        y += 6;
-        doc.setFontSize(9);
-        if (control.description) {
-          doc.text(`  ${control.description}`, 14, y);
-          y += 5;
-        }
-        doc.text(`  Statut: ${answer.status ? STATUS_OPTIONS.find(opt => opt.value === answer.status)?.label : 'Non renseigné'}`, 14, y);
-        y += 5;
-        if (answer.comment) {
-          doc.text(`  Commentaire: ${answer.comment}`, 14, y);
-          y += 5;
-        }
-        if (y > 270) { doc.addPage(); y = 15; }
+        return [
+          controlNum,
+          control.title,
+          answer.status ? STATUS_OPTIONS.find(opt => opt.value === answer.status)?.label : 'Non renseigné',
+          answer.comment || ''
+        ];
       });
-      y += 4;
-      if (y > 270) { doc.addPage(); y = 15; }
+      // Table headers
+      const head = [['Numéro', 'Contrôle', 'Statut', 'Commentaire']];
+      // Use autoTable
+      doc.autoTable({
+        head,
+        body: tableData,
+        startY: y,
+        theme: 'grid',
+        headStyles: { fillColor: [30, 64, 175], textColor: 255, fontStyle: 'bold' },
+        styles: { fontSize: 9, cellPadding: 2 },
+        bodyStyles: {
+          valign: 'top',
+          lineColor: [226, 232, 240],
+          lineWidth: 0.1,
+        },
+        didParseCell: function (data) {
+          if (data.section === 'body' && data.column.index === 2) {
+            const status = data.cell.raw;
+            data.cell.styles.fillColor = status === 'Oui' ? [34, 197, 94] : status === 'En cours' ? [250, 204, 21] : status === 'Non' ? [239, 68, 68] : [229, 231, 235];
+            data.cell.styles.textColor = status === 'Non renseigné' ? [100, 116, 139] : [255, 255, 255];
+          }
+        },
+        margin: { left: 10, right: 10 },
+        didDrawPage: function (data) {
+          // Footer
+          const pageCount = doc.internal.getNumberOfPages();
+          doc.setFontSize(8);
+          doc.setTextColor('#64748b');
+          doc.text(`Page ${doc.internal.getCurrentPageInfo().pageNumber} / ${pageCount}`, 105, 290, { align: 'center' });
+          doc.text(`Exporté le ${new Date().toLocaleDateString()}`, 200, 290, { align: 'right' });
+        },
+      });
+      y = doc.lastAutoTable.finalY + 10;
+      if (y > 250) { doc.addPage(); y = 20; }
     });
     doc.save('Auto-evaluation_ISO27001.pdf');
   };
