@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CheckCircleIcon, ExclamationTriangleIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
+import jsPDF from 'jspdf';
 
 // Official ISO 27001:2022 Annexe A controls (subset for demo; expand as needed)
 const ISO_CONTROLS = {
@@ -175,6 +176,46 @@ export default function ISO27001() {
     setExpanded(e => ({ ...e, [key]: !e[key] }));
   };
 
+  // Export to PDF
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    let y = 15;
+    doc.setFontSize(18);
+    doc.text('Auto-évaluation ISO 27001 - Annexe A', 10, y);
+    y += 10;
+    doc.setFontSize(12);
+    doc.text(`Progression: ${percent}% (${completed}/${total} contrôles conformes)`, 10, y);
+    y += 10;
+    CATEGORIES.forEach(cat => {
+      doc.setFontSize(14);
+      doc.text(cat.label, 10, y);
+      y += 8;
+      cat.controls.forEach(controlNum => {
+        const control = ISO_CONTROLS[controlNum] || { title: 'Contrôle inconnu', description: '' };
+        const key = cat.label + '-' + controlNum;
+        const answer = answers[key] || {};
+        doc.setFontSize(11);
+        doc.text(`- ${controlNum}: ${control.title}`, 12, y);
+        y += 6;
+        doc.setFontSize(9);
+        if (control.description) {
+          doc.text(`  ${control.description}`, 14, y);
+          y += 5;
+        }
+        doc.text(`  Statut: ${answer.status ? STATUS_OPTIONS.find(opt => opt.value === answer.status)?.label : 'Non renseigné'}`, 14, y);
+        y += 5;
+        if (answer.comment) {
+          doc.text(`  Commentaire: ${answer.comment}`, 14, y);
+          y += 5;
+        }
+        if (y > 270) { doc.addPage(); y = 15; }
+      });
+      y += 4;
+      if (y > 270) { doc.addPage(); y = 15; }
+    });
+    doc.save('Auto-evaluation_ISO27001.pdf');
+  };
+
   return (
     <section className="max-w-4xl mx-auto p-6">
       <h1 className="text-3xl font-bold text-blue-900 mb-2 flex items-center gap-2"><EyeIcon className="w-8 h-8 text-blue-700" /> ISO 27001 - Annexe A Contrôles</h1>
@@ -257,8 +298,8 @@ export default function ISO27001() {
         ))}
       </div>
       <div className="mt-8 flex gap-4">
-        <button className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow flex items-center gap-2" disabled>
-          <DocumentArrowDownIcon className="w-5 h-5" /> Exporter l’auto-évaluation (bientôt)
+        <button className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow flex items-center gap-2" onClick={handleExportPDF}>
+          <DocumentArrowDownIcon className="w-5 h-5" /> Exporter l’auto-évaluation
         </button>
       </div>
     </section>
