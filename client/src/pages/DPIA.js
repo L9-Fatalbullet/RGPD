@@ -123,6 +123,7 @@ export default function DPIA() {
   const [error, setError] = useState('');
   // New: state for selected DPIAs
   const [selectedDPIAs, setSelectedDPIAs] = useState([]);
+  const isPosting = useRef(false); // Prevent duplicate POSTs
 
   // Load DPIAs
   useEffect(() => {
@@ -180,7 +181,8 @@ export default function DPIA() {
     saveTimeout.current = setTimeout(async () => {
       let res, data;
       if (!currentId) {
-        // Create new DPIA
+        if (isPosting.current) return; // Prevent duplicate POSTs
+        isPosting.current = true;
         res = await fetch(`${API_BASE}/api/dpias`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -188,8 +190,8 @@ export default function DPIA() {
         });
         data = await res.json();
         if (data.success && data.id) setCurrentId(data.id);
+        isPosting.current = false;
       } else {
-        // Update existing DPIA
         res = await fetch(`${API_BASE}/api/dpias/${currentId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
