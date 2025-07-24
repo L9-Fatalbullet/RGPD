@@ -120,7 +120,6 @@ export default function DPIA() {
   const [saveStatus, setSaveStatus] = useState('');
   const [currentId, setCurrentId] = useState(null);
   const [error, setError] = useState('');
-  const [viewOnly, setViewOnly] = useState(false);
   const [viewModal, setViewModal] = useState(null); // holds the DPIA to view
 
   // Load DPIAs
@@ -269,60 +268,8 @@ export default function DPIA() {
           <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className="w-36 h-36 object-contain drop-shadow-xl" />
         </div>
       </div>
-      {/* Toggle view mode */}
-      <div className="flex justify-end mb-4">
-        <button
-          className={`px-4 py-2 rounded font-semibold shadow transition-all ${viewOnly ? 'bg-blue-100 text-blue-900' : 'bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 text-white'}`}
-          onClick={() => setViewOnly(v => !v)}
-        >
-          {viewOnly ? 'Revenir à l\'assistant DPIA' : 'Voir uniquement les résultats'}
-        </button>
-      </div>
-      {/* View Only Mode */}
-      {viewOnly ? (
-        <div className="animate-fade-in">
-          <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><ShieldCheckIcon className="w-7 h-7 text-blue-700" /> Mes DPIA (résultats)</h2>
-          {loading ? <div className="text-blue-700">Chargement...</div> : (
-            <div className="overflow-x-auto animate-fade-in">
-              <table className="min-w-full bg-white/80 backdrop-blur rounded-xl shadow-lg">
-                <thead>
-                  <tr>
-                    <th className="px-4 py-2 text-left text-blue-900 font-semibold">Nom</th>
-                    <th className="px-4 py-2 text-left text-blue-900 font-semibold">Responsable</th>
-                    <th className="px-4 py-2 text-left text-blue-900 font-semibold">Date</th>
-                    <th className="px-4 py-2 text-left text-blue-900 font-semibold">Résumé</th>
-                    <th className="px-4 py-2"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dpias.length === 0 && <tr><td colSpan={5} className="text-center text-gray-500 py-8">Aucune DPIA enregistrée.</td></tr>}
-                  {dpias.map(dpia => (
-                    <tr key={dpia.id} className="border-b border-blue-100 hover:bg-blue-50/40 transition">
-                      <td className="px-4 py-2 text-gray-800">{dpia.nom}</td>
-                      <td className="px-4 py-2 text-gray-800">{dpia.responsable}</td>
-                      <td className="px-4 py-2 text-gray-500 text-xs">{dpia.date && dpia.date.slice(0,10)}</td>
-                      <td className="px-4 py-2 text-gray-700 text-xs">
-                        <ul className="list-disc pl-4">
-                          {Object.entries(dpia).filter(([k,v]) => typeof v === 'string' && v && !['id','userId','date','nom','responsable'].includes(k)).map(([k,v]) => (
-                            <li key={k}><span className="font-semibold text-blue-900">{k.replace(/_/g,' ')}:</span> {v}</li>
-                          ))}
-                          {dpia.risques_selectionnes && dpia.risques_selectionnes.length > 0 && (
-                            <li><span className="font-semibold text-blue-900">Risques analysés:</span> {dpia.risques_selectionnes.map(idx => COMMON_RISKS[idx]?.label).filter(Boolean).join(', ')}</li>
-                          )}
-                        </ul>
-                      </td>
-                      <td className="px-4 py-2 flex gap-2">
-                        <button className="text-blue-700 hover:text-yellow-500" title="Modifier" onClick={() => handleEdit(dpia)}><PencilIcon className="w-5 h-5" /></button>
-                        <button className="text-red-600 hover:text-red-800" title="Supprimer" onClick={() => handleDelete(dpia.id)}><TrashIcon className="w-5 h-5" /></button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      ) : (
+      {/* Wizard or List */}
+      {!wizard ? (
         <>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-blue-900 flex items-center gap-2"><SparklesIcon className="w-7 h-7 text-blue-700" /> Mes DPIA</h2>
@@ -389,9 +336,7 @@ export default function DPIA() {
             </div>
           )}
         </>
-      )}
-      {/* Wizard or Review Form */}
-      {!viewOnly && (review ? (
+      ) : (
         <form className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-8 max-w-2xl mx-auto animate-fade-in" onSubmit={handleSave}>
           <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><CheckCircleIcon className="w-6 h-6 text-green-600" /> Revue finale</h3>
           <ul className="mb-6 space-y-2">
@@ -422,174 +367,7 @@ export default function DPIA() {
           {status && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{status}</div>}
           {saveStatus && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{saveStatus}</div>}
         </form>
-      ) : (
-        <form className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-8 max-w-2xl mx-auto animate-fade-in">
-          <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><ArrowRightCircleIcon className="w-6 h-6 text-blue-700" /> {STEPS[step].label}</h3>
-          <div className="text-gray-700 text-sm mb-4 flex items-center gap-2"><InformationCircleIcon className="w-4 h-4 text-blue-400" /> {STEPS[step].help}</div>
-          {/* Special risk matrix step */}
-          {step === 3 && (
-            <div className="mb-6">
-              <div className="font-semibold text-blue-900 mb-2 flex items-center gap-2">Sélectionnez les risques à analyser <InformationCircleIcon className="w-4 h-4 text-blue-400" title={STEPS[3].help} /></div>
-              <ul className="space-y-2 mb-4">
-                {COMMON_RISKS.map((risk, idx) => (
-                  <li key={idx} className="flex items-start gap-2">
-                    <input type="checkbox" className="accent-blue-700 mt-1" checked={form.risques_selectionnes && form.risques_selectionnes.includes(idx)} onChange={() => handleRiskToggle(idx)} />
-                    <div>
-                      <span className="font-semibold text-yellow-700 flex items-center gap-1"><ExclamationTriangleIcon className="w-5 h-5" /> {risk.label}</span>
-                      <div className="text-xs text-blue-700">Mesures recommandées : {risk.mesures}</div>
-                      {/* Risk matrix grid */}
-                      {form.risques_selectionnes && form.risques_selectionnes.includes(idx) && (
-                        <div className="flex gap-2 mt-2 items-center">
-                          <label className="text-xs">Gravité :</label>
-                          <select className="rounded border px-2 py-1 text-xs" value={form.risques_details && form.risques_details[idx]?.gravite || ''} onChange={e => handleRiskDetail(idx, 'gravite', e.target.value)}>
-                            <option value="">-</option>
-                            <option value="faible">Faible</option>
-                            <option value="moyenne">Moyenne</option>
-                            <option value="élevée">Élevée</option>
-                          </select>
-                          <label className="text-xs">Probabilité :</label>
-                          <select className="rounded border px-2 py-1 text-xs" value={form.risques_details && form.risques_details[idx]?.probabilite || ''} onChange={e => handleRiskDetail(idx, 'probabilite', e.target.value)}>
-                            <option value="">-</option>
-                            <option value="faible">Faible</option>
-                            <option value="moyenne">Moyenne</option>
-                            <option value="élevée">Élevée</option>
-                          </select>
-                          {/* Highlight high risk */}
-                          {form.risques_details && form.risques_details[idx]?.gravite === 'élevée' && form.risques_details[idx]?.probabilite === 'élevée' && (
-                            <span className="ml-2 text-red-600 font-bold animate-pulse">Risque élevé !</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {step !== 3 && (
-            <div className="grid grid-cols-1 gap-4 mb-6">
-              {STEPS[step].fields.map(f => {
-                // Catégories de données
-                if (f.key === 'categories_donnees') return (
-                  <div key={f.key}>
-                    <label className="block text-blue-900 font-semibold mb-1">{f.label}{f.required && ' *'}</label>
-                    <div className="text-xs text-blue-700 mb-1">{f.help}</div>
-                    <select
-                      className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400"
-                      value={CATEGORIES_DONNEES.includes(form.categories_donnees) ? form.categories_donnees : (form.categories_donnees.startsWith('Autre:') ? 'Autre...' : '')}
-                      onChange={e => {
-                        if (e.target.value === 'Autre...') {
-                          setForm(fm => ({ ...fm, categories_donnees: 'Autre:' }));
-                        } else {
-                          setForm(fm => ({ ...fm, categories_donnees: e.target.value }));
-                        }
-                      }}
-                      required={f.required}
-                    >
-                      <option value="">Sélectionner...</option>
-                      {CATEGORIES_DONNEES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                    </select>
-                    {form.categories_donnees.startsWith('Autre:') && (
-                      <input
-                        className="mt-2 w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400"
-                        type="text"
-                        placeholder="Précisez la catégorie"
-                        value={form.categories_donnees.replace('Autre:', '')}
-                        onChange={e => setForm(fm => ({ ...fm, categories_donnees: 'Autre:' + e.target.value }))}
-                        required={f.required}
-                      />
-                    )}
-                  </div>
-                );
-                // Personnes concernées
-                if (f.key === 'personnes_concernees') return (
-                  <div key={f.key}>
-                    <label className="block text-blue-900 font-semibold mb-1">{f.label}{f.required && ' *'}</label>
-                    <div className="text-xs text-blue-700 mb-1">{f.help}</div>
-                    <select
-                      className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400"
-                      value={PERSONNES_CONCERNEES.includes(form.personnes_concernees) ? form.personnes_concernees : (form.personnes_concernees.startsWith('Autre:') ? 'Autre...' : '')}
-                      onChange={e => {
-                        if (e.target.value === 'Autre...') {
-                          setForm(fm => ({ ...fm, personnes_concernees: 'Autre:' }));
-                        } else {
-                          setForm(fm => ({ ...fm, personnes_concernees: e.target.value }));
-                        }
-                      }}
-                      required={f.required}
-                    >
-                      <option value="">Sélectionner...</option>
-                      {PERSONNES_CONCERNEES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                    </select>
-                    {form.personnes_concernees.startsWith('Autre:') && (
-                      <input
-                        className="mt-2 w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400"
-                        type="text"
-                        placeholder="Précisez la personne concernée"
-                        value={form.personnes_concernees.replace('Autre:', '')}
-                        onChange={e => setForm(fm => ({ ...fm, personnes_concernees: 'Autre:' + e.target.value }))}
-                        required={f.required}
-                      />
-                    )}
-                  </div>
-                );
-                // Finalités
-                if (f.key === 'finalites') return (
-                  <div key={f.key}>
-                    <label className="block text-blue-900 font-semibold mb-1">{f.label}{f.required && ' *'}</label>
-                    <div className="text-xs text-blue-700 mb-1">{f.help}</div>
-                    <select
-                      className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400"
-                      value={FINALITES.includes(form.finalites) ? form.finalites : (form.finalites.startsWith('Autre:') ? 'Autre...' : '')}
-                      onChange={e => {
-                        if (e.target.value === 'Autre...') {
-                          setForm(fm => ({ ...fm, finalites: 'Autre:' }));
-                        } else {
-                          setForm(fm => ({ ...fm, finalites: e.target.value }));
-                        }
-                      }}
-                      required={f.required}
-                    >
-                      <option value="">Sélectionner...</option>
-                      {FINALITES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                    </select>
-                    {form.finalites.startsWith('Autre:') && (
-                      <input
-                        className="mt-2 w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400"
-                        type="text"
-                        placeholder="Précisez la finalité"
-                        value={form.finalites.replace('Autre:', '')}
-                        onChange={e => setForm(fm => ({ ...fm, finalites: 'Autre:' + e.target.value }))}
-                        required={f.required}
-                      />
-                    )}
-                  </div>
-                );
-                // Default: text/textarea
-                return (
-                  <div key={f.key}>
-                    <label className="block text-blue-900 font-semibold mb-1">{f.label}{f.required && ' *'}</label>
-                    <div className="text-xs text-blue-700 mb-1">{f.help}</div>
-                    {f.key === 'description' || f.key === 'mesures' || f.key === 'necessite' ? (
-                      <textarea className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400" value={form[f.key]} onChange={e => handleChange(f.key, e.target.value)} required={f.required} />
-                    ) : (
-                      <input className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400" value={form[f.key]} onChange={e => handleChange(f.key, e.target.value)} required={f.required} />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          <div className="flex gap-4">
-            <button type="button" className="bg-blue-100 text-blue-900 px-6 py-2 rounded font-semibold shadow flex items-center gap-2" onClick={prev} disabled={step === 0}><ArrowLeftCircleIcon className="w-5 h-5" /> Précédent</button>
-            {step < STEPS.length - 1 ? (
-              <button type="button" className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow flex items-center gap-2" onClick={next}>Suivant <ArrowRightCircleIcon className="w-5 h-5" /></button>
-            ) : (
-              <button type="button" className="bg-green-700 hover:bg-green-800 text-white px-6 py-2 rounded font-semibold shadow flex items-center gap-2" onClick={() => setReview(true)}><CheckCircleIcon className="w-5 h-5" /> Revue finale</button>
-            )}
-          </div>
-        </form>
-      ))}
+      )}
       <style>{`
         @keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
         .animate-fade-in { animation: fade-in 0.7s cubic-bezier(.4,0,.2,1) both; }
