@@ -124,6 +124,7 @@ export default function DPIA() {
   // New: state for selected DPIAs
   const [selectedDPIAs, setSelectedDPIAs] = useState([]);
   const isPosting = useRef(false); // Prevent duplicate POSTs
+  const [hasEdited, setHasEdited] = useState(false); // Prevent empty DPIA creation
 
   // Load DPIAs
   useEffect(() => {
@@ -141,7 +142,10 @@ export default function DPIA() {
   }, [dpias]);
 
   // Handle form change
-  const handleChange = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const handleChange = (k, v) => {
+    setHasEdited(true);
+    setForm(f => ({ ...f, [k]: v }));
+  };
 
   // Risk selection logic
   const handleRiskToggle = idx => {
@@ -181,6 +185,7 @@ export default function DPIA() {
     saveTimeout.current = setTimeout(async () => {
       let res, data;
       if (!currentId) {
+        if (!hasEdited) return; // Don't POST until user edits
         if (isPosting.current) return; // Prevent duplicate POSTs
         isPosting.current = true;
         res = await fetch(`${API_BASE}/api/dpias`, {
@@ -203,7 +208,7 @@ export default function DPIA() {
       else setSaveStatus("Erreur lors de l'enregistrement.");
     }, 700);
     return () => clearTimeout(saveTimeout.current);
-  }, [form, token, wizard, currentId]);
+  }, [form, token, wizard, currentId, hasEdited]);
 
   // Save DPIA
   const handleSave = async e => {
@@ -237,6 +242,7 @@ export default function DPIA() {
     setCurrentId(null);
     setReview(false);
     setStatus('');
+    setHasEdited(false); // Reset edit flag
   };
 
   // In DPIA component, add edit/delete logic
