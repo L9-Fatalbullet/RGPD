@@ -117,14 +117,10 @@ export default function DPIA() {
   const [form, setForm] = useState(emptyDPIA());
   const [status, setStatus] = useState('');
   const [review, setReview] = useState(false);
-  const saveTimeout = useRef();
-  const [saveStatus, setSaveStatus] = useState('');
   const [currentId, setCurrentId] = useState(null);
   const [error, setError] = useState('');
   // New: state for selected DPIAs
   const [selectedDPIAs, setSelectedDPIAs] = useState([]);
-  const isPosting = useRef(false); // Prevent duplicate POSTs
-  const [hasEdited, setHasEdited] = useState(false); // Prevent empty DPIA creation
 
   // Load DPIAs
   useEffect(() => {
@@ -143,7 +139,6 @@ export default function DPIA() {
 
   // Handle form change
   const handleChange = (k, v) => {
-    setHasEdited(true);
     setForm(f => ({ ...f, [k]: v }));
   };
 
@@ -177,76 +172,6 @@ export default function DPIA() {
     // eslint-disable-next-line
   }, [step]);
 
-  // Auto-save on form change (debounced)
-  useEffect(() => {
-    if (!token || !wizard) return;
-    setSaveStatus('Enregistrement...');
-    if (saveTimeout.current) clearTimeout(saveTimeout.current);
-    saveTimeout.current = setTimeout(async () => {
-      let res, data;
-      if (!currentId) {
-        if (!hasEdited) return; // Don't POST until user edits
-        if (isPosting.current) return; // Prevent duplicate POSTs
-        isPosting.current = true;
-        res = await fetch(`${API_BASE}/api/dpias`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ ...form })
-        });
-        data = await res.json();
-        if (data.success && data.id) setCurrentId(data.id);
-        isPosting.current = false;
-      } else {
-        res = await fetch(`${API_BASE}/api/dpias/${currentId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ ...form })
-        });
-        data = await res.json();
-      }
-      if (data && data.success) setSaveStatus('Enregistré !');
-      else setSaveStatus("Erreur lors de l'enregistrement.");
-    }, 700);
-    return () => clearTimeout(saveTimeout.current);
-  }, [form, token, wizard, currentId, hasEdited]);
-
-  // Save DPIA
-  const handleSave = async e => {
-    e.preventDefault();
-    if (isPosting.current) return; // Prevent double POST
-    setStatus('Enregistrement...');
-    try {
-      let res, data;
-      if (currentId) {
-        // Update existing DPIA
-        res = await fetch(`${API_BASE}/api/dpias/${currentId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ ...form })
-        });
-      } else {
-        // Create new DPIA
-        isPosting.current = true;
-        res = await fetch(`${API_BASE}/api/dpias`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ ...form })
-        });
-        isPosting.current = false;
-      }
-      data = await res.json();
-      if (data.success) {
-        setStatus('Enregistré !');
-        setTimeout(() => { setWizard(false); setReview(false); setForm(emptyDPIA()); setStatus(''); }, 1000);
-      } else {
-        setStatus("Erreur lors de l'enregistrement.");
-      }
-    } catch {
-      setStatus("Erreur réseau ou serveur.");
-      isPosting.current = false;
-    }
-  };
-
   // Wizard navigation
   const next = () => setStep(s => Math.min(s + 1, STEPS.length - 1));
   const prev = () => setStep(s => Math.max(s - 1, 0));
@@ -257,7 +182,6 @@ export default function DPIA() {
     setCurrentId(null);
     setReview(false);
     setStatus('');
-    setHasEdited(false); // Reset edit flag
   };
 
   // In DPIA component, add edit/delete logic
@@ -628,11 +552,9 @@ export default function DPIA() {
                   <button type="button" className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow flex items-center gap-2" onClick={next}>Suivant <ArrowRightCircleIcon className="w-5 h-5" /></button>
                 )}
                 {step === STEPS.length - 1 && (
-                  <button type="submit" className="w-full bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow mb-2" disabled={saveStatus === 'Enregistrement...' || isPosting.current}>Enregistrer la DPIA</button>
+                  <button type="submit" className="w-full bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow mb-2">Enregistrer la DPIA</button>
                 )}
               </div>
-              {/* Only show saveStatus if not 'Enregistrement...' */}
-              {saveStatus && saveStatus !== 'Enregistrement...' && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{saveStatus}</div>}
               {status && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{status}</div>}
             </div>
           </form>
