@@ -467,90 +467,87 @@ export default function DPIA() {
                     </div>
                     <button type="button" className="bg-blue-700 text-white px-4 py-2 rounded font-semibold shadow" onClick={handleAddCustomRisk}>Ajouter</button>
                   </div>
-                  {/* List custom risks */}
-                  {form.custom_risks && form.custom_risks.length > 0 && (
-                    <div className="mb-4">
-                      <div className="font-semibold text-blue-900 mb-2 text-sm">Risques personnalisés :</div>
-                      <ul className="flex flex-col gap-2">
-                        {form.custom_risks.map((r, idx) => (
-                          <li key={idx} className="flex items-center gap-2 bg-yellow-50 rounded px-3 py-2">
-                            <span className="font-semibold text-yellow-700">{r.label}</span>
-                            <span className="text-xs text-blue-700">{r.mesures}</span>
-                            <button type="button" className="text-red-600 ml-2" onClick={() => handleRemoveCustomRisk(idx)} title="Supprimer"><TrashIcon className="w-4 h-4" /></button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {/* Risks (fixed + custom) */}
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {[...COMMON_RISKS, ...(form.custom_risks || [])].map((risk, idx) => {
-                      // For custom risks, idx >= COMMON_RISKS.length, key is 'custom_' + (idx - COMMON_RISKS.length)
-                      const riskKey = idx < COMMON_RISKS.length ? idx : 'custom_' + (idx - COMMON_RISKS.length);
-                      const selected = form.risques_selectionnes && form.risques_selectionnes.includes(riskKey);
-                      const details = form.risques_details && form.risques_details[idx] ? form.risques_details[idx] : {};
-                      const gravite = details.gravite;
-                      const probabilite = details.probabilite;
-                      const score = (g => (g === 'faible' ? 1 : g === 'moyenne' ? 2 : g === 'élevée' ? 3 : 0))(gravite) * (p => (p === 'faible' ? 1 : p === 'moyenne' ? 2 : p === 'élevée' ? 3 : 0))(probabilite);
-                      let niveau = '';
-                      let badge = '';
-                      if (score >= 7) { niveau = 'Élevé'; badge = 'bg-red-100 text-red-700 border-red-300'; }
-                      else if (score >= 4) { niveau = 'Moyen'; badge = 'bg-yellow-100 text-yellow-700 border-yellow-300'; }
-                      else if (score > 0) { niveau = 'Faible'; badge = 'bg-green-100 text-green-700 border-green-300'; }
-                      return (
-                        <div
-                          key={riskKey}
-                          className={`rounded-2xl border-2 p-5 shadow-sm flex flex-col gap-3 transition-all duration-200 cursor-pointer hover:shadow-lg ${selected ? 'border-yellow-400 bg-yellow-50/60' : 'border-blue-100 bg-white/90'}`}
-                          style={{ minHeight: 220 }}
-                          onClick={() => handleRiskToggle(riskKey)}
-                        >
-                          <label className="flex items-center gap-2 cursor-pointer select-none">
-                            <input type="checkbox" className="accent-blue-700" checked={selected} onChange={e => { e.stopPropagation(); handleRiskToggle(riskKey); }} onClick={e => e.stopPropagation()} />
-                            <span className="font-semibold text-yellow-700 flex items-center gap-1 text-base"><ExclamationTriangleIcon className="w-5 h-5" /> {risk.label}</span>
-                          </label>
-                          <div className="text-xs text-blue-700 mb-1">Mesures recommandées : <input className="w-full rounded border px-2 py-1 text-xs" value={details.mesures !== undefined ? details.mesures : risk.mesures} onChange={e => handleRiskDetail(idx, 'mesures', e.target.value)} /></div>
-                          {selected && (
-                            <div className="flex flex-col gap-2 mt-2">
-                              <div className="flex gap-4 items-center flex-wrap">
-                                <label className="text-xs font-semibold">Gravité :</label>
-                                <select className="rounded border px-2 py-1 text-xs" value={gravite || ''} onChange={e => { e.stopPropagation(); handleRiskDetail(idx, 'gravite', e.target.value); }}>
+                  {/* Editable risk table */}
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-xs bg-white rounded shadow border">
+                      <thead>
+                        <tr className="bg-blue-50 text-blue-900">
+                          <th className="px-3 py-2 font-semibold">Risque</th>
+                          <th className="px-3 py-2 font-semibold">Gravité</th>
+                          <th className="px-3 py-2 font-semibold">Probabilité</th>
+                          <th className="px-3 py-2 font-semibold">Mesures</th>
+                          <th className="px-3 py-2 font-semibold">Contrôles</th>
+                          <th className="px-3 py-2 font-semibold">Mesures supp.</th>
+                          <th className="px-3 py-2 font-semibold">Responsable</th>
+                          <th className="px-3 py-2 font-semibold">Échéance</th>
+                          <th className="px-3 py-2 font-semibold">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[...COMMON_RISKS, ...(form.custom_risks || [])].map((risk, idx) => {
+                          const isCustom = idx >= COMMON_RISKS.length;
+                          const details = form.risques_details && form.risques_details[idx] ? form.risques_details[idx] : {};
+                          // A risk is considered selected if any field is filled
+                          const isSelected = [details.gravite, details.probabilite, details.mesures, details.controls, details.additional_measures, details.responsible, details.deadline].some(v => v && v.trim() !== '');
+                          return (
+                            <tr key={isCustom ? 'custom_' + (idx - COMMON_RISKS.length) : idx} className={isSelected ? 'bg-yellow-50' : ''}>
+                              <td className="px-3 py-2 font-medium text-blue-900">
+                                {isCustom ? (
+                                  <input
+                                    className="w-full rounded border px-2 py-1 text-xs"
+                                    value={risk.label}
+                                    onChange={e => {
+                                      const newCustomRisks = [...(form.custom_risks || [])];
+                                      newCustomRisks[idx - COMMON_RISKS.length].label = e.target.value;
+                                      setForm(f => ({ ...f, custom_risks: newCustomRisks }));
+                                    }}
+                                  />
+                                ) : risk.label}
+                              </td>
+                              <td className="px-3 py-2">
+                                <select className="rounded border px-2 py-1 text-xs" value={details.gravite || ''} onChange={e => handleRiskDetail(idx, 'gravite', e.target.value)}>
                                   <option value="">-</option>
                                   <option value="faible">Faible</option>
                                   <option value="moyenne">Moyenne</option>
                                   <option value="élevée">Élevée</option>
                                 </select>
-                                <label className="text-xs font-semibold">Probabilité :</label>
-                                <select className="rounded border px-2 py-1 text-xs" value={probabilite || ''} onChange={e => { e.stopPropagation(); handleRiskDetail(idx, 'probabilite', e.target.value); }}>
+                              </td>
+                              <td className="px-3 py-2">
+                                <select className="rounded border px-2 py-1 text-xs" value={details.probabilite || ''} onChange={e => handleRiskDetail(idx, 'probabilite', e.target.value)}>
                                   <option value="">-</option>
                                   <option value="faible">Faible</option>
                                   <option value="moyenne">Moyenne</option>
                                   <option value="élevée">Élevée</option>
                                 </select>
-                                {score > 0 && (
-                                  <span className={`ml-4 font-bold flex items-center gap-1`}>
-                                    Score: {score}
-                                    <span className={`ml-2 px-2 py-0.5 rounded-full border text-xs font-semibold ${badge}`}>{niveau}</span>
-                                  </span>
+                              </td>
+                              <td className="px-3 py-2">
+                                <input className="w-full rounded border px-2 py-1 text-xs" value={details.mesures !== undefined ? details.mesures : risk.mesures || ''} onChange={e => handleRiskDetail(idx, 'mesures', e.target.value)} />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input className="w-full rounded border px-2 py-1 text-xs" value={details.controls || ''} onChange={e => handleRiskDetail(idx, 'controls', e.target.value)} />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input className="w-full rounded border px-2 py-1 text-xs" value={details.additional_measures || ''} onChange={e => handleRiskDetail(idx, 'additional_measures', e.target.value)} />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input className="w-full rounded border px-2 py-1 text-xs" value={details.responsible || ''} onChange={e => handleRiskDetail(idx, 'responsible', e.target.value)} />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input className="w-full rounded border px-2 py-1 text-xs" value={details.deadline || ''} onChange={e => handleRiskDetail(idx, 'deadline', e.target.value)} />
+                              </td>
+                              <td className="px-3 py-2">
+                                {isCustom && (
+                                  <button type="button" className="text-red-600 ml-2" onClick={() => handleRemoveCustomRisk(idx - COMMON_RISKS.length)} title="Supprimer"><TrashIcon className="w-4 h-4" /></button>
                                 )}
-                              </div>
-                              {/* Mitigation plan fields */}
-                              <div className="flex flex-col gap-2 mt-2">
-                                <input className="rounded border px-2 py-1 text-xs" placeholder="Contrôles existants" value={details.controls || ''} onChange={e => handleRiskDetail(idx, 'controls', e.target.value)} />
-                                <input className="rounded border px-2 py-1 text-xs" placeholder="Mesures supplémentaires" value={details.additional_measures || ''} onChange={e => handleRiskDetail(idx, 'additional_measures', e.target.value)} />
-                                <input className="rounded border px-2 py-1 text-xs" placeholder="Responsable" value={details.responsible || ''} onChange={e => handleRiskDetail(idx, 'responsible', e.target.value)} />
-                                <input className="rounded border px-2 py-1 text-xs" placeholder="Échéance" value={details.deadline || ''} onChange={e => handleRiskDetail(idx, 'deadline', e.target.value)} />
-                              </div>
-                              {score === 9 && (
-                                <span className="text-red-600 font-bold animate-pulse">Risque élevé !</span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                   {/* Summary table of selected risks (fixed + custom) */}
-                  {form.risques_selectionnes && form.risques_selectionnes.length > 0 && (
+                  {form.risques_details && form.risques_details.filter(details => [details.gravite, details.probabilite, details.mesures, details.controls, details.additional_measures, details.responsible, details.deadline].some(v => v && v.trim() !== '')).length > 0 && (
                     <div className="mt-10">
                       <div className="font-semibold text-blue-900 mb-3 text-base">Résumé des risques sélectionnés :</div>
                       <div className="overflow-x-auto">
@@ -570,15 +567,11 @@ export default function DPIA() {
                             </tr>
                           </thead>
                           <tbody>
-                            {form.risques_selectionnes.map((riskKey, i) => {
-                              let risk, details;
-                              if (typeof riskKey === 'string' && riskKey.startsWith('custom_')) {
-                                const idx = parseInt(riskKey.replace('custom_', ''));
-                                risk = form.custom_risks[idx];
-                              } else {
-                                risk = COMMON_RISKS[riskKey];
-                              }
-                              details = form.risques_details && form.risques_details[i] ? form.risques_details[i] : {};
+                            {form.risques_details.map((details, i) => {
+                              // Only show if at least one field is filled
+                              if (![details.gravite, details.probabilite, details.mesures, details.controls, details.additional_measures, details.responsible, details.deadline].some(v => v && v.trim() !== '')) return null;
+                              const isCustom = i >= COMMON_RISKS.length;
+                              const risk = isCustom ? form.custom_risks[i - COMMON_RISKS.length] : COMMON_RISKS[i];
                               const gravite = details.gravite;
                               const probabilite = details.probabilite;
                               const score = (g => (g === 'faible' ? 1 : g === 'moyenne' ? 2 : g === 'élevée' ? 3 : 0))(gravite) * (p => (p === 'faible' ? 1 : p === 'moyenne' ? 2 : p === 'élevée' ? 3 : 0))(probabilite);
@@ -588,7 +581,7 @@ export default function DPIA() {
                               else if (score >= 4) { niveau = 'Moyen'; badge = 'bg-yellow-100 text-yellow-700 border-yellow-300'; }
                               else if (score > 0) { niveau = 'Faible'; badge = 'bg-green-100 text-green-700 border-green-300'; }
                               return (
-                                <tr key={riskKey} className="border-b last:border-0 hover:bg-blue-50/40 transition">
+                                <tr key={isCustom ? 'custom_' + (i - COMMON_RISKS.length) : i} className="border-b last:border-0 hover:bg-blue-50/40 transition">
                                   <td className="px-3 py-2 font-medium text-blue-900">{risk?.label}</td>
                                   <td className="px-3 py-2">{gravite || '-'}</td>
                                   <td className="px-3 py-2">{probabilite || '-'}</td>
