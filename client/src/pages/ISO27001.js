@@ -185,50 +185,67 @@ export default function ISO27001() {
     return '#e5e7eb'; // gray
   };
 
-  // Export to PDF with logo and styled tables
+  // Enhanced PDF export
   const handleExportPDF = async () => {
-    const doc = new jsPDF();
-    let y = 20;
-    // Add logo (must be base64 or external, here we use a placeholder)
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    let y = 40;
+    // Try to add logo centered
     const logoUrl = '/logo.png';
+    let logoHeight = 0;
     try {
       const img = new window.Image();
       img.src = logoUrl;
       await new Promise(resolve => { img.onload = resolve; });
-      doc.addImage(img, 'PNG', 10, 10, 30, 30);
-      y = 45;
+      const logoW = 80, logoH = 80;
+      doc.addImage(img, 'PNG', (doc.internal.pageSize.getWidth() - logoW) / 2, y, logoW, logoH);
+      y += logoH + 10;
+      logoHeight = logoH;
     } catch {
-      // If logo fails, just skip
+      y += 10;
     }
-    doc.setFontSize(20);
+    // Title centered
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(24);
     doc.setTextColor('#1e3a8a');
-    doc.text('Auto-évaluation ISO 27001 - Annexe A', 50, 25);
-    doc.setFontSize(12);
+    doc.text('Auto-évaluation ISO 27001 - Annexe A', doc.internal.pageSize.getWidth() / 2, y, { align: 'center' });
+    y += 30;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(13);
     doc.setTextColor('#0e172a');
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, 50, 33);
-    doc.text(`Progression: ${percent}% (${completed}/${total} conformes)`, 50, 41);
-    y += 10;
-    // Progress bar
-    doc.setFillColor(229, 231, 235);
-    doc.rect(50, y, 100, 6, 'F');
-    doc.setFillColor(34, 197, 94);
-    doc.rect(50, y, percent, 6, 'F');
-    y += 16;
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, doc.internal.pageSize.getWidth() / 2, y, { align: 'center' });
+    y += 18;
+    doc.text(`Progression: ${percent}% (${completed}/${total} conformes)`, doc.internal.pageSize.getWidth() / 2, y, { align: 'center' });
+    y += 18;
+    // Progress bar (rounded, gradient effect)
+    const barX = (doc.internal.pageSize.getWidth() - 250) / 2;
+    doc.setFillColor('#e5e7eb');
+    doc.roundedRect(barX, y, 250, 16, 8, 8, 'F');
+    doc.setFillColor('#facc15');
+    doc.roundedRect(barX, y, 2.5 * percent, 16, 8, 8, 'F');
+    y += 40;
     // For each category, add a styled table
     CATEGORIES.forEach(cat => {
-      doc.setFontSize(15);
-      doc.setTextColor('#1e40af');
-      doc.text(cat.label, 10, y);
-      y += 6;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.setTextColor('#1e3a8a');
+      doc.text(cat.label, 40, y);
+      y += 10;
       // Prepare table data
       const tableData = cat.controls.map(controlNum => {
         const control = ISO_CONTROLS[controlNum] || { title: 'Contrôle inconnu', description: '' };
         const key = cat.label + '-' + controlNum;
         const answer = answers[key] || {};
+        // Status badge as colored text
+        let statusLabel = answer.status ? STATUS_OPTIONS.find(opt => opt.value === answer.status)?.label : 'Non renseigné';
+        let statusColor = '#e5e7eb';
+        let statusTextColor = '#1e293b';
+        if (answer.status === 'yes') { statusColor = '#22c55e'; statusTextColor = '#fff'; }
+        else if (answer.status === 'partial') { statusColor = '#facc15'; statusTextColor = '#fff'; }
+        else if (answer.status === 'no') { statusColor = '#ef4444'; statusTextColor = '#fff'; }
         return [
           controlNum,
           control.title,
-          answer.status ? STATUS_OPTIONS.find(opt => opt.value === answer.status)?.label : 'Non renseigné',
+          { content: statusLabel, styles: { fillColor: statusColor, textColor: statusTextColor, fontStyle: 'bold', halign: 'center', cellPadding: { top: 4, bottom: 4 } } },
           answer.comment || ''
         ];
       });
@@ -240,32 +257,26 @@ export default function ISO27001() {
         body: tableData,
         startY: y,
         theme: 'grid',
-        headStyles: { fillColor: [30, 64, 175], textColor: 255, fontStyle: 'bold' },
-        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [30, 64, 175], textColor: 255, fontStyle: 'bold', halign: 'center' },
+        styles: { font: 'helvetica', fontSize: 10, cellPadding: 4 },
         bodyStyles: {
           valign: 'top',
           lineColor: [226, 232, 240],
           lineWidth: 0.1,
         },
-        didParseCell: function (data) {
-          if (data.section === 'body' && data.column.index === 2) {
-            const status = data.cell.raw;
-            data.cell.styles.fillColor = status === 'Oui' ? [34, 197, 94] : status === 'En cours' ? [250, 204, 21] : status === 'Non' ? [239, 68, 68] : [229, 231, 235];
-            data.cell.styles.textColor = status === 'Non renseigné' ? [100, 116, 139] : [255, 255, 255];
-          }
-        },
-        margin: { left: 10, right: 10 },
+        alternateRowStyles: { fillColor: [243, 244, 246] },
+        margin: { left: 30, right: 30 },
         didDrawPage: function (data) {
           // Footer
           const pageCount = doc.internal.getNumberOfPages();
-          doc.setFontSize(8);
+          doc.setFontSize(9);
           doc.setTextColor('#64748b');
-          doc.text(`Page ${doc.internal.getCurrentPageInfo().pageNumber} / ${pageCount}`, 105, 290, { align: 'center' });
-          doc.text(`Exporté le ${new Date().toLocaleDateString()}`, 200, 290, { align: 'right' });
+          doc.text(`Page ${doc.internal.getCurrentPageInfo().pageNumber} / ${pageCount}`, doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 20, { align: 'center' });
+          doc.text(`Exporté le ${new Date().toLocaleDateString()} - www.votre-site.com`, doc.internal.pageSize.getWidth() - 30, doc.internal.pageSize.getHeight() - 20, { align: 'right' });
         },
       });
-      y = doc.lastAutoTable.finalY + 10;
-      if (y > 250) { doc.addPage(); y = 20; }
+      y = doc.lastAutoTable.finalY + 20;
+      if (y > doc.internal.pageSize.getHeight() - 80) { doc.addPage(); y = 40; }
     });
     doc.save('Auto-evaluation_ISO27001.pdf');
   };
