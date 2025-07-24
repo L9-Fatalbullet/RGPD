@@ -161,6 +161,7 @@ const STATUS_OPTIONS = [
 export default function ISO27001() {
   const [answers, setAnswers] = useState({});
   const [expanded, setExpanded] = useState({});
+  const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
 
   // Progress calculation
   const total = CATEGORIES.reduce((sum, cat) => sum + cat.controls.length, 0);
@@ -175,14 +176,6 @@ export default function ISO27001() {
   };
   const toggleExpand = key => {
     setExpanded(e => ({ ...e, [key]: !e[key] }));
-  };
-
-  // Helper for status color
-  const statusColor = status => {
-    if (status === 'yes') return '#22c55e'; // green
-    if (status === 'partial') return '#facc15'; // yellow
-    if (status === 'no') return '#ef4444'; // red
-    return '#e5e7eb'; // gray
   };
 
   // Enhanced PDF export
@@ -281,6 +274,12 @@ export default function ISO27001() {
     doc.save('Auto-evaluation_ISO27001.pdf');
   };
 
+  // Navigation
+  const prevCategory = () => setCurrentCategoryIndex(i => Math.max(i - 1, 0));
+  const nextCategory = () => setCurrentCategoryIndex(i => Math.min(i + 1, CATEGORIES.length - 1));
+
+  const currentCategory = CATEGORIES[currentCategoryIndex];
+
   return (
     <section className="max-w-4xl mx-auto p-6">
       <h1 className="text-3xl font-bold text-blue-900 mb-2 flex items-center gap-2"><EyeIcon className="w-8 h-8 text-blue-700" /> ISO 27001 - Annexe A Contrôles</h1>
@@ -293,79 +292,100 @@ export default function ISO27001() {
           </div>
           <span className="font-semibold text-blue-900">{percent}%</span>
         </div>
+        <div className="flex items-center gap-4 mt-2">
+          <span className="text-blue-900 font-semibold">Catégorie {currentCategoryIndex + 1} / {CATEGORIES.length}</span>
+          <span className="text-blue-700">{currentCategory.label}</span>
+        </div>
       </div>
-      <div className="space-y-6">
-        {CATEGORIES.map(cat => (
-          <div key={cat.label} className="bg-blue-50 rounded-xl shadow p-4">
-            <h2 className="text-xl font-bold text-blue-800 mb-2">{cat.label}</h2>
-            <table className="min-w-full text-xs bg-white rounded shadow border">
-              <thead>
-                <tr className="bg-blue-100 text-blue-900">
-                  <th className="px-3 py-2 text-left font-semibold">Numéro</th>
-                  <th className="px-3 py-2 text-left font-semibold">Contrôle</th>
-                  <th className="px-3 py-2 text-left font-semibold">Statut</th>
-                  <th className="px-3 py-2"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {cat.controls.map(controlNum => {
-                  const control = ISO_CONTROLS[controlNum] || { title: 'Contrôle inconnu', description: '' };
-                  const key = cat.label + '-' + controlNum;
-                  const answer = answers[key] || {};
-                  return (
-                    <React.Fragment key={controlNum}>
-                      <tr className="border-b last:border-0 hover:bg-blue-50/40 transition">
-                        <td className="px-3 py-2 font-medium text-blue-900">{controlNum}</td>
-                        <td className="px-3 py-2">
-                          <div className="font-semibold text-blue-900">{control.title}</div>
-                          {expanded[key] && (
-                            <div className="text-xs text-blue-700 mt-1">{control.description}</div>
-                          )}
-                        </td>
-                        <td className="px-3 py-2">
-                          <div className="flex gap-2">
-                            {STATUS_OPTIONS.map(opt => (
-                              <button
-                                key={opt.value}
-                                className={`px-2 py-1 rounded font-semibold flex items-center gap-1 border ${answer.status === opt.value ? 'bg-blue-700 text-white border-blue-700' : 'bg-white text-blue-900 border-blue-200'}`}
-                                onClick={() => handleStatus(key, opt.value)}
-                                type="button"
-                              >
-                                {opt.icon} {opt.label}
-                              </button>
-                            ))}
-                          </div>
-                        </td>
-                        <td className="px-3 py-2 text-right">
-                          <button type="button" className="text-blue-700 hover:text-yellow-500" onClick={() => toggleExpand(key)}>
-                            {expanded[key] ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
-                          </button>
-                        </td>
-                      </tr>
+      {/* Only show the current category */}
+      <div className="bg-blue-50 rounded-xl shadow p-4 mb-8">
+        <h2 className="text-xl font-bold text-blue-800 mb-2">{currentCategory.label}</h2>
+        <table className="min-w-full text-xs bg-white rounded shadow border">
+          <thead>
+            <tr className="bg-blue-100 text-blue-900">
+              <th className="px-3 py-2 text-left font-semibold">Numéro</th>
+              <th className="px-3 py-2 text-left font-semibold">Contrôle</th>
+              <th className="px-3 py-2 text-left font-semibold">Statut</th>
+              <th className="px-3 py-2"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {currentCategory.controls.map(controlNum => {
+              const control = ISO_CONTROLS[controlNum] || { title: 'Contrôle inconnu', description: '' };
+              const key = currentCategory.label + '-' + controlNum;
+              const answer = answers[key] || {};
+              return (
+                <React.Fragment key={controlNum}>
+                  <tr className="border-b last:border-0 hover:bg-blue-50/40 transition">
+                    <td className="px-3 py-2 font-medium text-blue-900">{controlNum}</td>
+                    <td className="px-3 py-2">
+                      <div className="font-semibold text-blue-900">{control.title}</div>
                       {expanded[key] && (
-                        <tr>
-                          <td colSpan={4} className="bg-blue-50 px-3 py-2">
-                            <textarea
-                              className="w-full rounded border px-3 py-2 text-xs"
-                              placeholder="Commentaires, preuves, actions..."
-                              value={answer.comment || ''}
-                              onChange={e => handleComment(key, e.target.value)}
-                            />
-                          </td>
-                        </tr>
+                        <div className="text-xs text-blue-700 mt-1">{control.description}</div>
                       )}
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ))}
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex gap-2">
+                        {STATUS_OPTIONS.map(opt => (
+                          <button
+                            key={opt.value}
+                            className={`px-2 py-1 rounded font-semibold flex items-center gap-1 border ${answer.status === opt.value ? 'bg-blue-700 text-white border-blue-700' : 'bg-white text-blue-900 border-blue-200'}`}
+                            onClick={() => handleStatus(key, opt.value)}
+                            type="button"
+                          >
+                            {opt.icon} {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      <button type="button" className="text-blue-700 hover:text-yellow-500" onClick={() => toggleExpand(key)}>
+                        {expanded[key] ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
+                      </button>
+                    </td>
+                  </tr>
+                  {expanded[key] && (
+                    <tr>
+                      <td colSpan={4} className="bg-blue-50 px-3 py-2">
+                        <textarea
+                          className="w-full rounded border px-3 py-2 text-xs"
+                          placeholder="Commentaires, preuves, actions..."
+                          value={answer.comment || ''}
+                          onChange={e => handleComment(key, e.target.value)}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
-      <div className="mt-8 flex gap-4">
-        <button className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow flex items-center gap-2" onClick={handleExportPDF}>
-          <DocumentArrowDownIcon className="w-5 h-5" /> Exporter l’auto-évaluation
+      {/* Navigation buttons */}
+      <div className="flex gap-4 justify-between mt-4">
+        <button
+          className="bg-blue-100 text-blue-900 px-6 py-2 rounded font-semibold shadow flex items-center gap-2"
+          onClick={prevCategory}
+          disabled={currentCategoryIndex === 0}
+        >
+          Précédent
         </button>
+        {currentCategoryIndex < CATEGORIES.length - 1 ? (
+          <button
+            className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow flex items-center gap-2"
+            onClick={nextCategory}
+          >
+            Suivant
+          </button>
+        ) : (
+          <button
+            className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow flex items-center gap-2"
+            onClick={handleExportPDF}
+          >
+            <DocumentArrowDownIcon className="w-5 h-5" /> Exporter l’auto-évaluation
+          </button>
+        )}
       </div>
     </section>
   );
