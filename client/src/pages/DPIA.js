@@ -221,7 +221,14 @@ export default function DPIA() {
   // Wizard navigation
   const next = () => setStep(s => Math.min(s + 1, STEPS.length - 1));
   const prev = () => setStep(s => Math.max(s - 1, 0));
-  const startWizard = () => { setWizard(true); setStep(0); setForm(emptyDPIA()); setCurrentId(null); setReview(false); setStatus(''); };
+  const startWizard = () => {
+    setWizard(true);
+    setStep(0);
+    setForm(emptyDPIA());
+    setCurrentId(null);
+    setReview(false);
+    setStatus('');
+  };
 
   // In DPIA component, add edit/delete logic
   const handleEdit = dpia => {
@@ -337,36 +344,82 @@ export default function DPIA() {
           )}
         </>
       ) : (
-        <form className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-8 max-w-2xl mx-auto animate-fade-in" onSubmit={handleSave}>
-          <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><CheckCircleIcon className="w-6 h-6 text-green-600" /> Revue finale</h3>
-          <ul className="mb-6 space-y-2">
-            {STEPS.map(s => s.fields.map(f => (
-              <li key={f.key} className="flex gap-2"><span className="font-semibold text-blue-900">{f.label}:</span> <span>{form[f.key]}</span></li>
-            )))}
-            {/* Show selected risks and details */}
-            {form.risques_selectionnes && form.risques_selectionnes.length > 0 && (
-              <li className="flex flex-col gap-1">
-                <span className="font-semibold text-blue-900">Risques analysés :</span>
-                <ul className="list-disc pl-6">
-                  {form.risques_selectionnes.map(idx => (
-                    <li key={idx} className="mb-1">
-                      <span className="font-semibold text-yellow-700"><ExclamationTriangleIcon className="w-4 h-4 inline mr-1" /> {COMMON_RISKS[idx].label}</span>
-                      {form.risques_details && form.risques_details[idx] && (
-                        <span className="ml-2 text-xs text-gray-600">(Gravité: {form.risques_details[idx].gravite || '-'}, Probabilité: {form.risques_details[idx].probabilite || '-'})</span>
-                      )}
-                      <div className="text-xs text-blue-700">Mesures: {COMMON_RISKS[idx].mesures}</div>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            )}
-          </ul>
-          <button type="submit" className="w-full bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow mb-2">Enregistrer la DPIA</button>
-          <button type="button" className="w-full bg-blue-100 text-blue-900 px-6 py-2 rounded font-semibold shadow flex items-center justify-center gap-2" disabled><DocumentArrowDownIcon className="w-5 h-5" /> Exporter PDF (bientôt)</button>
-          <button type="button" className="w-full bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow flex items-center justify-center gap-2 mb-2" onClick={() => exportDPIAPDF(form)}>Exporter en PDF</button>
-          {status && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{status}</div>}
-          {saveStatus && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{saveStatus}</div>}
-        </form>
+        !review ? (
+          <form className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-8 max-w-2xl mx-auto animate-fade-in">
+            <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><CheckCircleIcon className="w-6 h-6 text-green-600" /> Étape {step + 1} : {STEPS[step].label}</h3>
+            <p className="text-gray-700 mb-4">{STEPS[step].help}</p>
+            <div className="grid gap-4">
+              {STEPS[step].fields.map(f => (
+                <div key={f.key} className="flex flex-col gap-1">
+                  <label htmlFor={f.key} className="text-sm font-semibold text-blue-900">{f.label} {f.required ? '*' : ''}</label>
+                  {f.help && <p className="text-xs text-gray-600">{f.help}</p>}
+                  {f.type === 'select' ? (
+                    <select
+                      id={f.key}
+                      value={form[f.key]}
+                      onChange={e => handleChange(f.key, e.target.value)}
+                      className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Sélectionnez une option</option>
+                      {f.options.map(option => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type={f.type || 'text'}
+                      id={f.key}
+                      value={form[f.key]}
+                      onChange={e => handleChange(f.key, e.target.value)}
+                      className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder={f.help}
+                    />
+                  )}
+                </div>
+              ))}
+              {step < STEPS.length - 1 && (
+                <button type="button" className="w-full bg-gradient-to-r from-blue-700 to-blue-900 hover:from-blue-900 hover:to-blue-700 text-white px-6 py-2 rounded font-semibold shadow" onClick={next}>Suivant</button>
+              )}
+              {step > 0 && (
+                <button type="button" className="w-full bg-gray-200 text-gray-800 px-6 py-2 rounded font-semibold shadow" onClick={prev}>Précédent</button>
+              )}
+            </div>
+            <button type="button" className="w-full bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow mb-2" onClick={() => setReview(true)}>Revue finale</button>
+            {status && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{status}</div>}
+            {saveStatus && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{saveStatus}</div>}
+          </form>
+        ) : (
+          <form className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-8 max-w-2xl mx-auto animate-fade-in" onSubmit={handleSave}>
+            <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><CheckCircleIcon className="w-6 h-6 text-green-600" /> Revue finale</h3>
+            <ul className="mb-6 space-y-2">
+              {STEPS.map(s => s.fields.map(f => (
+                <li key={f.key} className="flex gap-2"><span className="font-semibold text-blue-900">{f.label}:</span> <span>{form[f.key]}</span></li>
+              )))}
+              {/* Show selected risks and details */}
+              {form.risques_selectionnes && form.risques_selectionnes.length > 0 && (
+                <li className="flex flex-col gap-1">
+                  <span className="font-semibold text-blue-900">Risques analysés :</span>
+                  <ul className="list-disc pl-6">
+                    {form.risques_selectionnes.map(idx => (
+                      <li key={idx} className="mb-1">
+                        <span className="font-semibold text-yellow-700"><ExclamationTriangleIcon className="w-4 h-4 inline mr-1" /> {COMMON_RISKS[idx].label}</span>
+                        {form.risques_details && form.risques_details[idx] && (
+                          <span className="ml-2 text-xs text-gray-600">(Gravité: {form.risques_details[idx].gravite || '-'}, Probabilité: {form.risques_details[idx].probabilite || '-'})</span>
+                        )}
+                        <div className="text-xs text-blue-700">Mesures: {COMMON_RISKS[idx].mesures}</div>
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              )}
+            </ul>
+            <button type="submit" className="w-full bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow mb-2">Enregistrer la DPIA</button>
+            <button type="button" className="w-full bg-blue-100 text-blue-900 px-6 py-2 rounded font-semibold shadow flex items-center justify-center gap-2" disabled><DocumentArrowDownIcon className="w-5 h-5" /> Exporter PDF (bientôt)</button>
+            <button type="button" className="w-full bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow flex items-center justify-center gap-2 mb-2" onClick={() => exportDPIAPDF(form)}>Exporter en PDF</button>
+            {status && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{status}</div>}
+            {saveStatus && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{saveStatus}</div>}
+          </form>
+        )
       )}
       <style>{`
         @keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
