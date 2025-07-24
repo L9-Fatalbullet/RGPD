@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CheckCircleIcon, ExclamationTriangleIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 // Official ISO 27001:2022 Annexe A controls (subset for demo; expand as needed)
 const ISO_CONTROLS = {
@@ -190,7 +190,6 @@ export default function ISO27001() {
     const doc = new jsPDF();
     let y = 20;
     // Add logo (must be base64 or external, here we use a placeholder)
-    // If you want to use your real logo, convert it to base64 and replace below
     const logoUrl = '/logo.png';
     try {
       const img = new window.Image();
@@ -235,8 +234,8 @@ export default function ISO27001() {
       });
       // Table headers
       const head = [['Numéro', 'Contrôle', 'Statut', 'Commentaire']];
-      // Use autoTable
-      doc.autoTable({
+      // Use autoTable (call as a function, not as a method)
+      autoTable(doc, {
         head,
         body: tableData,
         startY: y,
