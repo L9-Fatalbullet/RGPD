@@ -463,11 +463,10 @@ export default function DPIA() {
                   <div className="mb-4 p-3 bg-blue-50 rounded-xl flex flex-col md:flex-row gap-2 items-end">
                     <div className="flex-1">
                       <input className="w-full rounded border px-3 py-2 mb-1" placeholder="Ajouter un risque personnalisé..." value={customRisk.label} onChange={e => setCustomRisk(r => ({ ...r, label: e.target.value }))} />
-                      <input className="w-full rounded border px-3 py-2" placeholder="Mesures recommandées (optionnel)" value={customRisk.mesures} onChange={e => setCustomRisk(r => ({ ...r, mesures: e.target.value }))} />
                     </div>
                     <button type="button" className="bg-blue-700 text-white px-4 py-2 rounded font-semibold shadow" onClick={handleAddCustomRisk}>Ajouter</button>
                   </div>
-                  {/* Editable risk table */}
+                  {/* Minimal risk analysis table */}
                   <div className="overflow-x-auto">
                     <table className="min-w-full text-xs bg-white rounded shadow border">
                       <thead>
@@ -475,22 +474,15 @@ export default function DPIA() {
                           <th className="px-3 py-2 font-semibold">Risque</th>
                           <th className="px-3 py-2 font-semibold">Gravité</th>
                           <th className="px-3 py-2 font-semibold">Probabilité</th>
-                          <th className="px-3 py-2 font-semibold">Mesures</th>
-                          <th className="px-3 py-2 font-semibold">Contrôles</th>
-                          <th className="px-3 py-2 font-semibold">Mesures supp.</th>
-                          <th className="px-3 py-2 font-semibold">Responsable</th>
-                          <th className="px-3 py-2 font-semibold">Échéance</th>
-                          <th className="px-3 py-2 font-semibold">Actions</th>
+                          <th className="px-3 py-2 font-semibold">""</th>
                         </tr>
                       </thead>
                       <tbody>
                         {[...COMMON_RISKS, ...(form.custom_risks || [])].map((risk, idx) => {
                           const isCustom = idx >= COMMON_RISKS.length;
                           const details = form.risques_details && form.risques_details[idx] ? form.risques_details[idx] : {};
-                          // A risk is considered selected if any field is filled
-                          const isSelected = [details.gravite, details.probabilite, details.mesures, details.controls, details.additional_measures, details.responsible, details.deadline].some(v => v && v.trim() !== '');
                           return (
-                            <tr key={isCustom ? 'custom_' + (idx - COMMON_RISKS.length) : idx} className={isSelected ? 'bg-yellow-50' : ''}>
+                            <tr key={isCustom ? 'custom_' + (idx - COMMON_RISKS.length) : idx}>
                               <td className="px-3 py-2 font-medium text-blue-900">
                                 {isCustom ? (
                                   <input
@@ -521,21 +513,6 @@ export default function DPIA() {
                                 </select>
                               </td>
                               <td className="px-3 py-2">
-                                <input className="w-full rounded border px-2 py-1 text-xs" value={details.mesures !== undefined ? details.mesures : risk.mesures || ''} onChange={e => handleRiskDetail(idx, 'mesures', e.target.value)} />
-                              </td>
-                              <td className="px-3 py-2">
-                                <input className="w-full rounded border px-2 py-1 text-xs" value={details.controls || ''} onChange={e => handleRiskDetail(idx, 'controls', e.target.value)} />
-                              </td>
-                              <td className="px-3 py-2">
-                                <input className="w-full rounded border px-2 py-1 text-xs" value={details.additional_measures || ''} onChange={e => handleRiskDetail(idx, 'additional_measures', e.target.value)} />
-                              </td>
-                              <td className="px-3 py-2">
-                                <input className="w-full rounded border px-2 py-1 text-xs" value={details.responsible || ''} onChange={e => handleRiskDetail(idx, 'responsible', e.target.value)} />
-                              </td>
-                              <td className="px-3 py-2">
-                                <input className="w-full rounded border px-2 py-1 text-xs" value={details.deadline || ''} onChange={e => handleRiskDetail(idx, 'deadline', e.target.value)} />
-                              </td>
-                              <td className="px-3 py-2">
                                 {isCustom && (
                                   <button type="button" className="text-red-600 ml-2" onClick={() => handleRemoveCustomRisk(idx - COMMON_RISKS.length)} title="Supprimer"><TrashIcon className="w-4 h-4" /></button>
                                 )}
@@ -546,60 +523,6 @@ export default function DPIA() {
                       </tbody>
                     </table>
                   </div>
-                  {/* Summary table of selected risks (fixed + custom) */}
-                  {form.risques_details && form.risques_details.filter(details => [details.gravite, details.probabilite, details.mesures, details.controls, details.additional_measures, details.responsible, details.deadline].some(v => v && v.trim() !== '')).length > 0 && (
-                    <div className="mt-10">
-                      <div className="font-semibold text-blue-900 mb-3 text-base">Résumé des risques sélectionnés :</div>
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full text-xs bg-white rounded shadow border">
-                          <thead>
-                            <tr className="bg-blue-50 text-blue-900">
-                              <th className="px-3 py-2 text-left font-semibold">Risque</th>
-                              <th className="px-3 py-2 font-semibold">Gravité</th>
-                              <th className="px-3 py-2 font-semibold">Probabilité</th>
-                              <th className="px-3 py-2 font-semibold">Score</th>
-                              <th className="px-3 py-2 font-semibold">Niveau</th>
-                              <th className="px-3 py-2 font-semibold">Mesures</th>
-                              <th className="px-3 py-2 font-semibold">Contrôles</th>
-                              <th className="px-3 py-2 font-semibold">Mesures supp.</th>
-                              <th className="px-3 py-2 font-semibold">Responsable</th>
-                              <th className="px-3 py-2 font-semibold">Échéance</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {form.risques_details.map((details, i) => {
-                              // Only show if at least one field is filled
-                              if (![details.gravite, details.probabilite, details.mesures, details.controls, details.additional_measures, details.responsible, details.deadline].some(v => v && v.trim() !== '')) return null;
-                              const isCustom = i >= COMMON_RISKS.length;
-                              const risk = isCustom ? form.custom_risks[i - COMMON_RISKS.length] : COMMON_RISKS[i];
-                              const gravite = details.gravite;
-                              const probabilite = details.probabilite;
-                              const score = (g => (g === 'faible' ? 1 : g === 'moyenne' ? 2 : g === 'élevée' ? 3 : 0))(gravite) * (p => (p === 'faible' ? 1 : p === 'moyenne' ? 2 : p === 'élevée' ? 3 : 0))(probabilite);
-                              let niveau = '';
-                              let badge = '';
-                              if (score >= 7) { niveau = 'Élevé'; badge = 'bg-red-100 text-red-700 border-red-300'; }
-                              else if (score >= 4) { niveau = 'Moyen'; badge = 'bg-yellow-100 text-yellow-700 border-yellow-300'; }
-                              else if (score > 0) { niveau = 'Faible'; badge = 'bg-green-100 text-green-700 border-green-300'; }
-                              return (
-                                <tr key={isCustom ? 'custom_' + (i - COMMON_RISKS.length) : i} className="border-b last:border-0 hover:bg-blue-50/40 transition">
-                                  <td className="px-3 py-2 font-medium text-blue-900">{risk?.label}</td>
-                                  <td className="px-3 py-2">{gravite || '-'}</td>
-                                  <td className="px-3 py-2">{probabilite || '-'}</td>
-                                  <td className="px-3 py-2">{score || '-'}</td>
-                                  <td className="px-3 py-2 font-bold">{niveau ? <span className={`px-2 py-0.5 rounded-full border text-xs font-semibold ${badge}`}>{niveau}</span> : '-'}</td>
-                                  <td className="px-3 py-2 text-blue-700">{details.mesures !== undefined ? details.mesures : risk?.mesures}</td>
-                                  <td className="px-3 py-2">{details.controls || '-'}</td>
-                                  <td className="px-3 py-2">{details.additional_measures || '-'}</td>
-                                  <td className="px-3 py-2">{details.responsible || '-'}</td>
-                                  <td className="px-3 py-2">{details.deadline || '-'}</td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
               <div className="flex gap-4 mt-6">
