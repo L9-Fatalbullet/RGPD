@@ -99,10 +99,6 @@ const FINALITES = [
   "Gestion RH", "Gestion de la paie", "Gestion des accès", "Sécurité des locaux", "Vidéosurveillance", "Marketing", "Prospection commerciale", "Gestion des clients", "Gestion des fournisseurs", "Gestion des contrats", "Gestion des formations", "Gestion des candidatures", "Gestion des adhésions", "Gestion des dossiers médicaux", "Gestion des dossiers scolaires", "Gestion des plaintes", "Gestion des événements", "Gestion des newsletters", "Gestion des réseaux sociaux", "Gestion des cookies", "Autre..."
 ];
 
-// 1. Extend COMMON_RISKS to allow dynamic (custom) risks
-const [customRisks, setCustomRisks] = useState([]);
-
-// 2. Update emptyDPIA to support new fields
 function emptyDPIA() {
   return {
     ...Object.fromEntries(STEPS.flatMap(s => s.fields.map(f => [f.key, '']))),
@@ -497,11 +493,10 @@ export default function DPIA() {
                       const probabilite = details.probabilite;
                       const score = (g => (g === 'faible' ? 1 : g === 'moyenne' ? 2 : g === 'élevée' ? 3 : 0))(gravite) * (p => (p === 'faible' ? 1 : p === 'moyenne' ? 2 : p === 'élevée' ? 3 : 0))(probabilite);
                       let niveau = '';
-                      let color = '';
                       let badge = '';
-                      if (score >= 7) { niveau = 'Élevé'; color = 'text-red-600'; badge = 'bg-red-100 text-red-700 border-red-300'; }
-                      else if (score >= 4) { niveau = 'Moyen'; color = 'text-yellow-600'; badge = 'bg-yellow-100 text-yellow-700 border-yellow-300'; }
-                      else if (score > 0) { niveau = 'Faible'; color = 'text-green-600'; badge = 'bg-green-100 text-green-700 border-green-300'; }
+                      if (score >= 7) { niveau = 'Élevé'; badge = 'bg-red-100 text-red-700 border-red-300'; }
+                      else if (score >= 4) { niveau = 'Moyen'; badge = 'bg-yellow-100 text-yellow-700 border-yellow-300'; }
+                      else if (score > 0) { niveau = 'Faible'; badge = 'bg-green-100 text-green-700 border-green-300'; }
                       return (
                         <div
                           key={riskKey}
@@ -532,7 +527,7 @@ export default function DPIA() {
                                   <option value="élevée">Élevée</option>
                                 </select>
                                 {score > 0 && (
-                                  <span className={`ml-4 font-bold flex items-center gap-1 ${color}`}>
+                                  <span className={`ml-4 font-bold flex items-center gap-1`}>
                                     Score: {score}
                                     <span className={`ml-2 px-2 py-0.5 rounded-full border text-xs font-semibold ${badge}`}>{niveau}</span>
                                   </span>
