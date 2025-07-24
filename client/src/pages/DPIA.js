@@ -313,19 +313,31 @@ export default function DPIA() {
     setStatus('Suppression...');
     setLoading(true);
     try {
-      await Promise.all(selectedDPIAs.map(id =>
-        fetch(`${API_BASE}/api/dpias/${id}`, {
+      // Log each response
+      const results = await Promise.all(selectedDPIAs.map(async id => {
+        const res = await fetch(`${API_BASE}/api/dpias/${id}`, {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` }
-        })
-      ));
+        });
+        const text = await res.text();
+        if (!res.ok) {
+          console.error(`Failed to delete DPIA ${id}:`, text);
+        }
+        return { id, ok: res.ok, status: res.status, text };
+      }));
+      // Show errors if any
+      const failed = results.filter(r => !r.ok);
+      if (failed.length > 0) {
+        alert('Certains DPIA n\'ont pas pu être supprimés: ' + failed.map(f => `${f.id} (status ${f.status})`).join(', '));
+      }
       // Re-fetch the list from the server
       const res = await fetch(`${API_BASE}/api/dpias`, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       setDPIAs(data);
       setStatus('');
-    } catch {
+    } catch (e) {
       setStatus("Erreur lors de la suppression.");
+      console.error(e);
     }
     setLoading(false);
     setSelectedDPIAs([]);
