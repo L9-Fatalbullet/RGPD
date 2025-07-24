@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon, SparklesIcon, ShieldCheckIcon, ArrowRightCircleIcon, ArrowLeftCircleIcon, CheckCircleIcon, InformationCircleIcon, DocumentArrowDownIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, SparklesIcon, ShieldCheckIcon, ArrowRightCircleIcon, ArrowLeftCircleIcon, CheckCircleIcon, InformationCircleIcon, DocumentArrowDownIcon, ExclamationTriangleIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../App';
 import jsPDF from 'jspdf';
 
@@ -121,6 +121,7 @@ export default function DPIA() {
   const [error, setError] = useState('');
   // New: state for selected DPIAs
   const [selectedDPIAs, setSelectedDPIAs] = useState([]);
+  const [viewMatrixDPIA, setViewMatrixDPIA] = useState(null); // For viewing risk matrix
 
   // Load DPIAs
   useEffect(() => {
@@ -381,6 +382,7 @@ export default function DPIA() {
                       <td className="px-4 py-2 text-gray-800">{dpia.responsable}</td>
                       <td className="px-4 py-2 text-gray-500 text-xs">{dpia.date && dpia.date.slice(0,10)}</td>
                       <td className="px-4 py-2 flex gap-2">
+                        <button className="text-blue-700 hover:text-yellow-500" title="Voir la matrice des risques" onClick={() => setViewMatrixDPIA(dpia)}><EyeIcon className="w-5 h-5" /></button>
                         <button className="text-blue-700 hover:text-yellow-500" title="Modifier" onClick={() => handleEdit(dpia)}><PencilIcon className="w-5 h-5" /></button>
                         <button className="text-red-600 hover:text-red-800" title="Supprimer" onClick={() => handleDelete(dpia.id)}><TrashIcon className="w-5 h-5" /></button>
                       </td>
@@ -389,6 +391,59 @@ export default function DPIA() {
                   {dpias.length === 0 && <tr><td colSpan={5} className="text-center text-gray-500 py-8">Aucune DPIA enregistrée.</td></tr>}
                 </tbody>
               </table>
+            </div>
+          )}
+          {/* Modal for viewing risk matrix */}
+          {viewMatrixDPIA && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+              <div className="bg-white rounded-xl shadow-xl p-8 max-w-2xl w-full relative animate-fade-in">
+                <button className="absolute top-2 right-2 text-blue-900 hover:text-red-600" onClick={() => setViewMatrixDPIA(null)} title="Fermer">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+                <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><EyeIcon className="w-6 h-6 text-blue-700" /> Matrice des risques</h3>
+                {/* Risk matrix table for the selected DPIA */}
+                {viewMatrixDPIA.risques_details && viewMatrixDPIA.risques_details.filter(details => details.gravite && details.probabilite).length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-xs bg-white rounded shadow border">
+                      <thead>
+                        <tr className="bg-blue-50 text-blue-900">
+                          <th className="px-3 py-2 text-left font-semibold">Risque</th>
+                          <th className="px-3 py-2 font-semibold">Gravité</th>
+                          <th className="px-3 py-2 font-semibold">Probabilité</th>
+                          <th className="px-3 py-2 font-semibold">Score</th>
+                          <th className="px-3 py-2 font-semibold">Niveau</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {viewMatrixDPIA.risques_details.map((details, i) => {
+                          if (!(details.gravite && details.probabilite)) return null;
+                          const isCustom = i >= COMMON_RISKS.length;
+                          const risk = isCustom ? viewMatrixDPIA.custom_risks[i - COMMON_RISKS.length] : COMMON_RISKS[i];
+                          const gravite = details.gravite;
+                          const probabilite = details.probabilite;
+                          const score = (g => (g === 'faible' ? 1 : g === 'moyenne' ? 2 : g === 'élevée' ? 3 : 0))(gravite) * (p => (p === 'faible' ? 1 : p === 'moyenne' ? 2 : p === 'élevée' ? 3 : 0))(probabilite);
+                          let niveau = '';
+                          let badge = '';
+                          if (score >= 7) { niveau = 'Élevé'; badge = 'bg-red-100 text-red-700 border-red-300'; }
+                          else if (score >= 4) { niveau = 'Moyen'; badge = 'bg-yellow-100 text-yellow-700 border-yellow-300'; }
+                          else if (score > 0) { niveau = 'Faible'; badge = 'bg-green-100 text-green-700 border-green-300'; }
+                          return (
+                            <tr key={isCustom ? 'custom_' + (i - COMMON_RISKS.length) : i} className="border-b last:border-0 hover:bg-blue-50/40 transition">
+                              <td className="px-3 py-2 font-medium text-blue-900">{risk?.label}</td>
+                              <td className="px-3 py-2">{gravite || '-'}</td>
+                              <td className="px-3 py-2">{probabilite || '-'}</td>
+                              <td className="px-3 py-2 font-bold text-center">{score > 0 ? score : '-'}</td>
+                              <td className="px-3 py-2 text-center">{niveau ? <span className={`px-2 py-0.5 rounded-full border text-xs font-semibold ${badge}`}>{niveau}</span> : '-'}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-blue-700">Aucune analyse de risque renseignée pour cette DPIA.</div>
+                )}
+              </div>
             </div>
           )}
         </>
