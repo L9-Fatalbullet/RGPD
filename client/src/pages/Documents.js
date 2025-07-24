@@ -28,6 +28,19 @@ const GENERATED = [
   },
 ];
 
+const CNDP_DECLARATIONS = [
+  {
+    name: "Déclaration simplifiée (F214) préalable du traitement",
+    url: "https://www.cndp.ma/wp-content/uploads/2025/01/CNDP-Declaration-Normale-Conformement-Decision_F214_20210318_Fr.pdf",
+    desc: "Formulaire officiel CNDP pour les traitements éligibles à la procédure simplifiée.",
+  },
+  {
+    name: "Déclaration normale (F211) préalable de traitement",
+    url: "https://www.cndp.ma/wp-content/uploads/2025/01/CNDP-Declaration-Normale-Conformement-Decision_F214_20210318_Fr.pdf",
+    desc: "Formulaire officiel CNDP pour la déclaration normale des traitements.",
+  },
+];
+
 export default function Documents() {
   return (
     <section>
@@ -67,6 +80,20 @@ export default function Documents() {
               <div className="font-semibold text-blue-900 text-lg group-hover:text-yellow-700 transition-all">{doc.name}</div>
               <div className="text-gray-700 text-sm mb-2">{doc.desc}</div>
               <div className="text-xs text-gray-500">Télécharger</div>
+            </a>
+          ))}
+        </div>
+      </div>
+      {/* CNDP Official Declarations */}
+      <div className="mb-10">
+        <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><DocumentTextIcon className="w-7 h-7 text-yellow-500" /> Déclarations officielles CNDP</h2>
+        <div className="grid md:grid-cols-2 gap-6 animate-fade-in">
+          {CNDP_DECLARATIONS.map((doc, i) => (
+            <a key={i} href={doc.url} target="_blank" rel="noopener noreferrer" className="group bg-white/80 backdrop-blur rounded-xl shadow-lg p-6 flex flex-col items-start gap-3 border-t-4 border-yellow-100 hover:border-yellow-400 hover:scale-105 transition-all animate-fade-in" style={{ animationDelay: `${i * 0.1}s` }}>
+              <DocumentArrowDownIcon className="w-10 h-10 text-yellow-500 group-hover:text-blue-700 transition-all" />
+              <div className="font-semibold text-blue-900 text-lg group-hover:text-yellow-700 transition-all">{doc.name}</div>
+              <div className="text-gray-700 text-sm mb-2">{doc.desc}</div>
+              <div className="text-xs text-gray-500">Voir le formulaire</div>
             </a>
           ))}
         </div>
