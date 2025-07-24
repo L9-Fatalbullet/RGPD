@@ -430,8 +430,8 @@ export default function DPIA() {
               {/* Improved risk analysis UI for step 4 */}
               {step === 3 && (
                 <div className="mb-6">
-                  <div className="font-semibold text-blue-900 mb-2 flex items-center gap-2">Sélectionnez les risques à analyser <InformationCircleIcon className="w-4 h-4 text-blue-400" title={STEPS[3].help} /></div>
-                  <div className="grid md:grid-cols-2 gap-4">
+                  <div className="font-semibold text-blue-900 mb-4 flex items-center gap-2 text-lg">Analyse des risques <InformationCircleIcon className="w-5 h-5 text-blue-400" title={STEPS[3].help} /></div>
+                  <div className="grid md:grid-cols-2 gap-6">
                     {COMMON_RISKS.map((risk, idx) => {
                       const selected = form.risques_selectionnes && form.risques_selectionnes.includes(idx);
                       const details = form.risques_details && form.risques_details[idx] ? form.risques_details[idx] : {};
@@ -440,35 +440,44 @@ export default function DPIA() {
                       const score = (g => (g === 'faible' ? 1 : g === 'moyenne' ? 2 : g === 'élevée' ? 3 : 0))(gravite) * (p => (p === 'faible' ? 1 : p === 'moyenne' ? 2 : p === 'élevée' ? 3 : 0))(probabilite);
                       let niveau = '';
                       let color = '';
-                      if (score >= 7) { niveau = 'Élevé'; color = 'text-red-600'; }
-                      else if (score >= 4) { niveau = 'Moyen'; color = 'text-yellow-600'; }
-                      else if (score > 0) { niveau = 'Faible'; color = 'text-green-600'; }
+                      let badge = '';
+                      if (score >= 7) { niveau = 'Élevé'; color = 'text-red-600'; badge = 'bg-red-100 text-red-700 border-red-300'; }
+                      else if (score >= 4) { niveau = 'Moyen'; color = 'text-yellow-600'; badge = 'bg-yellow-100 text-yellow-700 border-yellow-300'; }
+                      else if (score > 0) { niveau = 'Faible'; color = 'text-green-600'; badge = 'bg-green-100 text-green-700 border-green-300'; }
                       return (
-                        <div key={idx} className={`rounded-xl border-2 p-4 shadow flex flex-col gap-2 ${selected ? 'border-yellow-400 bg-yellow-50/40' : 'border-blue-100 bg-white/80'}`}>
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" className="accent-blue-700" checked={selected} onChange={() => handleRiskToggle(idx)} />
-                            <span className="font-semibold text-yellow-700 flex items-center gap-1"><ExclamationTriangleIcon className="w-5 h-5" /> {risk.label}</span>
+                        <div
+                          key={idx}
+                          className={`rounded-2xl border-2 p-5 shadow-sm flex flex-col gap-3 transition-all duration-200 cursor-pointer hover:shadow-lg ${selected ? 'border-yellow-400 bg-yellow-50/60' : 'border-blue-100 bg-white/90'}`}
+                          style={{ minHeight: 180 }}
+                          onClick={() => handleRiskToggle(idx)}
+                        >
+                          <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" className="accent-blue-700" checked={selected} onChange={e => { e.stopPropagation(); handleRiskToggle(idx); }} onClick={e => e.stopPropagation()} />
+                            <span className="font-semibold text-yellow-700 flex items-center gap-1 text-base"><ExclamationTriangleIcon className="w-5 h-5" /> {risk.label}</span>
                           </label>
-                          <div className="text-xs text-blue-700 mb-1">Mesures recommandées : {risk.mesures}</div>
+                          <div className="text-xs text-blue-700 mb-1">Mesures recommandées : <span className="font-medium text-blue-900">{risk.mesures}</span></div>
                           {selected && (
                             <div className="flex flex-col gap-2 mt-2">
-                              <div className="flex gap-4 items-center">
-                                <label className="text-xs">Gravité :</label>
-                                <select className="rounded border px-2 py-1 text-xs" value={gravite || ''} onChange={e => handleRiskDetail(idx, 'gravite', e.target.value)}>
+                              <div className="flex gap-4 items-center flex-wrap">
+                                <label className="text-xs font-semibold">Gravité :</label>
+                                <select className="rounded border px-2 py-1 text-xs" value={gravite || ''} onChange={e => { e.stopPropagation(); handleRiskDetail(idx, 'gravite', e.target.value); }}>
                                   <option value="">-</option>
                                   <option value="faible">Faible</option>
                                   <option value="moyenne">Moyenne</option>
                                   <option value="élevée">Élevée</option>
                                 </select>
-                                <label className="text-xs">Probabilité :</label>
-                                <select className="rounded border px-2 py-1 text-xs" value={probabilite || ''} onChange={e => handleRiskDetail(idx, 'probabilite', e.target.value)}>
+                                <label className="text-xs font-semibold">Probabilité :</label>
+                                <select className="rounded border px-2 py-1 text-xs" value={probabilite || ''} onChange={e => { e.stopPropagation(); handleRiskDetail(idx, 'probabilite', e.target.value); }}>
                                   <option value="">-</option>
                                   <option value="faible">Faible</option>
                                   <option value="moyenne">Moyenne</option>
                                   <option value="élevée">Élevée</option>
                                 </select>
                                 {score > 0 && (
-                                  <span className={`ml-4 font-bold ${color}`}>Score: {score} <span className="ml-1">({niveau})</span></span>
+                                  <span className={`ml-4 font-bold flex items-center gap-1 ${color}`}>
+                                    Score: {score}
+                                    <span className={`ml-2 px-2 py-0.5 rounded-full border text-xs font-semibold ${badge}`}>{niveau}</span>
+                                  </span>
                                 )}
                               </div>
                               {score === 9 && (
@@ -482,43 +491,48 @@ export default function DPIA() {
                   </div>
                   {/* Summary table of selected risks */}
                   {form.risques_selectionnes && form.risques_selectionnes.length > 0 && (
-                    <div className="mt-8">
-                      <div className="font-semibold text-blue-900 mb-2">Résumé des risques sélectionnés :</div>
-                      <table className="min-w-full text-xs bg-white rounded shadow">
-                        <thead>
-                          <tr className="bg-blue-50">
-                            <th className="px-2 py-1 text-left">Risque</th>
-                            <th className="px-2 py-1">Gravité</th>
-                            <th className="px-2 py-1">Probabilité</th>
-                            <th className="px-2 py-1">Score</th>
-                            <th className="px-2 py-1">Niveau</th>
-                            <th className="px-2 py-1">Mesures</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {form.risques_selectionnes.map(idx => {
-                            const details = form.risques_details && form.risques_details[idx] ? form.risques_details[idx] : {};
-                            const gravite = details.gravite;
-                            const probabilite = details.probabilite;
-                            const score = (g => (g === 'faible' ? 1 : g === 'moyenne' ? 2 : g === 'élevée' ? 3 : 0))(gravite) * (p => (p === 'faible' ? 1 : p === 'moyenne' ? 2 : p === 'élevée' ? 3 : 0))(probabilite);
-                            let niveau = '';
-                            let color = '';
-                            if (score >= 7) { niveau = 'Élevé'; color = 'text-red-600'; }
-                            else if (score >= 4) { niveau = 'Moyen'; color = 'text-yellow-600'; }
-                            else if (score > 0) { niveau = 'Faible'; color = 'text-green-600'; }
-                            return (
-                              <tr key={idx} className="border-b last:border-0">
-                                <td className="px-2 py-1">{COMMON_RISKS[idx].label}</td>
-                                <td className="px-2 py-1">{gravite || '-'}</td>
-                                <td className="px-2 py-1">{probabilite || '-'}</td>
-                                <td className="px-2 py-1">{score || '-'}</td>
-                                <td className={`px-2 py-1 font-bold ${color}`}>{niveau || '-'}</td>
-                                <td className="px-2 py-1">{COMMON_RISKS[idx].mesures}</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                    <div className="mt-10">
+                      <div className="font-semibold text-blue-900 mb-3 text-base">Résumé des risques sélectionnés :</div>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full text-xs bg-white rounded shadow border">
+                          <thead>
+                            <tr className="bg-blue-50 text-blue-900">
+                              <th className="px-3 py-2 text-left font-semibold">Risque</th>
+                              <th className="px-3 py-2 font-semibold">Gravité</th>
+                              <th className="px-3 py-2 font-semibold">Probabilité</th>
+                              <th className="px-3 py-2 font-semibold">Score</th>
+                              <th className="px-3 py-2 font-semibold">Niveau</th>
+                              <th className="px-3 py-2 font-semibold">Mesures</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {form.risques_selectionnes.map(idx => {
+                              const details = form.risques_details && form.risques_details[idx] ? form.risques_details[idx] : {};
+                              const gravite = details.gravite;
+                              const probabilite = details.probabilite;
+                              const score = (g => (g === 'faible' ? 1 : g === 'moyenne' ? 2 : g === 'élevée' ? 3 : 0))(gravite) * (p => (p === 'faible' ? 1 : p === 'moyenne' ? 2 : p === 'élevée' ? 3 : 0))(probabilite);
+                              let niveau = '';
+                              let color = '';
+                              let badge = '';
+                              if (score >= 7) { niveau = 'Élevé'; color = 'text-red-600'; badge = 'bg-red-100 text-red-700 border-red-300'; }
+                              else if (score >= 4) { niveau = 'Moyen'; color = 'text-yellow-600'; badge = 'bg-yellow-100 text-yellow-700 border-yellow-300'; }
+                              else if (score > 0) { niveau = 'Faible'; color = 'text-green-600'; badge = 'bg-green-100 text-green-700 border-green-300'; }
+                              return (
+                                <tr key={idx} className="border-b last:border-0 hover:bg-blue-50/40 transition">
+                                  <td className="px-3 py-2 font-medium text-blue-900">{COMMON_RISKS[idx].label}</td>
+                                  <td className="px-3 py-2">{gravite || '-'}</td>
+                                  <td className="px-3 py-2">{probabilite || '-'}</td>
+                                  <td className="px-3 py-2">{score || '-'}</td>
+                                  <td className={`px-3 py-2 font-bold`}>
+                                    {niveau ? <span className={`px-2 py-0.5 rounded-full border text-xs font-semibold ${badge}`}>{niveau}</span> : '-'}
+                                  </td>
+                                  <td className="px-3 py-2 text-blue-700">{COMMON_RISKS[idx].mesures}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   )}
                 </div>
