@@ -307,13 +307,17 @@ export default function DPIA() {
     if (!window.confirm('Supprimer les DPIA sélectionnées ?')) return;
     setStatus('Suppression...');
     try {
-      for (const id of selectedDPIAs) {
-        await fetch(`${API_BASE}/api/dpias/${id}`, {
+      // Send all delete requests in parallel
+      await Promise.all(selectedDPIAs.map(id =>
+        fetch(`${API_BASE}/api/dpias/${id}`, {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` }
-        });
-      }
-      setDPIAs(dpias => dpias.filter(d => !selectedDPIAs.includes(d.id)));
+        })
+      ));
+      // Re-fetch the list from the server
+      const res = await fetch(`${API_BASE}/api/dpias`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      setDPIAs(data);
       setSelectedDPIAs([]);
       setStatus('');
     } catch {
