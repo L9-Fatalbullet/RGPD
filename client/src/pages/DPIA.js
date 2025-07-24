@@ -290,6 +290,41 @@ export default function DPIA() {
     setSelectedDPIAs([]);
   };
 
+  // --- Move handleSave here, before return ---
+  const handleSave = async e => {
+    e.preventDefault();
+    setStatus('Enregistrement...');
+    try {
+      let res, data;
+      if (currentId) {
+        // Update existing DPIA
+        res = await fetch(`${API_BASE}/api/dpias/${currentId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ ...form })
+        });
+      } else {
+        // Create new DPIA
+        res = await fetch(`${API_BASE}/api/dpias`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ ...form })
+        });
+        data = await res.json();
+        if (data.success && data.id) setCurrentId(data.id);
+      }
+      if (!data) data = await res.json();
+      if (data.success) {
+        setStatus('Enregistré !');
+        setTimeout(() => { setWizard(false); setReview(false); setForm(emptyDPIA()); setStatus(''); }, 1000);
+      } else {
+        setStatus("Erreur lors de l'enregistrement.");
+      }
+    } catch {
+      setStatus("Erreur réseau ou serveur.");
+    }
+  };
+
   // Render
   if (error) return <div className="text-red-600 font-semibold p-8">{error}</div>;
   return (
