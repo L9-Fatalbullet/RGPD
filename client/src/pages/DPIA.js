@@ -215,12 +215,23 @@ export default function DPIA() {
     e.preventDefault();
     setStatus('Enregistrement...');
     try {
-      const res = await fetch(`${API_BASE}/api/dpias`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ...form })
-      });
-      const data = await res.json();
+      let res, data;
+      if (currentId) {
+        // Update existing DPIA
+        res = await fetch(`${API_BASE}/api/dpias/${currentId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ ...form })
+        });
+      } else {
+        // Create new DPIA
+        res = await fetch(`${API_BASE}/api/dpias`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ ...form })
+        });
+      }
+      data = await res.json();
       if (data.success) {
         setStatus('Enregistré !');
         setTimeout(() => { setWizard(false); setReview(false); setForm(emptyDPIA()); setStatus(''); }, 1000);
