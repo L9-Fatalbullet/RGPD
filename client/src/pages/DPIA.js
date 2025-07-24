@@ -213,6 +213,7 @@ export default function DPIA() {
   // Save DPIA
   const handleSave = async e => {
     e.preventDefault();
+    if (isPosting.current) return; // Prevent double POST
     setStatus('Enregistrement...');
     try {
       let res, data;
@@ -225,11 +226,13 @@ export default function DPIA() {
         });
       } else {
         // Create new DPIA
+        isPosting.current = true;
         res = await fetch(`${API_BASE}/api/dpias`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ ...form })
         });
+        isPosting.current = false;
       }
       data = await res.json();
       if (data.success) {
@@ -240,6 +243,7 @@ export default function DPIA() {
       }
     } catch {
       setStatus("Erreur réseau ou serveur.");
+      isPosting.current = false;
     }
   };
 
@@ -624,7 +628,7 @@ export default function DPIA() {
                   <button type="button" className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow flex items-center gap-2" onClick={next}>Suivant <ArrowRightCircleIcon className="w-5 h-5" /></button>
                 )}
                 {step === STEPS.length - 1 && (
-                  <button type="submit" className="w-full bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow mb-2">Enregistrer la DPIA</button>
+                  <button type="submit" className="w-full bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow mb-2" disabled={saveStatus === 'Enregistrement...' || isPosting.current}>Enregistrer la DPIA</button>
                 )}
               </div>
               {/* Only show saveStatus if not 'Enregistrement...' */}
