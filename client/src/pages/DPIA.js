@@ -134,6 +134,11 @@ export default function DPIA() {
       .catch((e) => { setLoading(false); setError(e.message || 'Erreur de connexion au serveur. Vérifiez votre connexion ou réessayez plus tard.'); });
   }, [token, logout]);
 
+  // Clear selection when dpias changes
+  useEffect(() => {
+    setSelectedDPIAs([]);
+  }, [dpias]);
+
   // Handle form change
   const handleChange = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -306,8 +311,8 @@ export default function DPIA() {
     if (selectedDPIAs.length === 0) return;
     if (!window.confirm('Supprimer les DPIA sélectionnées ?')) return;
     setStatus('Suppression...');
+    setLoading(true);
     try {
-      // Send all delete requests in parallel
       await Promise.all(selectedDPIAs.map(id =>
         fetch(`${API_BASE}/api/dpias/${id}`, {
           method: 'DELETE',
@@ -318,11 +323,12 @@ export default function DPIA() {
       const res = await fetch(`${API_BASE}/api/dpias`, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       setDPIAs(data);
-      setSelectedDPIAs([]);
       setStatus('');
     } catch {
       setStatus("Erreur lors de la suppression.");
     }
+    setLoading(false);
+    setSelectedDPIAs([]);
   };
 
   // Render
@@ -353,7 +359,7 @@ export default function DPIA() {
             <button
               className="bg-red-600 hover:bg-red-800 text-white px-4 py-2 rounded font-semibold shadow disabled:opacity-50"
               onClick={handleDeleteSelected}
-              disabled={selectedDPIAs.length === 0}
+              disabled={selectedDPIAs.length === 0 || loading}
             >
               Supprimer la sélection ({selectedDPIAs.length})
             </button>
@@ -372,7 +378,8 @@ export default function DPIA() {
                   </tr>
                 </thead>
                 <tbody>
-                  {dpias.filter(dpia => dpia.nom || Object.values(dpia).some(v => typeof v === 'string' && v.trim() !== '' && v !== dpia.id && v !== dpia.userId && v !== dpia.date)).map(dpia => (
+                  {/* Relaxed: show all dpias for now */}
+                  {dpias.map(dpia => (
                     <tr key={dpia.id} className="border-b border-blue-100 hover:bg-blue-50/40 transition">
                       {/* New: Row checkbox */}
                       <td className="px-2 py-2"><input type="checkbox" checked={selectedDPIAs.includes(dpia.id)} onChange={() => handleSelectDPIA(dpia.id)} /></td>
