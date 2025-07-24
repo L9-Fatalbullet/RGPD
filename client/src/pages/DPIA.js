@@ -312,11 +312,12 @@ export default function DPIA() {
         </>
       ) : (
         !review ? (
-          <form className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-8 max-w-2xl mx-auto animate-fade-in">
+          <form className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-8 max-w-2xl mx-auto animate-fade-in" onSubmit={step === STEPS.length - 1 ? handleSave : undefined}>
             <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2"><CheckCircleIcon className="w-6 h-6 text-green-600" /> Étape {step + 1} : {STEPS[step].label}</h3>
             <p className="text-gray-700 mb-4">{STEPS[step].help}</p>
             <div className="grid gap-4">
-              {STEPS[step].fields.map(f => {
+              {/* Render fields for all steps except step 4 (risques) */}
+              {step !== 3 && STEPS[step].fields.map(f => {
                 // Catégories de données
                 if (f.key === 'categories_donnees') return (
                   <div key={f.key}>
@@ -413,76 +414,6 @@ export default function DPIA() {
                     )}
                   </div>
                 );
-                // Analyse des risques
-                if (f.key === 'risques') return (
-                  <div key={f.key}>
-                    <label className="block text-blue-900 font-semibold mb-1">{f.label}{f.required && ' *'}</label>
-                    <div className="text-xs text-blue-700 mb-1">{f.help}</div>
-                    {STEPS[step].fields.length === 0 && step === 3 ? (
-                      <div className="mb-6">
-                        <div className="font-semibold text-blue-900 mb-2 flex items-center gap-2">Sélectionnez les risques à analyser <InformationCircleIcon className="w-4 h-4 text-blue-400" title={STEPS[3].help} /></div>
-                        <ul className="space-y-2 mb-4">
-                          {COMMON_RISKS.map((risk, idx) => (
-                            <li key={idx} className="flex items-start gap-2">
-                              <input type="checkbox" className="accent-blue-700 mt-1" checked={form.risques_selectionnes && form.risques_selectionnes.includes(idx)} onChange={() => handleRiskToggle(idx)} />
-                              <div>
-                                <span className="font-semibold text-yellow-700 flex items-center gap-1"><ExclamationTriangleIcon className="w-5 h-5" /> {risk.label}</span>
-                                <div className="text-xs text-blue-700">Mesures recommandées : {risk.mesures}</div>
-                                {/* Risk matrix grid */}
-                                {form.risques_selectionnes && form.risques_selectionnes.includes(idx) && (
-                                  <div className="flex gap-2 mt-2 items-center">
-                                    <label className="text-xs">Gravité :</label>
-                                    <select className="rounded border px-2 py-1 text-xs" value={form.risques_details && form.risques_details[idx]?.gravite || ''} onChange={e => handleRiskDetail(idx, 'gravite', e.target.value)}>
-                                      <option value="">-</option>
-                                      <option value="faible">Faible</option>
-                                      <option value="moyenne">Moyenne</option>
-                                      <option value="élevée">Élevée</option>
-                                    </select>
-                                    <label className="text-xs">Probabilité :</label>
-                                    <select className="rounded border px-2 py-1 text-xs" value={form.risques_details && form.risques_details[idx]?.probabilite || ''} onChange={e => handleRiskDetail(idx, 'probabilite', e.target.value)}>
-                                      <option value="">-</option>
-                                      <option value="faible">Faible</option>
-                                      <option value="moyenne">Moyenne</option>
-                                      <option value="élevée">Élevée</option>
-                                    </select>
-                                    {/* Highlight high risk */}
-                                    {form.risques_details && form.risques_details[idx]?.gravite === 'élevée' && form.risques_details[idx]?.probabilite === 'élevée' && (
-                                      <span className="ml-2 text-red-600 font-bold animate-pulse">Risque élevé !</span>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : null}
-                  </div>
-                );
-                // Mesures de sécurité
-                if (f.key === 'mesures') return (
-                  <div key={f.key}>
-                    <label className="block text-blue-900 font-semibold mb-1">{f.label}{f.required && ' *'}</label>
-                    <div className="text-xs text-blue-700 mb-1">{f.help}</div>
-                    <textarea className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400" value={form[f.key]} onChange={e => handleChange(f.key, e.target.value)} required={f.required} />
-                  </div>
-                );
-                // Nécessité & proportionnalité
-                if (f.key === 'necessite') return (
-                  <div key={f.key}>
-                    <label className="block text-blue-900 font-semibold mb-1">{f.label}{f.required && ' *'}</label>
-                    <div className="text-xs text-blue-700 mb-1">{f.help}</div>
-                    <textarea className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400" value={form[f.key]} onChange={e => handleChange(f.key, e.target.value)} required={f.required} />
-                  </div>
-                );
-                // Consultation CNDP
-                if (f.key === 'consultation') return (
-                  <div key={f.key}>
-                    <label className="block text-blue-900 font-semibold mb-1">{f.label}{f.required && ' *'}</label>
-                    <div className="text-xs text-blue-700 mb-1">{f.help}</div>
-                    <textarea className="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-400" value={form[f.key]} onChange={e => handleChange(f.key, e.target.value)} required={f.required} />
-                  </div>
-                );
                 // Default: text/textarea
                 return (
                   <div key={f.key}>
@@ -496,6 +427,46 @@ export default function DPIA() {
                   </div>
                 );
               })}
+              {/* Special risk analysis UI for step 4 */}
+              {step === 3 && (
+                <div className="mb-6">
+                  <div className="font-semibold text-blue-900 mb-2 flex items-center gap-2">Sélectionnez les risques à analyser <InformationCircleIcon className="w-4 h-4 text-blue-400" title={STEPS[3].help} /></div>
+                  <ul className="space-y-2 mb-4">
+                    {COMMON_RISKS.map((risk, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <input type="checkbox" className="accent-blue-700 mt-1" checked={form.risques_selectionnes && form.risques_selectionnes.includes(idx)} onChange={() => handleRiskToggle(idx)} />
+                        <div>
+                          <span className="font-semibold text-yellow-700 flex items-center gap-1"><ExclamationTriangleIcon className="w-5 h-5" /> {risk.label}</span>
+                          <div className="text-xs text-blue-700">Mesures recommandées : {risk.mesures}</div>
+                          {/* Risk matrix grid */}
+                          {form.risques_selectionnes && form.risques_selectionnes.includes(idx) && (
+                            <div className="flex gap-2 mt-2 items-center">
+                              <label className="text-xs">Gravité :</label>
+                              <select className="rounded border px-2 py-1 text-xs" value={form.risques_details && form.risques_details[idx]?.gravite || ''} onChange={e => handleRiskDetail(idx, 'gravite', e.target.value)}>
+                                <option value="">-</option>
+                                <option value="faible">Faible</option>
+                                <option value="moyenne">Moyenne</option>
+                                <option value="élevée">Élevée</option>
+                              </select>
+                              <label className="text-xs">Probabilité :</label>
+                              <select className="rounded border px-2 py-1 text-xs" value={form.risques_details && form.risques_details[idx]?.probabilite || ''} onChange={e => handleRiskDetail(idx, 'probabilite', e.target.value)}>
+                                <option value="">-</option>
+                                <option value="faible">Faible</option>
+                                <option value="moyenne">Moyenne</option>
+                                <option value="élevée">Élevée</option>
+                              </select>
+                              {/* Highlight high risk */}
+                              {form.risques_details && form.risques_details[idx]?.gravite === 'élevée' && form.risques_details[idx]?.probabilite === 'élevée' && (
+                                <span className="ml-2 text-red-600 font-bold animate-pulse">Risque élevé !</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <div className="flex gap-4 mt-6">
                 {step > 0 && (
                   <button type="button" className="bg-blue-100 text-blue-900 px-6 py-2 rounded font-semibold shadow flex items-center gap-2" onClick={prev}><ArrowLeftCircleIcon className="w-5 h-5" /> Précédent</button>
@@ -507,8 +478,9 @@ export default function DPIA() {
                   <button type="submit" className="w-full bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow mb-2">Enregistrer la DPIA</button>
                 )}
               </div>
+              {/* Only show saveStatus if not 'Enregistrement...' */}
+              {saveStatus && saveStatus !== 'Enregistrement...' && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{saveStatus}</div>}
               {status && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{status}</div>}
-              {saveStatus && <div className="text-xs text-blue-700 mt-2 animate-fade-in">{saveStatus}</div>}
             </div>
           </form>
         ) : (
