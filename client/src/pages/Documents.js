@@ -36,7 +36,7 @@ const CNDP_DECLARATIONS = [
   },
   {
     name: "Déclaration normale (F211) préalable de traitement",
-    url: "https://www.cndp.ma/wp-content/uploads/2025/01/CNDP-Declaration-Normale-Conformement-Decision_F214_20210318_Fr.pdf",
+    url: "https://www.cndp.ma/wp-content/uploads/2025/01/CNDP-Declaration-Normale_F211_20210318_Fr.pdf",
     desc: "Formulaire officiel CNDP pour la déclaration normale des traitements.",
   },
 ];
