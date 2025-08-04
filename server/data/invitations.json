@@ -1,1 +1,14 @@
-[] 
+[
+  {
+    "id": 1704067200000,
+    "email": "test@example.com",
+    "role": "user",
+    "code": "TEST123",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "expiresAt": "2024-12-31T23:59:59.000Z",
+    "organizationId": 1704067200000,
+    "used": false,
+    "usedBy": null,
+    "usedAt": null
+  }
+] 

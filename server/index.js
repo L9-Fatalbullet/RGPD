@@ -159,8 +159,11 @@ function writeOrganizations(data) {
 
 // Helper to read invitations data
 function readInvitations() {
-  if (!fs.existsSync(INVITATIONS_PATH)) return [];
-  return JSON.parse(fs.readFileSync(INVITATIONS_PATH, 'utf-8'));
+  if (!fs.existsSync(INVITATIONS_PATH)) {
+    return [];
+  }
+  const data = JSON.parse(fs.readFileSync(INVITATIONS_PATH, 'utf-8'));
+  return data;
 }
 
 function writeInvitations(data) {
@@ -1289,6 +1292,7 @@ app.post('/api/invitations/generate', auth, isAdmin, (req, res) => {
       usedBy: null,
       usedAt: null
     };
+    
     invitations.push(invitation);
     writeInvitations(invitations);
 
