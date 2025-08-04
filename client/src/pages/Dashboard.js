@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { SparklesIcon, ChartBarIcon, ExclamationTriangleIcon, CheckCircleIcon, DocumentCheckIcon, ShieldCheckIcon, ArrowRightCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { SparklesIcon, ChartBarIcon, ExclamationTriangleIcon, CheckCircleIcon, DocumentCheckIcon, ShieldCheckIcon, ArrowRightCircleIcon, ArrowPathIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../App';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -83,6 +83,7 @@ export default function Dashboard() {
   const [assessment, setAssessment] = useState(null);
   const [registers, setRegisters] = useState([]);
   const [dpias, setDpias] = useState([]);
+  const [iso27001, setIso27001] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -93,10 +94,12 @@ export default function Dashboard() {
       fetch(`${API_BASE}/api/assessments`, { headers: { Authorization: `Bearer ${token}` } }).then(async r => { if (r.status === 401 || r.status === 403) { throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); }),
       fetch(`${API_BASE}/api/registers`, { headers: { Authorization: `Bearer ${token}` } }).then(async r => { if (r.status === 401 || r.status === 403) { throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); }),
       fetch(`${API_BASE}/api/dpias`, { headers: { Authorization: `Bearer ${token}` } }).then(async r => { if (r.status === 401 || r.status === 403) { throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); }),
-    ]).then(([assess, regs, dpias]) => {
+      fetch(`${API_BASE}/api/iso27001/latest`, { headers: { Authorization: `Bearer ${token}` } }).then(async r => { if (r.status === 401 || r.status === 403) { throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); }),
+    ]).then(([assess, regs, dpias, iso]) => {
       setAssessment(Array.isArray(assess) && assess.length > 0 ? assess[assess.length - 1] : null);
       setRegisters(regs || []);
       setDpias(dpias || []);
+      setIso27001(iso);
       setLoading(false);
     }).catch((e) => {
       setLoading(false);
@@ -198,6 +201,19 @@ export default function Dashboard() {
                   <div className="text-gray-700 text-xs">Analyses d'impact effectuées</div>
                 </div>
               </div>
+              {/* ISO 27001 card */}
+              <div className="group border-l-4 border-purple-500 rounded-xl shadow-lg p-6 flex items-center gap-4 hover:scale-105 hover:shadow-2xl transition">
+                <DocumentTextIcon className="w-10 h-10 text-purple-500 group-hover:text-yellow-500 transition" />
+                <div>
+                  <div className="text-2xl font-bold text-blue-900 group-hover:text-yellow-700 transition">
+                    {iso27001 ? `${iso27001.totalScore}%` : '--'}
+                  </div>
+                  <div className="font-semibold text-blue-900">ISO 27001</div>
+                  <div className="text-gray-700 text-xs">
+                    {iso27001 ? `Niveau: ${iso27001.complianceLevel}` : 'Aucune évaluation'}
+                  </div>
+                </div>
+              </div>
             </div>
             {domainScores.length === 0 ? <div className="text-green-700 font-semibold">Aucune action urgente. Bravo !</div> :
               <ul className="space-y-4">
@@ -244,6 +260,14 @@ export default function Dashboard() {
                 <Link to="/dpia" className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-4 py-2 rounded font-semibold shadow">Faire une DPIA</Link>
               </li>
             )}
+            {/* ISO 27001 step */}
+            {!iso27001 && (
+              <li className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-4 flex items-center gap-4 border-l-4 border-purple-500 animate-fade-in">
+                <DocumentTextIcon className="w-6 h-6 text-purple-500" />
+                <span className="flex-1 text-blue-900 font-semibold">Évaluez votre conformité ISO 27001 pour renforcer votre sécurité informatique.</span>
+                <Link to="/iso27001" className="bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white px-4 py-2 rounded font-semibold shadow">Évaluer ISO 27001</Link>
+              </li>
+            )}
             {/* All main steps done */}
             {assessment && Object.values(assessment.answers || {}).every(v => v === 2) && registers && registers.length > 0 && (assessment.answers.dpia !== 2 || (dpias && dpias.length > 0)) && (
               <li className="bg-white/80 backdrop-blur rounded-xl shadow-lg p-4 flex items-center gap-4 border-l-4 border-green-500 animate-fade-in">
@@ -283,6 +307,10 @@ export default function Dashboard() {
           <li className="flex items-center gap-2">
             <ShieldCheckIcon className={`w-6 h-6 ${(assessment && assessment.answers && assessment.answers.dpia === 2 && dpias && dpias.length > 0) ? 'text-green-500' : 'text-gray-400'}`} />
             <span className={(assessment && assessment.answers && assessment.answers.dpia === 2 && dpias && dpias.length > 0) ? 'text-green-700 font-semibold' : 'text-gray-500'}>DPIA</span>
+          </li>
+          <li className="flex items-center gap-2">
+            <DocumentTextIcon className={`w-6 h-6 ${iso27001 ? 'text-green-500' : 'text-gray-400'}`} />
+            <span className={iso27001 ? 'text-green-700 font-semibold' : 'text-gray-500'}>ISO 27001</span>
           </li>
         </ul>
       </div>

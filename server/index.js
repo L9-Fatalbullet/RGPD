@@ -15,6 +15,7 @@ const REGISTERS_PATH = path.resolve('./data/registers.json');
 const DPIAS_PATH = path.resolve('./data/dpias.json');
 const AUDIT_PATH = path.resolve('./data/audit.json');
 const PROGRESSION_PATH = path.resolve('./data/progression.json');
+const ISO27001_PATH = path.resolve('./data/iso27001.json');
 
 // Default compliance roadmap
 const DEFAULT_STEPS = [
@@ -108,6 +109,28 @@ function readProgression() {
 // Helper to write progression data
 function writeProgression(data) {
   fs.writeFileSync(PROGRESSION_PATH, JSON.stringify(data, null, 2));
+}
+
+// Helper to read ISO27001 data
+function readISO27001() {
+  try {
+    if (fs.existsSync(ISO27001_PATH)) {
+      return JSON.parse(fs.readFileSync(ISO27001_PATH, 'utf-8'));
+    }
+    return [];
+  } catch (error) {
+    console.error('Error reading ISO27001:', error);
+    return [];
+  }
+}
+
+// Helper to write ISO27001 data
+function writeISO27001(data) {
+  try {
+    fs.writeFileSync(ISO27001_PATH, JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error('Error writing ISO27001:', error);
+  }
 }
 
 // Manual OPTIONS handler for CORS preflight (must be first)
@@ -669,6 +692,177 @@ app.get('/api/roles', auth, (req, res) => {
     { value: 'user', label: 'Utilisateur standard', description: 'Accès limité aux fonctionnalités de base' }
   ];
   res.json(roles);
+});
+
+// ISO 27001 Assessment endpoints
+
+// Get all ISO 27001 assessments for the user's organization
+app.get('/api/iso27001', auth, (req, res) => {
+  try {
+    const assessments = readISO27001();
+    // Filter by organization
+    const userAssessments = assessments.filter(assessment => 
+      assessment.organizationId === req.user.organizationId
+    );
+    res.json(userAssessments);
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur lors de la récupération des évaluations ISO 27001' });
+  }
+});
+
+// Get latest ISO 27001 assessment for the user's organization
+app.get('/api/iso27001/latest', auth, (req, res) => {
+  try {
+    const assessments = readISO27001();
+    // Filter by organization and get the latest
+    const userAssessments = assessments.filter(assessment => 
+      assessment.organizationId === req.user.organizationId
+    );
+    
+    if (userAssessments.length === 0) {
+      return res.json(null);
+    }
+    
+    // Sort by date and get the latest
+    const latestAssessment = userAssessments.sort((a, b) => 
+      new Date(b.createdAt) - new Date(a.createdAt)
+    )[0];
+    
+    res.json(latestAssessment);
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur lors de la récupération de la dernière évaluation ISO 27001' });
+  }
+});
+
+// Save ISO 27001 assessment
+app.post('/api/iso27001', auth, (req, res) => {
+  try {
+    const { controls, summary, totalScore, complianceLevel } = req.body;
+    
+    if (!controls || !summary) {
+      return res.status(400).json({ error: 'Données d\'évaluation requises' });
+    }
+    
+    const assessments = readISO27001();
+    
+    const newAssessment = {
+      id: Date.now(),
+      organizationId: req.user.organizationId,
+      userId: req.user.id,
+      userEmail: req.user.email,
+      controls,
+      summary,
+      totalScore,
+      complianceLevel,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    assessments.push(newAssessment);
+    writeISO27001(assessments);
+    
+    logAudit({ 
+      user: req.user, 
+      action: 'create', 
+      type: 'iso27001_assessment', 
+      itemId: newAssessment.id, 
+      details: { 
+        totalScore, 
+        complianceLevel,
+        controlsCount: Object.keys(controls).length 
+      } 
+    });
+    
+    res.json(newAssessment);
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur lors de la sauvegarde de l\'évaluation ISO 27001' });
+  }
+});
+
+// Update ISO 27001 assessment
+app.put('/api/iso27001/:id', auth, (req, res) => {
+  try {
+    const assessmentId = parseInt(req.params.id);
+    const { controls, summary, totalScore, complianceLevel } = req.body;
+    
+    const assessments = readISO27001();
+    const assessmentIndex = assessments.findIndex(a => a.id === assessmentId);
+    
+    if (assessmentIndex === -1) {
+      return res.status(404).json({ error: 'Évaluation non trouvée' });
+    }
+    
+    const assessment = assessments[assessmentIndex];
+    
+    // Check if user has permission to update this assessment
+    if (assessment.organizationId !== req.user.organizationId) {
+      return res.status(403).json({ error: 'Accès non autorisé' });
+    }
+    
+    // Update fields
+    assessment.controls = controls;
+    assessment.summary = summary;
+    assessment.totalScore = totalScore;
+    assessment.complianceLevel = complianceLevel;
+    assessment.updatedAt = new Date().toISOString();
+    
+    writeISO27001(assessments);
+    
+    logAudit({ 
+      user: req.user, 
+      action: 'update', 
+      type: 'iso27001_assessment', 
+      itemId: assessmentId, 
+      details: { 
+        totalScore, 
+        complianceLevel,
+        controlsCount: Object.keys(controls).length 
+      } 
+    });
+    
+    res.json(assessment);
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur lors de la mise à jour de l\'évaluation ISO 27001' });
+  }
+});
+
+// Delete ISO 27001 assessment
+app.delete('/api/iso27001/:id', auth, (req, res) => {
+  try {
+    const assessmentId = parseInt(req.params.id);
+    
+    const assessments = readISO27001();
+    const assessmentIndex = assessments.findIndex(a => a.id === assessmentId);
+    
+    if (assessmentIndex === -1) {
+      return res.status(404).json({ error: 'Évaluation non trouvée' });
+    }
+    
+    const assessment = assessments[assessmentIndex];
+    
+    // Check if user has permission to delete this assessment
+    if (assessment.organizationId !== req.user.organizationId) {
+      return res.status(403).json({ error: 'Accès non autorisé' });
+    }
+    
+    assessments.splice(assessmentIndex, 1);
+    writeISO27001(assessments);
+    
+    logAudit({ 
+      user: req.user, 
+      action: 'delete', 
+      type: 'iso27001_assessment', 
+      itemId: assessmentId, 
+      details: { 
+        totalScore: assessment.totalScore, 
+        complianceLevel: assessment.complianceLevel 
+      } 
+    });
+    
+    res.json({ success: true, message: 'Évaluation supprimée avec succès' });
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur lors de la suppression de l\'évaluation ISO 27001' });
+  }
 });
 
 app.listen(PORT, () => {

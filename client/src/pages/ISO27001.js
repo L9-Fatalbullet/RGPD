@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
-import { CheckCircleIcon, ExclamationTriangleIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect } from 'react';
+import { CheckCircleIcon, ExclamationTriangleIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon, DocumentArrowDownIcon, CheckIcon } from '@heroicons/react/24/outline';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useAuth } from '../App';
+
+const API_BASE = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev';
 
 // Official ISO 27001:2022 Annexe A controls (subset for demo; expand as needed)
 const ISO_CONTROLS = {
@@ -159,10 +162,14 @@ const STATUS_OPTIONS = [
 ];
 
 export default function ISO27001() {
+  const { token } = useAuth();
   const [answers, setAnswers] = useState({});
   const [expanded, setExpanded] = useState({});
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
   const [showResults, setShowResults] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState(null);
 
   // Progress calculation
   const total = CATEGORIES.reduce((sum, cat) => sum + cat.controls.length, 0);
@@ -187,6 +194,64 @@ export default function ISO27001() {
   };
   const toggleExpand = key => {
     setExpanded(e => ({ ...e, [key]: !e[key] }));
+  };
+
+  // Save assessment to backend
+  const handleSaveAssessment = async () => {
+    setSaving(true);
+    setError(null);
+    
+    try {
+      // Calculate summary and scores
+      const totalControls = Object.keys(ISO_CONTROLS).length;
+      const compliantControls = Object.values(answers).filter(a => a && a.status === 'yes').length;
+      const partialControls = Object.values(answers).filter(a => a && a.status === 'partial').length;
+      const nonCompliantControls = Object.values(answers).filter(a => a && a.status === 'no').length;
+      
+      const totalScore = Math.round((compliantControls / totalControls) * 100);
+      
+      let complianceLevel = 'Non conforme';
+      if (totalScore >= 90) complianceLevel = 'Excellente';
+      else if (totalScore >= 80) complianceLevel = 'Bonne';
+      else if (totalScore >= 70) complianceLevel = 'Moyenne';
+      else if (totalScore >= 60) complianceLevel = 'Faible';
+      
+      const summary = {
+        totalControls,
+        compliantControls,
+        partialControls,
+        nonCompliantControls,
+        totalScore,
+        complianceLevel,
+        categoryStats
+      };
+      
+      const response = await fetch(`${API_BASE}/api/iso27001`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          controls: answers,
+          summary,
+          totalScore,
+          complianceLevel
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors de la sauvegarde');
+      }
+      
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000); // Hide success message after 3 seconds
+      
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Enhanced PDF export
@@ -336,11 +401,41 @@ export default function ISO27001() {
             </tbody>
           </table>
         </div>
-        <div className="mt-8 flex gap-4">
-          <button className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-2 rounded font-semibold shadow flex items-center gap-2" onClick={handleExportPDF}>
-            <DocumentArrowDownIcon className="w-5 h-5" /> Exporter l’auto-évaluation
+        <div className="mt-8 flex gap-4 justify-center">
+          <button
+            className="bg-gradient-to-r from-green-500 to-green-700 hover:from-green-600 hover:to-green-800 text-white px-6 py-3 rounded-lg font-semibold shadow-lg flex items-center gap-2 disabled:opacity-50"
+            onClick={handleSaveAssessment}
+            disabled={saving}
+          >
+            {saving ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                Sauvegarde...
+              </>
+            ) : (
+              <>
+                <CheckIcon className="w-5 h-5" />
+                Sauvegarder l'évaluation
+              </>
+            )}
+          </button>
+          <button className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-6 py-3 rounded-lg font-semibold shadow-lg flex items-center gap-2" onClick={handleExportPDF}>
+            <DocumentArrowDownIcon className="w-5 h-5" /> Exporter l'auto-évaluation
           </button>
         </div>
+        
+        {/* Status messages */}
+        {saved && (
+          <div className="mt-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg text-center">
+            ✅ Évaluation sauvegardée avec succès !
+          </div>
+        )}
+        
+        {error && (
+          <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center">
+            ❌ Erreur: {error}
+          </div>
+        )}
       </section>
     );
   }
