@@ -145,6 +145,12 @@ function isAdmin(req, res, next) {
   return res.status(403).json({ error: 'Accès réservé aux administrateurs' });
 }
 
+// Helper: isAdminOrDPO middleware
+function isAdminOrDPO(req, res, next) {
+  if (req.user && (req.user.role === 'admin' || req.user.role === 'dpo')) return next();
+  return res.status(403).json({ error: 'Accès réservé aux administrateurs et DPO' });
+}
+
 // Middleware for DPO
 function isDPO(req, res, next) {
   if (req.user && req.user.role === 'dpo') return next();
@@ -206,6 +212,18 @@ app.post('/api/auth/login', (req, res) => {
   const user = users.find(u => u.email === email);
   if (!user) return res.status(400).json({ error: 'Utilisateur non trouvé' });
   if (!bcrypt.compareSync(password, user.password)) return res.status(400).json({ error: 'Mot de passe incorrect' });
+  
+  // Check if user is active
+  if (user.isActive === false) {
+    return res.status(403).json({ error: 'Compte désactivé. Contactez l\'administrateur.' });
+  }
+  
+  // Update last login
+  user.lastLogin = Date.now();
+  const userIndex = users.findIndex(u => u.id === user.id);
+  users[userIndex] = user;
+  fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
+  
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role, organizationId: user.organizationId }, SECRET, { expiresIn: '7d' });
   res.json({ token });
 });
@@ -407,54 +425,250 @@ app.put('/api/progression', auth, (req, res) => {
   res.json(userProg.steps);
 });
 
-// Get current user info
-app.get('/api/users/me', auth, (req, res) => {
-  let users = [];
-  if (fs.existsSync(USERS_PATH)) {
-    users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
-  }
-  const user = users.find(u => u.id === req.user.id);
-  if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
-  const { password, ...userInfo } = user;
-  res.json(userInfo);
-});
+// User Management Endpoints
 
-// List all users (admin only)
+// Get all users (admin only)
 app.get('/api/users', auth, isAdmin, (req, res) => {
-  if (!fs.existsSync(USERS_PATH)) return res.json([]);
-  const users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
-  res.json(users.map(u => ({ id: u.id, email: u.email, role: u.role, organizationId: u.organizationId })));
+  try {
+    let users = [];
+    if (fs.existsSync(USERS_PATH)) {
+      users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+    }
+    // Remove password from response
+    const usersWithoutPassword = users.map(user => ({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      organizationId: user.organizationId,
+      name: user.name || '',
+      department: user.department || '',
+      createdAt: user.createdAt || user.id,
+      lastLogin: user.lastLogin || null,
+      isActive: user.isActive !== false
+    }));
+    res.json(usersWithoutPassword);
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur lors de la récupération des utilisateurs' });
+  }
 });
 
-// Invite/add user to org (admin only)
-app.post('/api/users/invite', auth, isAdmin, (req, res) => {
-  const { email, password, role, organizationId } = req.body;
-  if (!email || !password || !role || !organizationId) return res.status(400).json({ error: 'Champs requis manquants' });
-  let users = [];
-  if (fs.existsSync(USERS_PATH)) {
-    users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+// Get current user profile
+app.get('/api/users/profile', auth, (req, res) => {
+  try {
+    let users = [];
+    if (fs.existsSync(USERS_PATH)) {
+      users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+    }
+    const user = users.find(u => u.id === req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    }
+    // Remove password from response
+    const userWithoutPassword = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      organizationId: user.organizationId,
+      name: user.name || '',
+      department: user.department || '',
+      createdAt: user.createdAt || user.id,
+      lastLogin: user.lastLogin || null,
+      isActive: user.isActive !== false
+    };
+    res.json(userWithoutPassword);
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur lors de la récupération du profil' });
   }
-  if (users.find(u => u.email === email)) return res.status(400).json({ error: 'Utilisateur déjà existant' });
-  const hash = bcrypt.hashSync(password, 10);
-  const user = { id: Date.now(), email, password: hash, role, organizationId };
-  users.push(user);
-  fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
-  res.json({ success: true });
 });
 
-// Change user role (admin only)
-app.put('/api/users/:id/role', auth, isAdmin, (req, res) => {
-  const { role } = req.body;
-  if (!['admin', 'dpo', 'representant'].includes(role)) return res.status(400).json({ error: 'Rôle invalide' });
-  let users = [];
-  if (fs.existsSync(USERS_PATH)) {
-    users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+// Update user profile
+app.put('/api/users/profile', auth, (req, res) => {
+  try {
+    const { name, department, currentPassword, newPassword } = req.body;
+    let users = [];
+    if (fs.existsSync(USERS_PATH)) {
+      users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+    }
+    const userIndex = users.findIndex(u => u.id === req.user.id);
+    if (userIndex === -1) {
+      return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    }
+    
+    const user = users[userIndex];
+    
+    // Update basic info
+    if (name !== undefined) user.name = name;
+    if (department !== undefined) user.department = department;
+    
+    // Update password if provided
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({ error: 'Mot de passe actuel requis' });
+      }
+      if (!bcrypt.compareSync(currentPassword, user.password)) {
+        return res.status(400).json({ error: 'Mot de passe actuel incorrect' });
+      }
+      user.password = bcrypt.hashSync(newPassword, 10);
+    }
+    
+    fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
+    logAudit({ user: req.user, action: 'update', type: 'profile', itemId: user.id, details: { name, department, passwordChanged: !!newPassword } });
+    
+    res.json({ success: true, message: 'Profil mis à jour avec succès' });
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur lors de la mise à jour du profil' });
   }
-  const idx = users.findIndex(u => u.id === Number(req.params.id));
-  if (idx === -1) return res.status(404).json({ error: 'Utilisateur non trouvé' });
-  users[idx].role = role;
-  fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
-  res.json({ success: true });
+});
+
+// Create new user (admin only)
+app.post('/api/users', auth, isAdmin, (req, res) => {
+  try {
+    const { email, password, role, name, department } = req.body;
+    if (!email || !password || !role) {
+      return res.status(400).json({ error: 'Email, mot de passe et rôle requis' });
+    }
+    
+    let users = [];
+    if (fs.existsSync(USERS_PATH)) {
+      users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+    }
+    
+    if (users.find(u => u.email === email)) {
+      return res.status(400).json({ error: 'Utilisateur déjà existant' });
+    }
+    
+    const hash = bcrypt.hashSync(password, 10);
+    const newUser = {
+      id: Date.now(),
+      email,
+      password: hash,
+      role,
+      name: name || '',
+      department: department || '',
+      organizationId: req.user.organizationId,
+      createdAt: Date.now(),
+      isActive: true
+    };
+    
+    users.push(newUser);
+    fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
+    
+    logAudit({ user: req.user, action: 'create', type: 'user', itemId: newUser.id, details: { email, role, name, department } });
+    
+    // Return user without password
+    const userWithoutPassword = {
+      id: newUser.id,
+      email: newUser.email,
+      role: newUser.role,
+      name: newUser.name,
+      department: newUser.department,
+      organizationId: newUser.organizationId,
+      createdAt: newUser.createdAt,
+      isActive: newUser.isActive
+    };
+    
+    res.json(userWithoutPassword);
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur lors de la création de l\'utilisateur' });
+  }
+});
+
+// Update user (admin only)
+app.put('/api/users/:id', auth, isAdmin, (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const { email, role, name, department, isActive, newPassword } = req.body;
+    
+    let users = [];
+    if (fs.existsSync(USERS_PATH)) {
+      users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+    }
+    
+    const userIndex = users.findIndex(u => u.id === userId);
+    if (userIndex === -1) {
+      return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    }
+    
+    const user = users[userIndex];
+    
+    // Update fields
+    if (email !== undefined) user.email = email;
+    if (role !== undefined) user.role = role;
+    if (name !== undefined) user.name = name;
+    if (department !== undefined) user.department = department;
+    if (isActive !== undefined) user.isActive = isActive;
+    
+    // Update password if provided
+    if (newPassword) {
+      user.password = bcrypt.hashSync(newPassword, 10);
+    }
+    
+    fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
+    
+    logAudit({ user: req.user, action: 'update', type: 'user', itemId: userId, details: { email, role, name, department, isActive, passwordChanged: !!newPassword } });
+    
+    // Return user without password
+    const userWithoutPassword = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+      department: user.department,
+      organizationId: user.organizationId,
+      createdAt: user.createdAt,
+      lastLogin: user.lastLogin,
+      isActive: user.isActive
+    };
+    
+    res.json(userWithoutPassword);
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur lors de la mise à jour de l\'utilisateur' });
+  }
+});
+
+// Delete user (admin only)
+app.delete('/api/users/:id', auth, isAdmin, (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    
+    // Prevent admin from deleting themselves
+    if (userId === req.user.id) {
+      return res.status(400).json({ error: 'Vous ne pouvez pas supprimer votre propre compte' });
+    }
+    
+    let users = [];
+    if (fs.existsSync(USERS_PATH)) {
+      users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+    }
+    
+    const userIndex = users.findIndex(u => u.id === userId);
+    if (userIndex === -1) {
+      return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    }
+    
+    const deletedUser = users[userIndex];
+    users.splice(userIndex, 1);
+    fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
+    
+    logAudit({ user: req.user, action: 'delete', type: 'user', itemId: userId, details: { email: deletedUser.email, role: deletedUser.role } });
+    
+    res.json({ success: true, message: 'Utilisateur supprimé avec succès' });
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur lors de la suppression de l\'utilisateur' });
+  }
+});
+
+// Get user roles (for dropdowns)
+app.get('/api/roles', auth, (req, res) => {
+  const roles = [
+    { value: 'admin', label: 'Administrateur', description: 'Accès complet à toutes les fonctionnalités' },
+    { value: 'dpo', label: 'DPO (Délégué à la Protection des Données)', description: 'Gestion de la conformité et des DPIAs' },
+    { value: 'representant', label: 'Représentant légal', description: 'Responsable légal de l\'organisation' },
+    { value: 'responsable', label: 'Responsable de traitement', description: 'Gestion des traitements de données' },
+    { value: 'auditeur', label: 'Auditeur', description: 'Accès en lecture seule pour les audits' },
+    { value: 'user', label: 'Utilisateur standard', description: 'Accès limité aux fonctionnalités de base' }
+  ];
+  res.json(roles);
 });
 
 app.listen(PORT, () => {

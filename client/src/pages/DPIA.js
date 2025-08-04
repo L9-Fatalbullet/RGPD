@@ -109,7 +109,13 @@ function emptyDPIA() {
 }
 
 export default function DPIA() {
-  const { token, logout } = useAuth();
+  const { token, logout, user } = useAuth();
+  
+  // Role-based permissions
+  const canCreate = user?.role === 'admin' || user?.role === 'dpo' || user?.role === 'responsable';
+  const canEdit = user?.role === 'admin' || user?.role === 'dpo' || user?.role === 'responsable';
+  const canDelete = user?.role === 'admin' || user?.role === 'dpo';
+  const canViewAll = user?.role === 'admin' || user?.role === 'dpo' || user?.role === 'auditeur';
   const [dpias, setDPIAs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [wizard, setWizard] = useState(false);
@@ -346,26 +352,30 @@ export default function DPIA() {
       {!wizard ? (
         <>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-blue-900 flex items-center gap-2"><SparklesIcon className="w-7 h-7 text-blue-700" /> Mes DPIA</h2>
-            <button className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-4 py-2 rounded flex items-center gap-2 font-semibold shadow" onClick={startWizard}><PlusIcon className="w-5 h-5" /> Nouvelle DPIA</button>
+            <h2 className="text-xl font-bold text-blue-900 flex items-center gap-2"><SparklesIcon className="w-7 h-7 text-blue-700" /> {canViewAll ? 'Toutes les DPIA' : 'Mes DPIA'}</h2>
+            {canCreate && (
+              <button className="bg-gradient-to-r from-yellow-400 via-blue-700 to-blue-900 hover:from-blue-700 hover:to-yellow-400 text-white px-4 py-2 rounded flex items-center gap-2 font-semibold shadow" onClick={startWizard}><PlusIcon className="w-5 h-5" /> Nouvelle DPIA</button>
+            )}
           </div>
           {/* New: Delete selected button */}
-          <div className="mb-2 flex items-center gap-4">
-            <button
-              className="bg-red-600 hover:bg-red-800 text-white px-4 py-2 rounded font-semibold shadow disabled:opacity-50"
-              onClick={handleDeleteSelected}
-              disabled={selectedDPIAs.length === 0 || loading}
-            >
-              Supprimer la sélection ({selectedDPIAs.length})
-            </button>
-          </div>
+          {canDelete && (
+            <div className="mb-2 flex items-center gap-4">
+              <button
+                className="bg-red-600 hover:bg-red-800 text-white px-4 py-2 rounded font-semibold shadow disabled:opacity-50"
+                onClick={handleDeleteSelected}
+                disabled={selectedDPIAs.length === 0 || loading}
+              >
+                Supprimer la sélection ({selectedDPIAs.length})
+              </button>
+            </div>
+          )}
           {loading ? <div className="text-blue-700">Chargement...</div> : (
             <div className="overflow-x-auto animate-fade-in">
               <table className="min-w-full bg-white/80 backdrop-blur rounded-xl shadow-lg">
                 <thead>
                   <tr>
                     {/* New: Select all checkbox */}
-                    <th className="px-2 py-2"><input type="checkbox" checked={selectedDPIAs.length === dpias.length && dpias.length > 0} onChange={handleSelectAllDPIAs} /></th>
+                    {canDelete && <th className="px-2 py-2"><input type="checkbox" checked={selectedDPIAs.length === dpias.length && dpias.length > 0} onChange={handleSelectAllDPIAs} /></th>}
                     <th className="px-4 py-2 text-left text-blue-900 font-semibold">Nom</th>
                     <th className="px-4 py-2 text-left text-blue-900 font-semibold">Responsable</th>
                     <th className="px-4 py-2 text-left text-blue-900 font-semibold">Date</th>
@@ -377,18 +387,18 @@ export default function DPIA() {
                   {dpias.map(dpia => (
                     <tr key={dpia.id} className="border-b border-blue-100 hover:bg-blue-50/40 transition">
                       {/* New: Row checkbox */}
-                      <td className="px-2 py-2"><input type="checkbox" checked={selectedDPIAs.includes(dpia.id)} onChange={() => handleSelectDPIA(dpia.id)} /></td>
+                      {canDelete && <td className="px-2 py-2"><input type="checkbox" checked={selectedDPIAs.includes(dpia.id)} onChange={() => handleSelectDPIA(dpia.id)} /></td>}
                       <td className="px-4 py-2 text-gray-800">{dpia.nom}</td>
                       <td className="px-4 py-2 text-gray-800">{dpia.responsable}</td>
                       <td className="px-4 py-2 text-gray-500 text-xs">{dpia.date && dpia.date.slice(0,10)}</td>
                       <td className="px-4 py-2 flex gap-2">
                         <button className="text-blue-700 hover:text-yellow-500" title="Voir la matrice des risques" onClick={() => setViewMatrixDPIA(dpia)}><EyeIcon className="w-5 h-5" /></button>
-                        <button className="text-blue-700 hover:text-yellow-500" title="Modifier" onClick={() => handleEdit(dpia)}><PencilIcon className="w-5 h-5" /></button>
-                        <button className="text-red-600 hover:text-red-800" title="Supprimer" onClick={() => handleDelete(dpia.id)}><TrashIcon className="w-5 h-5" /></button>
+                        {canEdit && <button className="text-blue-700 hover:text-yellow-500" title="Modifier" onClick={() => handleEdit(dpia)}><PencilIcon className="w-5 h-5" /></button>}
+                        {canDelete && <button className="text-red-600 hover:text-red-800" title="Supprimer" onClick={() => handleDelete(dpia.id)}><TrashIcon className="w-5 h-5" /></button>}
                       </td>
                     </tr>
                   ))}
-                  {dpias.length === 0 && <tr><td colSpan={5} className="text-center text-gray-500 py-8">Aucune DPIA enregistrée.</td></tr>}
+                  {dpias.length === 0 && <tr><td colSpan={canDelete ? 5 : 4} className="text-center text-gray-500 py-8">Aucune DPIA enregistrée.</td></tr>}
                 </tbody>
               </table>
             </div>

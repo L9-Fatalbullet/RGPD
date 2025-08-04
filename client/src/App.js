@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
-import { HomeIcon, ChartBarIcon, ClipboardDocumentListIcon, BookOpenIcon, DocumentTextIcon, SparklesIcon, ArrowLeftOnRectangleIcon, DocumentCheckIcon, ArrowPathIcon, ShieldCheckIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, ChartBarIcon, ClipboardDocumentListIcon, BookOpenIcon, DocumentTextIcon, SparklesIcon, ArrowLeftOnRectangleIcon, DocumentCheckIcon, ArrowPathIcon, ShieldCheckIcon, ChevronDownIcon, UserIcon } from '@heroicons/react/24/outline';
 import { Menu } from '@headlessui/react';
 import ISO27001 from './pages/ISO27001';
 
@@ -16,6 +16,7 @@ const Progress = lazy(() => import('./pages/Progress'));
 const DPIA = lazy(() => import('./pages/DPIA'));
 const Admin = lazy(() => import('./pages/Admin'));
 const Profile = lazy(() => import('./pages/Profile'));
+const UserManagement = lazy(() => import('./pages/UserManagement'));
 
 // AuthContext
 const AuthContext = createContext();
@@ -77,6 +78,11 @@ const nav = [
   { to: '/iso27001', label: 'ISO 27001', icon: <DocumentTextIcon className="w-6 h-6" /> },
 ];
 
+// Admin nav items (only shown to admins)
+const adminNav = [
+  { to: '/users', label: 'Utilisateurs', icon: <UserIcon className="w-6 h-6" /> },
+];
+
 function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, setEditProfileOpen }) {
   const [hovered, setHovered] = React.useState(false);
   const isExpanded = hovered;
@@ -114,12 +120,26 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, set
             {isExpanded && item.label}
           </Link>
         ))}
-        {user && user.role === 'admin' && isExpanded && (
-          <li>
-            <Link to="/admin" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-yellow-100/80 transition text-base font-medium text-white">
-              <span className="icon">🛡️</span> Admin
-            </Link>
-          </li>
+        {/* Admin navigation items */}
+        {user && user.role === 'admin' && (
+          <>
+            {isExpanded && (
+              <div className="mt-4 pt-4 border-t border-yellow-400/30">
+                <div className="text-xs font-semibold text-yellow-200 uppercase tracking-wider px-3 mb-2">
+                  Administration
+                </div>
+              </div>
+            )}
+            {adminNav.map(item => (
+              <Link key={item.to} to={item.to} aria-label={item.label} tabIndex={0}
+                className={`group flex items-center gap-3 px-3 py-2 my-1 rounded-full font-medium transition-all duration-200 outline-none focus:ring-2 focus:ring-yellow-400
+                  ${activePath === item.to ? 'bg-yellow-400/80 text-blue-900 shadow-lg border-l-4 border-yellow-400' : 'hover:bg-yellow-100/80 hover:text-yellow-300 text-white'}`}
+              >
+                <span className="transition-transform group-hover:scale-110 text-white">{item.icon}</span>
+                {isExpanded && item.label}
+              </Link>
+            ))}
+          </>
         )}
       </nav>
     </aside>
@@ -273,6 +293,7 @@ function App() {
                   <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
                   <Route path="/best-practices" element={<BestPractices />} />
                   <Route path="/iso27001" element={<ProtectedRoute><ISO27001 /></ProtectedRoute>} />
+                  <Route path="/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
