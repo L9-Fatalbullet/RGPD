@@ -84,6 +84,7 @@ export default function Dashboard() {
   const [registers, setRegisters] = useState([]);
   const [dpias, setDpias] = useState([]);
   const [iso27001, setIso27001] = useState(null);
+  const [organization, setOrganization] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -95,11 +96,13 @@ export default function Dashboard() {
       fetch(`${API_BASE}/api/registers`, { headers: { Authorization: `Bearer ${token}` } }).then(async r => { if (r.status === 401 || r.status === 403) { throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); }),
       fetch(`${API_BASE}/api/dpias`, { headers: { Authorization: `Bearer ${token}` } }).then(async r => { if (r.status === 401 || r.status === 403) { throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); }),
       fetch(`${API_BASE}/api/iso27001/latest`, { headers: { Authorization: `Bearer ${token}` } }).then(async r => { if (r.status === 401 || r.status === 403) { throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); }),
-    ]).then(([assess, regs, dpias, iso]) => {
+      fetch(`${API_BASE}/api/organization`, { headers: { Authorization: `Bearer ${token}` } }).then(async r => { if (r.status === 401 || r.status === 403) { throw new Error('Session expirée, veuillez vous reconnecter.'); } if (!r.ok) throw new Error('Erreur serveur'); return r.json(); }),
+    ]).then(([assess, regs, dpias, iso, org]) => {
       setAssessment(Array.isArray(assess) && assess.length > 0 ? assess[assess.length - 1] : null);
       setRegisters(regs || []);
       setDpias(dpias || []);
       setIso27001(iso);
+      setOrganization(org);
       setLoading(false);
     }).catch((e) => {
       setLoading(false);
@@ -118,6 +121,11 @@ export default function Dashboard() {
           <h1 className="text-3xl md:text-4xl font-extrabold mb-2 tracking-tight drop-shadow flex items-center gap-2">
             <SparklesIcon className="w-10 h-10 text-yellow-300" /> Tableau de bord conformité
           </h1>
+          {organization && (
+            <p className="text-lg md:text-xl font-light mb-2 drop-shadow text-blue-100">
+              {organization.name}
+            </p>
+          )}
           <p className="text-lg md:text-xl font-light mb-4 drop-shadow">Visualisez votre niveau de conformité Loi 09-08 par domaine clé.</p>
         </div>
         <div className="flex-1 flex flex-col items-center justify-center">

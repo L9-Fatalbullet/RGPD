@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
-import { HomeIcon, ChartBarIcon, ClipboardDocumentListIcon, BookOpenIcon, DocumentTextIcon, SparklesIcon, ArrowLeftOnRectangleIcon, DocumentCheckIcon, ArrowPathIcon, ShieldCheckIcon, ChevronDownIcon, UserIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, ChartBarIcon, ClipboardDocumentListIcon, BookOpenIcon, DocumentTextIcon, SparklesIcon, ArrowLeftOnRectangleIcon, DocumentCheckIcon, ArrowPathIcon, ShieldCheckIcon, ChevronDownIcon, UserIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
 import { Menu } from '@headlessui/react';
 import ISO27001 from './pages/ISO27001';
 
@@ -17,6 +17,7 @@ const DPIA = lazy(() => import('./pages/DPIA'));
 const Admin = lazy(() => import('./pages/Admin'));
 const Profile = lazy(() => import('./pages/Profile'));
 const UserManagement = lazy(() => import('./pages/UserManagement'));
+const OrganizationManagement = lazy(() => import('./pages/OrganizationManagement'));
 
 // AuthContext
 const AuthContext = createContext();
@@ -81,6 +82,7 @@ const nav = [
 // Admin nav items (only shown to admins)
 const adminNav = [
   { to: '/users', label: 'Utilisateurs', icon: <UserIcon className="w-6 h-6" /> },
+  { to: '/organization', label: 'Organisation', icon: <BuildingOfficeIcon className="w-6 h-6" /> },
 ];
 
 function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, setEditProfileOpen }) {
@@ -294,6 +296,7 @@ function App() {
                   <Route path="/best-practices" element={<BestPractices />} />
                   <Route path="/iso27001" element={<ProtectedRoute><ISO27001 /></ProtectedRoute>} />
                   <Route path="/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
+<Route path="/organization" element={<ProtectedRoute><OrganizationManagement /></ProtectedRoute>} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

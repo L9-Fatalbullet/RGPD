@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1704067200000,
+    "name": "Entreprise Demo",
+    "description": "Organisation de démonstration",
+    "address": "123 Rue de la Démo, 10000 Ville",
+    "phone": "+212 5 22 12 34 56",
+    "email": "contact@demo-entreprise.ma",
+    "website": "https://demo-entreprise.ma",
+    "sector": "Technologie",
+    "size": "PME",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "isActive": true,
+    "logo": "/logo.png"
+  }
+] 

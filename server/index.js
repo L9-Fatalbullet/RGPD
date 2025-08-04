@@ -16,6 +16,7 @@ const DPIAS_PATH = path.resolve('./data/dpias.json');
 const AUDIT_PATH = path.resolve('./data/audit.json');
 const PROGRESSION_PATH = path.resolve('./data/progression.json');
 const ISO27001_PATH = path.resolve('./data/iso27001.json');
+const ORGANIZATIONS_PATH = path.resolve('./data/organizations.json');
 
 // Default compliance roadmap
 const DEFAULT_STEPS = [
@@ -130,6 +131,27 @@ function writeISO27001(data) {
     fs.writeFileSync(ISO27001_PATH, JSON.stringify(data, null, 2));
   } catch (error) {
     console.error('Error writing ISO27001:', error);
+  }
+}
+
+// Helper functions for Organizations data
+function readOrganizations() {
+  try {
+    if (fs.existsSync(ORGANIZATIONS_PATH)) {
+      return JSON.parse(fs.readFileSync(ORGANIZATIONS_PATH, 'utf-8'));
+    }
+    return [];
+  } catch (error) {
+    console.error('Error reading organizations:', error);
+    return [];
+  }
+}
+
+function writeOrganizations(data) {
+  try {
+    fs.writeFileSync(ORGANIZATIONS_PATH, JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error('Error writing organizations:', error);
   }
 }
 
@@ -878,6 +900,115 @@ app.delete('/api/iso27001/:id', auth, (req, res) => {
     res.json({ success: true, message: 'Évaluation supprimée avec succès' });
   } catch (error) {
     res.status(500).json({ error: 'Erreur lors de la suppression de l\'évaluation ISO 27001' });
+  }
+});
+
+// Organization Management Endpoints
+
+// Get current user's organization details
+app.get('/api/organization', auth, (req, res) => {
+  try {
+    const organizations = readOrganizations();
+    const organization = organizations.find(org => org.id === req.user.organizationId);
+    
+    if (!organization) {
+      return res.status(404).json({ error: 'Organisation non trouvée' });
+    }
+    
+    res.json(organization);
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur lors de la récupération des détails de l\'organisation' });
+  }
+});
+
+// Update organization details (admin only)
+app.put('/api/organization', auth, isAdmin, (req, res) => {
+  try {
+    const { name, description, address, phone, email, website, sector, size, logo } = req.body;
+    
+    const organizations = readOrganizations();
+    const organizationIndex = organizations.findIndex(org => org.id === req.user.organizationId);
+    
+    if (organizationIndex === -1) {
+      return res.status(404).json({ error: 'Organisation non trouvée' });
+    }
+    
+    const organization = organizations[organizationIndex];
+    
+    // Update fields
+    if (name !== undefined) organization.name = name;
+    if (description !== undefined) organization.description = description;
+    if (address !== undefined) organization.address = address;
+    if (phone !== undefined) organization.phone = phone;
+    if (email !== undefined) organization.email = email;
+    if (website !== undefined) organization.website = website;
+    if (sector !== undefined) organization.sector = sector;
+    if (size !== undefined) organization.size = size;
+    if (logo !== undefined) organization.logo = logo;
+    
+    organization.updatedAt = new Date().toISOString();
+    
+    writeOrganizations(organizations);
+    
+    logAudit({ 
+      user: req.user, 
+      action: 'update', 
+      type: 'organization', 
+      itemId: organization.id, 
+      details: { name, description, address, phone, email, website, sector, size } 
+    });
+    
+    res.json(organization);
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur lors de la mise à jour de l\'organisation' });
+  }
+});
+
+// Get organization statistics (admin only)
+app.get('/api/organization/stats', auth, isAdmin, (req, res) => {
+  try {
+    const organizationId = req.user.organizationId;
+    
+    // Get counts from different data sources
+    let users = [];
+    if (fs.existsSync(USERS_PATH)) {
+      users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+    }
+    const userCount = users.filter(u => u.organizationId === organizationId).length;
+    
+    let dpias = [];
+    if (fs.existsSync(DPIAS_PATH)) {
+      dpias = JSON.parse(fs.readFileSync(DPIAS_PATH, 'utf-8'));
+    }
+    const dpiaCount = dpias.filter(d => d.organizationId === organizationId).length;
+    
+    let assessments = [];
+    if (fs.existsSync(DATA_PATH)) {
+      assessments = JSON.parse(fs.readFileSync(DATA_PATH, 'utf-8'));
+    }
+    const assessmentCount = assessments.filter(a => a.organizationId === organizationId).length;
+    
+    let isoAssessments = readISO27001();
+    const isoCount = isoAssessments.filter(a => a.organizationId === organizationId).length;
+    
+    let registers = [];
+    if (fs.existsSync(REGISTERS_PATH)) {
+      registers = JSON.parse(fs.readFileSync(REGISTERS_PATH, 'utf-8'));
+    }
+    const registerCount = registers.filter(r => r.organizationId === organizationId).length;
+    
+    const stats = {
+      users: userCount,
+      dpias: dpiaCount,
+      assessments: assessmentCount,
+      isoAssessments: isoCount,
+      registers: registerCount,
+      total: userCount + dpiaCount + assessmentCount + isoCount + registerCount
+    };
+    
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur lors de la récupération des statistiques' });
   }
 });
 
