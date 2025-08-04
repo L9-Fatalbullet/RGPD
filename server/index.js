@@ -260,7 +260,7 @@ app.get('/api/health', (req, res) => {
 app.get('/api/assessments', auth, (req, res) => {
   if (!fs.existsSync(DATA_PATH)) return res.json([]);
   const data = JSON.parse(fs.readFileSync(DATA_PATH, 'utf-8'));
-  res.json(data.filter(a => a.userId === req.user.id));
+  res.json(data.filter(a => a.organizationId === req.user.organizationId));
 });
 
 // Save a new assessment (protected, no folderId)
@@ -272,6 +272,7 @@ app.post('/api/assessments', auth, (req, res) => {
   }
   assessment.id = Date.now();
   assessment.userId = req.user.id;
+  assessment.organizationId = req.user.organizationId; // Add organization isolation
   data.push(assessment);
   fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2));
   logAudit({ user: req.user, action: 'create', type: 'assessment', itemId: assessment.id, details: assessment });
@@ -282,7 +283,7 @@ app.post('/api/assessments', auth, (req, res) => {
 app.get('/api/assessments/:id', auth, (req, res) => {
   if (!fs.existsSync(DATA_PATH)) return res.status(404).json({ error: 'Not found' });
   const data = JSON.parse(fs.readFileSync(DATA_PATH, 'utf-8'));
-  const found = data.find(a => a.id === Number(req.params.id) && a.userId === req.user.id);
+  const found = data.find(a => a.id === Number(req.params.id) && a.organizationId === req.user.organizationId);
   if (!found) return res.status(404).json({ error: 'Not found' });
   res.json(found);
 });
@@ -291,7 +292,7 @@ app.get('/api/assessments/:id', auth, (req, res) => {
 app.get('/api/registers', auth, (req, res) => {
   if (!fs.existsSync(REGISTERS_PATH)) return res.json([]);
   const data = JSON.parse(fs.readFileSync(REGISTERS_PATH, 'utf-8'));
-  res.json(data.filter(r => r.userId === req.user.id));
+  res.json(data.filter(r => r.organizationId === req.user.organizationId));
 });
 
 function logAudit({ user, action, type, itemId, details }) {
@@ -303,6 +304,7 @@ function logAudit({ user, action, type, itemId, details }) {
     id: Date.now(),
     userId: user.id,
     email: user.email,
+    organizationId: user.organizationId, // Add organization isolation
     action, // 'create' | 'update' | 'delete'
     type,   // 'register' | 'dpia' | 'assessment'
     itemId,
@@ -313,17 +315,23 @@ function logAudit({ user, action, type, itemId, details }) {
 }
 
 // --- Audit endpoints ---
-// List all audit logs (admin only)
+// List all audit logs (admin only) - filtered by organization
 app.get('/api/audit', auth, isAdmin, (req, res) => {
   if (!fs.existsSync(AUDIT_PATH)) return res.json([]);
   const logs = JSON.parse(fs.readFileSync(AUDIT_PATH, 'utf-8'));
-  res.json(logs);
+  // Filter by organization - admin can only see audit logs from their organization
+  const organizationLogs = logs.filter(log => log.organizationId === req.user.organizationId);
+  res.json(organizationLogs);
 });
-// Get audit logs for a specific item (auth)
+// Get audit logs for a specific item (auth) - filtered by organization
 app.get('/api/audit/:type/:itemId', auth, (req, res) => {
   if (!fs.existsSync(AUDIT_PATH)) return res.json([]);
   const logs = JSON.parse(fs.readFileSync(AUDIT_PATH, 'utf-8'));
-  res.json(logs.filter(l => l.type === req.params.type && String(l.itemId) === String(req.params.itemId)));
+  res.json(logs.filter(l => 
+    l.type === req.params.type && 
+    String(l.itemId) === String(req.params.itemId) &&
+    l.organizationId === req.user.organizationId
+  ));
 });
 
 // --- Register audit ---
@@ -335,6 +343,7 @@ app.post('/api/registers', auth, (req, res) => {
   }
   reg.id = Date.now();
   reg.userId = req.user.id;
+  reg.organizationId = req.user.organizationId; // Add organization isolation
   reg.date = new Date().toISOString();
   data.push(reg);
   fs.writeFileSync(REGISTERS_PATH, JSON.stringify(data, null, 2));
@@ -345,7 +354,7 @@ app.post('/api/registers', auth, (req, res) => {
 app.put('/api/registers/:id', auth, (req, res) => {
   if (!fs.existsSync(REGISTERS_PATH)) return res.status(404).json({ error: 'Not found' });
   let data = JSON.parse(fs.readFileSync(REGISTERS_PATH, 'utf-8'));
-  const idx = data.findIndex(r => r.id === Number(req.params.id) && r.userId === req.user.id);
+  const idx = data.findIndex(r => r.id === Number(req.params.id) && r.organizationId === req.user.organizationId);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
   data[idx] = { ...data[idx], ...req.body };
   fs.writeFileSync(REGISTERS_PATH, JSON.stringify(data, null, 2));
@@ -356,7 +365,7 @@ app.put('/api/registers/:id', auth, (req, res) => {
 app.delete('/api/registers/:id', auth, (req, res) => {
   if (!fs.existsSync(REGISTERS_PATH)) return res.status(404).json({ error: 'Not found' });
   let data = JSON.parse(fs.readFileSync(REGISTERS_PATH, 'utf-8'));
-  const idx = data.findIndex(r => r.id === Number(req.params.id) && r.userId === req.user.id);
+  const idx = data.findIndex(r => r.id === Number(req.params.id) && r.organizationId === req.user.organizationId);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
   const deleted = data[idx];
   data.splice(idx, 1);
@@ -369,7 +378,8 @@ app.delete('/api/registers/:id', auth, (req, res) => {
 app.get('/api/dpias', auth, (req, res) => {
   if (!fs.existsSync(DPIAS_PATH)) return res.json([]);
   const data = JSON.parse(fs.readFileSync(DPIAS_PATH, 'utf-8'));
-  res.json(data.filter(d => d.userId === req.user.id));
+  // Filter by organization, not just user
+  res.json(data.filter(d => d.organizationId === req.user.organizationId));
 });
 
 app.post('/api/dpias', auth, (req, res) => {
@@ -380,6 +390,7 @@ app.post('/api/dpias', auth, (req, res) => {
   }
   dpia.id = Date.now();
   dpia.userId = req.user.id;
+  dpia.organizationId = req.user.organizationId; // Add organization isolation
   dpia.date = new Date().toISOString();
   data.push(dpia);
   fs.writeFileSync(DPIAS_PATH, JSON.stringify(data, null, 2));
@@ -390,7 +401,7 @@ app.post('/api/dpias', auth, (req, res) => {
 app.put('/api/dpias/:id', auth, (req, res) => {
   if (!fs.existsSync(DPIAS_PATH)) return res.status(404).json({ error: 'Not found' });
   let data = JSON.parse(fs.readFileSync(DPIAS_PATH, 'utf-8'));
-  const idx = data.findIndex(d => d.id === Number(req.params.id) && d.userId === req.user.id);
+  const idx = data.findIndex(d => d.id === Number(req.params.id) && d.organizationId === req.user.organizationId);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
   data[idx] = { ...data[idx], ...req.body };
   fs.writeFileSync(DPIAS_PATH, JSON.stringify(data, null, 2));
@@ -401,7 +412,7 @@ app.put('/api/dpias/:id', auth, (req, res) => {
 app.delete('/api/dpias/:id', auth, (req, res) => {
   if (!fs.existsSync(DPIAS_PATH)) return res.status(404).json({ error: 'Not found' });
   let data = JSON.parse(fs.readFileSync(DPIAS_PATH, 'utf-8'));
-  const idx = data.findIndex(d => d.id === Number(req.params.id) && d.userId === req.user.id);
+  const idx = data.findIndex(d => d.id === Number(req.params.id) && d.organizationId === req.user.organizationId);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
   const deleted = data[idx];
   data.splice(idx, 1);
@@ -413,10 +424,11 @@ app.delete('/api/dpias/:id', auth, (req, res) => {
 // GET /api/progression - get current user's progression
 app.get('/api/progression', auth, (req, res) => {
   const userId = req.user.id;
+  const organizationId = req.user.organizationId;
   let progression = readProgression();
-  let userProg = progression.find(p => p.userId === userId);
+  let userProg = progression.find(p => p.userId === userId && p.organizationId === organizationId);
   if (!userProg) {
-    userProg = { userId, steps: JSON.parse(JSON.stringify(DEFAULT_STEPS)) };
+    userProg = { userId, organizationId, steps: JSON.parse(JSON.stringify(DEFAULT_STEPS)) };
     progression.push(userProg);
     writeProgression(progression);
   }
@@ -426,14 +438,15 @@ app.get('/api/progression', auth, (req, res) => {
 // PUT /api/progression - update a sub-task
 app.put('/api/progression', auth, (req, res) => {
   const userId = req.user.id;
+  const organizationId = req.user.organizationId;
   const { step, subTask, completed } = req.body;
   if (typeof step !== 'number' || typeof subTask !== 'number' || typeof completed !== 'boolean') {
     return res.status(400).json({ error: 'step, subTask, completed requis' });
   }
   let progression = readProgression();
-  let userProg = progression.find(p => p.userId === userId);
+  let userProg = progression.find(p => p.userId === userId && p.organizationId === organizationId);
   if (!userProg) {
-    userProg = { userId, steps: JSON.parse(JSON.stringify(DEFAULT_STEPS)) };
+    userProg = { userId, organizationId, steps: JSON.parse(JSON.stringify(DEFAULT_STEPS)) };
     progression.push(userProg);
   }
   const stepObj = userProg.steps.find(s => s.step === step);
@@ -450,15 +463,18 @@ app.put('/api/progression', auth, (req, res) => {
 
 // User Management Endpoints
 
-// Get all users (admin only)
+// Get all users (admin only) - filtered by organization
 app.get('/api/users', auth, isAdmin, (req, res) => {
   try {
     let users = [];
     if (fs.existsSync(USERS_PATH)) {
       users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
     }
+    // Filter by organization - admin can only see users from their organization
+    const organizationUsers = users.filter(user => user.organizationId === req.user.organizationId);
+    
     // Remove password from response
-    const usersWithoutPassword = users.map(user => ({
+    const usersWithoutPassword = organizationUsers.map(user => ({
       id: user.id,
       email: user.email,
       role: user.role,
@@ -596,7 +612,7 @@ app.post('/api/users', auth, isAdmin, (req, res) => {
   }
 });
 
-// Update user (admin only)
+// Update user (admin only) - can only update users from same organization
 app.put('/api/users/:id', auth, isAdmin, (req, res) => {
   try {
     const userId = parseInt(req.params.id);
@@ -607,7 +623,7 @@ app.put('/api/users/:id', auth, isAdmin, (req, res) => {
       users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
     }
     
-    const userIndex = users.findIndex(u => u.id === userId);
+    const userIndex = users.findIndex(u => u.id === userId && u.organizationId === req.user.organizationId);
     if (userIndex === -1) {
       return res.status(404).json({ error: 'Utilisateur non trouvé' });
     }
@@ -649,7 +665,7 @@ app.put('/api/users/:id', auth, isAdmin, (req, res) => {
   }
 });
 
-// Delete user (admin only)
+// Delete user (admin only) - can only delete users from same organization
 app.delete('/api/users/:id', auth, isAdmin, (req, res) => {
   try {
     const userId = parseInt(req.params.id);
@@ -664,7 +680,7 @@ app.delete('/api/users/:id', auth, isAdmin, (req, res) => {
       users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
     }
     
-    const userIndex = users.findIndex(u => u.id === userId);
+    const userIndex = users.findIndex(u => u.id === userId && u.organizationId === req.user.organizationId);
     if (userIndex === -1) {
       return res.status(404).json({ error: 'Utilisateur non trouvé' });
     }
