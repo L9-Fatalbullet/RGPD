@@ -87,9 +87,17 @@ export default function Login() {
         </form>
         <div className="mt-6 text-center">
           {tab === 'login' ? (
-            <span className="text-blue-900">Pas de compte ?{' '}
-              <button className="text-yellow-600 hover:underline font-semibold" onClick={() => setTab('register')}>Créer un compte</button>
-            </span>
+            <div className="space-y-2">
+              <span className="text-blue-900">Pas de compte ?</span>
+              <div className="flex flex-col gap-2">
+                <Link to="/register" className="text-yellow-600 hover:underline font-semibold">
+                  Rejoindre une organisation (avec code d'invitation)
+                </Link>
+                <Link to="/register-organization" className="text-yellow-600 hover:underline font-semibold">
+                  Créer une nouvelle organisation
+                </Link>
+              </div>
+            </div>
           ) : (
             <span className="text-blue-900">Déjà inscrit ?{' '}
               <button className="text-yellow-600 hover:underline font-semibold" onClick={() => setTab('login')}>Se connecter</button>

@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -17,6 +18,7 @@ const AUDIT_PATH = path.resolve('./data/audit.json');
 const PROGRESSION_PATH = path.resolve('./data/progression.json');
 const ISO27001_PATH = path.resolve('./data/iso27001.json');
 const ORGANIZATIONS_PATH = path.resolve('./data/organizations.json');
+const INVITATIONS_PATH = path.resolve('./data/invitations.json');
 
 // Default compliance roadmap
 const DEFAULT_STEPS = [
@@ -155,6 +157,37 @@ function writeOrganizations(data) {
   }
 }
 
+// Helper to read invitations data
+function readInvitations() {
+  if (!fs.existsSync(INVITATIONS_PATH)) return [];
+  return JSON.parse(fs.readFileSync(INVITATIONS_PATH, 'utf-8'));
+}
+
+function writeInvitations(data) {
+  fs.writeFileSync(INVITATIONS_PATH, JSON.stringify(data, null, 2));
+}
+
+// Generate unique organization ID
+function generateOrganizationId() {
+  return crypto.randomBytes(8).toString('hex');
+}
+
+// Generate unique invitation code
+function generateInvitationCode() {
+  return crypto.randomBytes(6).toString('hex').toUpperCase();
+}
+
+// Validate organization data
+function validateOrganization(org) {
+  if (!org.name || org.name.trim().length < 2) {
+    return { valid: false, error: 'Le nom de l\'organisation doit contenir au moins 2 caractères' };
+  }
+  if (!org.email || !org.email.includes('@')) {
+    return { valid: false, error: 'Email invalide' };
+  }
+  return { valid: true };
+}
+
 // Manual OPTIONS handler for CORS preflight (must be first)
 app.use((req, res, next) => {
   if (req.method === 'OPTIONS') {
@@ -208,42 +241,248 @@ function isRepresentant(req, res, next) {
   return res.status(403).json({ error: 'Accès réservé au représentant légal' });
 }
 
-// Register user (admin can assign role, else default to 'user' or 'admin' for first user)
-app.post('/api/auth/register', auth, isAdmin, (req, res) => {
-  const { email, password, role, organizationId } = req.body;
-  if (!email || !password || !role) return res.status(400).json({ error: 'Email, mot de passe et rôle requis' });
-  let users = [];
-  if (fs.existsSync(USERS_PATH)) {
-    users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+// Organization Management Endpoints
+
+// Create new organization (public endpoint)
+app.post('/api/organizations', (req, res) => {
+  try {
+    const { name, description, address, phone, email, website, sector, size, adminEmail, adminPassword, adminName } = req.body;
+    
+    // Validate required fields
+    if (!name || !email || !adminEmail || !adminPassword) {
+      return res.status(400).json({ error: 'Nom, email, email admin et mot de passe admin requis' });
+    }
+    
+    // Validate organization data
+    const validation = validateOrganization({ name, email });
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+    
+    // Check if organization already exists
+    const organizations = readOrganizations();
+    const existingOrg = organizations.find(org => org.email === email || org.name.toLowerCase() === name.toLowerCase());
+    if (existingOrg) {
+      return res.status(400).json({ error: 'Une organisation avec ce nom ou email existe déjà' });
+    }
+    
+    // Check if admin user already exists
+    let users = [];
+    if (fs.existsSync(USERS_PATH)) {
+      users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+    }
+    if (users.find(u => u.email === adminEmail)) {
+      return res.status(400).json({ error: 'Un utilisateur avec cet email existe déjà' });
+    }
+    
+    // Create organization
+    const organizationId = generateOrganizationId();
+    const organization = {
+      id: organizationId,
+      name: name.trim(),
+      description: description || '',
+      address: address || '',
+      phone: phone || '',
+      email: email.trim(),
+      website: website || '',
+      sector: sector || '',
+      size: size || '',
+      logo: '/logo.png',
+      createdAt: new Date().toISOString(),
+      isActive: true,
+      adminEmail: adminEmail
+    };
+    
+    // Create admin user
+    const adminUser = {
+      id: Date.now(),
+      email: adminEmail,
+      password: bcrypt.hashSync(adminPassword, 10),
+      role: 'admin',
+      name: adminName || 'Administrateur',
+      department: 'Administration',
+      organizationId: organizationId,
+      createdAt: new Date().toISOString(),
+      isActive: true,
+      lastLogin: null
+    };
+    
+    // Save organization and user
+    organizations.push(organization);
+    writeOrganizations(organizations);
+    
+    users.push(adminUser);
+    fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
+    
+    // Generate token for admin
+    const token = jwt.sign({ 
+      id: adminUser.id, 
+      email: adminUser.email, 
+      role: adminUser.role, 
+      organizationId: adminUser.organizationId 
+    }, SECRET, { expiresIn: '7d' });
+    
+    res.json({ 
+      success: true, 
+      token, 
+      organization: {
+        id: organization.id,
+        name: organization.name,
+        email: organization.email
+      },
+      user: {
+        id: adminUser.id,
+        email: adminUser.email,
+        role: adminUser.role,
+        name: adminUser.name
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error creating organization:', error);
+    res.status(500).json({ error: 'Erreur lors de la création de l\'organisation' });
   }
-  if (users.find(u => u.email === email)) return res.status(400).json({ error: 'Utilisateur déjà existant' });
-  const hash = bcrypt.hashSync(password, 10);
-  let orgId = organizationId;
-  if (users.length === 0) { orgId = Date.now(); } // first user is admin/org creator
-  if (!orgId) orgId = Date.now();
-  const user = { id: Date.now(), email, password: hash, role, organizationId: orgId };
-  users.push(user);
-  fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
-  const token = jwt.sign({ id: user.id, email: user.email, role: user.role, organizationId: user.organizationId }, SECRET, { expiresIn: '7d' });
-  res.json({ token });
 });
 
-// Public registration (first user only)
-app.post('/api/auth/public-register', (req, res) => {
-  const { email, password } = req.body;
-  let users = [];
-  if (fs.existsSync(USERS_PATH)) {
-    users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+// Register user with invitation code
+app.post('/api/auth/register', (req, res) => {
+  try {
+    const { email, password, invitationCode, name, department } = req.body;
+    
+    if (!email || !password || !invitationCode) {
+      return res.status(400).json({ error: 'Email, mot de passe et code d\'invitation requis' });
+    }
+    
+    // Validate invitation
+    const invitations = readInvitations();
+    const invitation = invitations.find(inv => 
+      inv.email === email && 
+      inv.code === invitationCode && 
+      !inv.used && 
+      new Date(inv.expiresAt) > new Date()
+    );
+    
+    if (!invitation) {
+      return res.status(400).json({ error: 'Code d\'invitation invalide, expiré ou déjà utilisé' });
+    }
+    
+    // Check if user already exists
+    let users = [];
+    if (fs.existsSync(USERS_PATH)) {
+      users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+    }
+    if (users.find(u => u.email === email)) {
+      return res.status(400).json({ error: 'Un utilisateur avec cet email existe déjà' });
+    }
+    
+    // Create user
+    const newUser = {
+      id: Date.now(),
+      email: email.trim(),
+      password: bcrypt.hashSync(password, 10),
+      role: invitation.role,
+      name: name || '',
+      department: department || '',
+      organizationId: invitation.organizationId,
+      createdAt: new Date().toISOString(),
+      isActive: true,
+      lastLogin: null
+    };
+    
+    users.push(newUser);
+    fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
+    
+    // Mark invitation as used
+    invitation.used = true;
+    invitation.usedAt = new Date().toISOString();
+    writeInvitations(invitations);
+    
+    // Generate token
+    const token = jwt.sign({ 
+      id: newUser.id, 
+      email: newUser.email, 
+      role: newUser.role, 
+      organizationId: newUser.organizationId 
+    }, SECRET, { expiresIn: '7d' });
+    
+    res.json({ 
+      success: true, 
+      token,
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        role: newUser.role,
+        name: newUser.name
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error registering user:', error);
+    res.status(500).json({ error: 'Erreur lors de l\'inscription' });
   }
-  if (users.length > 0) return res.status(403).json({ error: 'Inscription publique désactivée' });
-  if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis' });
-  const hash = bcrypt.hashSync(password, 10);
-  const orgId = Date.now();
-  const user = { id: Date.now(), email, password: hash, role: 'admin', organizationId: orgId };
-  users.push(user);
-  fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
-  const token = jwt.sign({ id: user.id, email: user.email, role: user.role, organizationId: user.organizationId }, SECRET, { expiresIn: '7d' });
-  res.json({ token });
+});
+
+// Admin registration (for existing organizations)
+app.post('/api/auth/admin-register', auth, isAdmin, (req, res) => {
+  try {
+    const { email, password, role, name, department } = req.body;
+    
+    if (!email || !password || !role) {
+      return res.status(400).json({ error: 'Email, mot de passe et rôle requis' });
+    }
+    
+    // Check if user already exists
+    let users = [];
+    if (fs.existsSync(USERS_PATH)) {
+      users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+    }
+    if (users.find(u => u.email === email)) {
+      return res.status(400).json({ error: 'Un utilisateur avec cet email existe déjà' });
+    }
+    
+    // Create user in same organization
+    const newUser = {
+      id: Date.now(),
+      email: email.trim(),
+      password: bcrypt.hashSync(password, 10),
+      role: role,
+      name: name || '',
+      department: department || '',
+      organizationId: req.user.organizationId,
+      createdAt: new Date().toISOString(),
+      isActive: true,
+      lastLogin: null
+    };
+    
+    users.push(newUser);
+    fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
+    
+    logAudit({ 
+      user: req.user, 
+      action: 'create', 
+      type: 'user', 
+      itemId: newUser.id, 
+      details: { email, role, name, department } 
+    });
+    
+    res.json({ 
+      success: true,
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        role: newUser.role,
+        name: newUser.name,
+        department: newUser.department,
+        organizationId: newUser.organizationId,
+        createdAt: newUser.createdAt,
+        isActive: newUser.isActive
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error creating user:', error);
+    res.status(500).json({ error: 'Erreur lors de la création de l\'utilisateur' });
+  }
 });
 
 // Connexion utilisateur
@@ -1009,6 +1248,157 @@ app.get('/api/organization/stats', auth, isAdmin, (req, res) => {
     res.json(stats);
   } catch (error) {
     res.status(500).json({ error: 'Erreur lors de la récupération des statistiques' });
+  }
+});
+
+// Invitation Management Endpoints
+
+// Generate invitation code
+app.post('/api/invitations/generate', auth, isAdmin, (req, res) => {
+  try {
+    const { email, role } = req.body;
+    if (!email || !role) {
+      return res.status(400).json({ error: 'Email et rôle requis pour générer un code d\'invitation' });
+    }
+
+    // Check if user already exists
+    let users = [];
+    if (fs.existsSync(USERS_PATH)) {
+      users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+    }
+    if (users.find(u => u.email === email)) {
+      return res.status(400).json({ error: 'Un utilisateur avec cet email existe déjà' });
+    }
+
+    const invitations = readInvitations();
+    const existingInvitation = invitations.find(inv => inv.email === email && !inv.used);
+    if (existingInvitation) {
+      return res.status(400).json({ error: 'Un code d\'invitation actif existe déjà pour cet email' });
+    }
+
+    const invitationCode = generateInvitationCode();
+    const invitation = {
+      id: Date.now(),
+      email: email.trim(),
+      role,
+      code: invitationCode,
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
+      organizationId: req.user.organizationId,
+      used: false,
+      usedBy: null,
+      usedAt: null
+    };
+    invitations.push(invitation);
+    writeInvitations(invitations);
+
+    logAudit({ 
+      user: req.user, 
+      action: 'create', 
+      type: 'invitation', 
+      itemId: invitation.id, 
+      details: { email, role, code: invitationCode } 
+    });
+
+    res.json({ 
+      success: true,
+      invitationCode,
+      expiresAt: invitation.expiresAt,
+      message: `Code d'invitation généré pour ${email}`
+    });
+  } catch (error) {
+    console.error('Error generating invitation:', error);
+    res.status(500).json({ error: 'Erreur lors de la génération du code d\'invitation' });
+  }
+});
+
+// List invitations (admin only)
+app.get('/api/invitations', auth, isAdmin, (req, res) => {
+  try {
+    const invitations = readInvitations();
+    const organizationInvitations = invitations.filter(inv => inv.organizationId === req.user.organizationId);
+    
+    // Add organization info to invitations
+    const organizations = readOrganizations();
+    const invitationsWithOrg = organizationInvitations.map(inv => {
+      const org = organizations.find(o => o.id === inv.organizationId);
+      return {
+        ...inv,
+        organizationName: org ? org.name : 'Organisation inconnue'
+      };
+    });
+    
+    res.json(invitationsWithOrg);
+  } catch (error) {
+    console.error('Error fetching invitations:', error);
+    res.status(500).json({ error: 'Erreur lors de la récupération des invitations' });
+  }
+});
+
+// Validate invitation code
+app.post('/api/invitations/validate', (req, res) => {
+  try {
+    const { email, invitationCode } = req.body;
+    if (!email || !invitationCode) {
+      return res.status(400).json({ error: 'Email et code d\'invitation requis' });
+    }
+
+    const invitations = readInvitations();
+    const invitation = invitations.find(inv => inv.email === email && inv.code === invitationCode);
+
+    if (!invitation) {
+      return res.status(404).json({ error: 'Code d\'invitation invalide ou expiré' });
+    }
+
+    if (invitation.used) {
+      return res.status(400).json({ error: 'Code d\'invitation déjà utilisé' });
+    }
+
+    if (new Date(invitation.expiresAt) < new Date()) {
+      return res.status(400).json({ error: 'Code d\'invitation expiré' });
+    }
+
+    res.json({ 
+      success: true,
+      message: 'Code d\'invitation valide',
+      role: invitation.role,
+      expiresAt: invitation.expiresAt
+    });
+  } catch (error) {
+    console.error('Error validating invitation:', error);
+    res.status(500).json({ error: 'Erreur lors de la validation du code d\'invitation' });
+  }
+});
+
+// Delete invitation (admin only)
+app.delete('/api/invitations/:id', auth, isAdmin, (req, res) => {
+  try {
+    const invitationId = parseInt(req.params.id);
+    const invitations = readInvitations();
+    const invitationIndex = invitations.findIndex(inv => 
+      inv.id === invitationId && inv.organizationId === req.user.organizationId
+    );
+    
+    if (invitationIndex === -1) {
+      return res.status(404).json({ error: 'Invitation non trouvée' });
+    }
+    
+    const invitation = invitations[invitationIndex];
+    invitations.splice(invitationIndex, 1);
+    writeInvitations(invitations);
+    
+    logAudit({ 
+      user: req.user, 
+      action: 'delete', 
+      type: 'invitation', 
+      itemId: invitationId, 
+      details: { email: invitation.email, role: invitation.role } 
+    });
+    
+    res.json({ success: true, message: 'Invitation supprimée avec succès' });
+  } catch (error) {
+    console.error('Error deleting invitation:', error);
+    res.status(500).json({ error: 'Erreur lors de la suppression de l\'invitation' });
   }
 });
 

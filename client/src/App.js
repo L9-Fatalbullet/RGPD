@@ -18,6 +18,8 @@ const Admin = lazy(() => import('./pages/Admin'));
 const Profile = lazy(() => import('./pages/Profile'));
 const UserManagement = lazy(() => import('./pages/UserManagement'));
 const OrganizationManagement = lazy(() => import('./pages/OrganizationManagement'));
+const OrganizationRegistration = lazy(() => import('./pages/OrganizationRegistration'));
+const UserRegistration = lazy(() => import('./pages/UserRegistration'));
 
 // AuthContext
 const AuthContext = createContext();
@@ -289,7 +291,8 @@ function App() {
                   <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                   <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
                   <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
-                  <Route path="/register" element={<ProtectedRoute><Register /></ProtectedRoute>} />
+                  <Route path="/register" element={<UserRegistration />} />
+                  <Route path="/register-organization" element={<OrganizationRegistration />} />
                   <Route path="/dpia" element={<ProtectedRoute><DPIA /></ProtectedRoute>} />
                   <Route path="/guide" element={<Guide />} />
                   <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />

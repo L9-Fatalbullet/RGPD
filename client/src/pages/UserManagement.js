@@ -22,9 +22,11 @@ export default function UserManagement() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showInvitationModal, setShowInvitationModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [invitations, setInvitations] = useState([]);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -33,6 +35,11 @@ export default function UserManagement() {
     role: '',
     name: '',
     department: ''
+  });
+
+  const [invitationData, setInvitationData] = useState({
+    email: '',
+    role: ''
   });
 
   const [profileData, setProfileData] = useState({
@@ -46,6 +53,7 @@ export default function UserManagement() {
   useEffect(() => {
     fetchUsers();
     fetchRoles();
+    fetchInvitations();
   }, []);
 
   const fetchUsers = async () => {
@@ -97,6 +105,68 @@ export default function UserManagement() {
       }
     } catch (error) {
       setError('Erreur lors du chargement du profil');
+    }
+  };
+
+  const fetchInvitations = async () => {
+    try {
+      const response = await fetch(`${API_URL}/invitations`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setInvitations(data);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des invitations:', error);
+    }
+  };
+
+  const handleCreateInvitation = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`${API_URL}/invitations/generate`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify(invitationData)
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSuccess(`Code d'invitation généré: ${data.invitationCode}`);
+        setInvitationData({ email: '', role: '' });
+        setShowInvitationModal(false);
+        fetchInvitations();
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Erreur lors de la génération du code d\'invitation');
+      }
+    } catch (error) {
+      setError('Erreur réseau');
+    }
+  };
+
+  const handleDeleteInvitation = async (invitationId) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette invitation ?')) return;
+    
+    try {
+      const response = await fetch(`${API_URL}/invitations/${invitationId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        setSuccess('Invitation supprimée avec succès');
+        fetchInvitations();
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Erreur lors de la suppression de l\'invitation');
+      }
+    } catch (error) {
+      setError('Erreur réseau');
     }
   };
 
@@ -292,6 +362,13 @@ export default function UserManagement() {
             Mon Profil
           </button>
           <button
+            onClick={() => setShowInvitationModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <UserGroupIcon className="w-5 h-5" />
+            Inviter Utilisateur
+          </button>
+          <button
             onClick={() => setShowCreateModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
@@ -420,6 +497,97 @@ export default function UserManagement() {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Invitations Section */}
+      <div className="mt-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold text-gray-900">Codes d'Invitation</h2>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Rôle
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Code
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Statut
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Expire le
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {invitations.map((invitation) => (
+                  <tr key={invitation.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {invitation.email}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(invitation.role)}`}>
+                        {getRoleLabel(invitation.role)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono">
+                        {invitation.code}
+                      </code>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        invitation.used 
+                          ? 'bg-green-100 text-green-800' 
+                          : new Date(invitation.expiresAt) < new Date()
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {invitation.used 
+                          ? 'Utilisé' 
+                          : new Date(invitation.expiresAt) < new Date()
+                          ? 'Expiré'
+                          : 'En attente'
+                        }
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDate(invitation.expiresAt)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {!invitation.used && new Date(invitation.expiresAt) > new Date() && (
+                        <button
+                          onClick={() => handleDeleteInvitation(invitation.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {invitations.length === 0 && (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                      Aucune invitation en cours
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -648,6 +816,67 @@ export default function UserManagement() {
                 <button
                   type="button"
                   onClick={() => setShowProfileModal(false)}
+                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
+                >
+                  Annuler
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Invitation Modal */}
+      {showInvitationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Générer un Code d'Invitation</h2>
+            <form onSubmit={handleCreateInvitation}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Email *</label>
+                  <input
+                    type="email"
+                    required
+                    value={invitationData.email}
+                    onChange={(e) => setInvitationData({...invitationData, email: e.target.value})}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="email@exemple.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Rôle *</label>
+                  <select
+                    required
+                    value={invitationData.role}
+                    onChange={(e) => setInvitationData({...invitationData, role: e.target.value})}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Sélectionner un rôle</option>
+                    {roles.map((role) => (
+                      <option key={role.value} value={role.value}>
+                        {role.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="bg-blue-50 p-3 rounded-md">
+                  <p className="text-sm text-blue-700">
+                    Un code d'invitation unique sera généré et envoyé à l'utilisateur. 
+                    Le code expirera dans 24 heures.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="submit"
+                  className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
+                >
+                  Générer le Code
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowInvitationModal(false)}
                   className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
                 >
                   Annuler
