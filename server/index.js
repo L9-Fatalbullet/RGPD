@@ -393,7 +393,7 @@ app.post('/api/auth/register', (req, res) => {
       role: invitation.role,
       name: name || '',
       department: department || '',
-      organizationId: invitation.organizationId,
+      organizationId: invitation.organizationId, // Use the invitation's organization ID
       createdAt: new Date().toISOString(),
       isActive: true,
       lastLogin: null
@@ -1294,7 +1294,7 @@ app.post('/api/invitations/generate', auth, isAdmin, (req, res) => {
       code: invitationCode,
       createdAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
-      organizationId: req.user.organizationId,
+      organizationId: req.user.organizationId, // Use the admin's organization ID
       used: false,
       usedBy: null,
       usedAt: null
@@ -1350,11 +1350,14 @@ app.get('/api/invitations', auth, isAdmin, (req, res) => {
 app.post('/api/invitations/validate', (req, res) => {
   try {
     const { email, invitationCode } = req.body;
+    
     if (!email || !invitationCode) {
       return res.status(400).json({ error: 'Email et code d\'invitation requis' });
     }
 
     const invitations = readInvitations();
+    
+    // Find invitation by email and code
     const invitation = invitations.find(inv => inv.email === email && inv.code === invitationCode);
 
     if (!invitation) {
