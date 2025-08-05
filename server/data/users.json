@@ -1,26 +1,20 @@
 [
   {
-    "id": 1704067200000,
-    "email": "admin@example.com",
+    "id": "admin-demo",
+    "email": "admin@demo.com",
     "password": "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
     "role": "admin",
-    "name": "Administrateur Principal",
-    "department": "IT",
-    "organizationId": 1704067200000,
-    "createdAt": 1704067200000,
-    "isActive": true,
-    "lastLogin": 1704067200000
+    "name": "Admin Demo",
+    "organizationId": "demo",
+    "isActive": true
   },
   {
-    "id": 1754386111004,
+    "id": "admin-ramaqs",
     "email": "admin@ramaqs.com",
     "password": "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
     "role": "admin",
-    "name": "Administrateur RAMAQS",
-    "department": "Administration",
-    "organizationId": 1754387991203,
-    "createdAt": 1754386111004,
-    "isActive": true,
-    "lastLogin": null
+    "name": "Admin RAMAQS",
+    "organizationId": "ramaqs",
+    "isActive": true
   }
 ] 

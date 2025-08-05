@@ -1,52 +1,53 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../App';
-import { UserIcon, LockClosedIcon, EnvelopeIcon, KeyIcon } from '@heroicons/react/24/outline';
+import { UserIcon, EnvelopeIcon, LockClosedIcon, KeyIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '../contexts/AuthContext';
 
-const API_BASE = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev';
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001';
 
 export default function UserRegistration() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
-  const [invitationValid, setInvitationValid] = useState(null);
-
+  
   const [form, setForm] = useState({
     email: '',
-    password: '',
-    confirmPassword: '',
     invitationCode: '',
     name: '',
-    department: ''
+    password: '',
+    confirmPassword: ''
   });
-
+  
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [invitationValid, setInvitationValid] = useState(null);
+  const [error, setError] = useState(null);
 
   const validateForm = () => {
     const newErrors = {};
-
-    if (!form.email.trim()) newErrors.email = 'L\'email est requis';
-    else if (!/\S+@\S+\.\S+/.test(form.email)) newErrors.email = 'Email invalide';
     
-    if (!form.password) newErrors.password = 'Le mot de passe est requis';
-    else if (form.password.length < 6) newErrors.password = 'Le mot de passe doit contenir au moins 6 caractères';
+    if (!form.email) newErrors.email = 'Email requis';
+    if (!form.invitationCode) newErrors.invitationCode = 'Code d\'invitation requis';
+    if (!form.password) newErrors.password = 'Mot de passe requis';
+    if (form.password.length < 6) newErrors.password = 'Mot de passe doit contenir au moins 6 caractères';
+    if (form.password !== form.confirmPassword) newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
     
-    if (form.password !== form.confirmPassword) {
-      newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
-    }
-    
-    if (!form.invitationCode.trim()) newErrors.invitationCode = 'Le code d\'invitation est requis';
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const validateInvitation = async () => {
-    if (!form.email || !form.invitationCode) return;
+    if (!form.email || !form.invitationCode) {
+      setError('Veuillez remplir l\'email et le code d\'invitation');
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
     
     try {
+      console.log('Sending validation request:', { email: form.email, invitationCode: form.invitationCode });
+      
       const response = await fetch(`${API_BASE}/api/invitations/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -57,17 +58,21 @@ export default function UserRegistration() {
       });
 
       const data = await response.json();
+      console.log('Validation response:', data);
       
       if (response.ok) {
         setInvitationValid(data);
         setError(null);
       } else {
         setInvitationValid(null);
-        setError(data.error);
+        setError(data.error || 'Code d\'invitation invalide');
       }
     } catch (err) {
+      console.error('Validation error:', err);
       setInvitationValid(null);
       setError('Erreur lors de la validation du code d\'invitation');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -76,6 +81,11 @@ export default function UserRegistration() {
     setError(null);
     
     if (!validateForm()) return;
+    
+    if (!invitationValid) {
+      setError('Veuillez d\'abord valider votre code d\'invitation');
+      return;
+    }
     
     setLoading(true);
     try {
@@ -86,8 +96,7 @@ export default function UserRegistration() {
           email: form.email,
           password: form.password,
           invitationCode: form.invitationCode,
-          name: form.name,
-          department: form.department
+          name: form.name
         })
       });
 
@@ -123,47 +132,10 @@ export default function UserRegistration() {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
     
-    // Validate invitation when both email and code are entered
+    // Clear invitation validation when fields change
     if (name === 'email' || name === 'invitationCode') {
-      const newForm = { ...form, [name]: value };
-      if (newForm.email && newForm.invitationCode) {
-        setTimeout(() => {
-          // Use the updated form values
-          validateInvitationWithData(newForm.email, newForm.invitationCode);
-        }, 500); // Debounce
-      } else {
-        // Clear validation if either field is empty
-        setInvitationValid(null);
-        setError(null);
-      }
-    }
-  };
-
-  const validateInvitationWithData = async (email, invitationCode) => {
-    if (!email || !invitationCode) return;
-    
-    try {
-      const response = await fetch(`${API_BASE}/api/invitations/validate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: email,
-          invitationCode: invitationCode
-        })
-      });
-
-      const data = await response.json();
-      
-      if (response.ok) {
-        setInvitationValid(data);
-        setError(null);
-      } else {
-        setInvitationValid(null);
-        setError(data.error);
-      }
-    } catch (err) {
       setInvitationValid(null);
-      setError('Erreur lors de la validation du code d\'invitation');
+      setError(null);
     }
   };
 
@@ -199,8 +171,6 @@ export default function UserRegistration() {
           </p>
         </div>
 
-
-
         {invitationValid && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
             <p className="text-green-600 font-medium">✓ Code d'invitation valide</p>
@@ -209,44 +179,13 @@ export default function UserRegistration() {
           </div>
         )}
 
-        {error && !invitationValid && (
+        {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-600">{error}</p>
-            <p className="text-red-600 text-sm mt-1">Vérifiez votre code d'invitation et réessayez.</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Invitation Code */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Code d'invitation *
-            </label>
-            <div className="relative">
-              <KeyIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                name="invitationCode"
-                value={form.invitationCode}
-                onChange={handleChange}
-                className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.invitationCode ? 'border-red-300' : 'border-gray-300'
-                }`}
-                placeholder="Entrez votre code d'invitation"
-              />
-            </div>
-            {errors.invitationCode && <p className="text-red-500 text-sm mt-1">{errors.invitationCode}</p>}
-            {form.email && form.invitationCode && !invitationValid && !error && (
-              <button
-                type="button"
-                onClick={() => validateInvitationWithData(form.email, form.invitationCode)}
-                className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
-              >
-                Valider le code d'invitation
-              </button>
-            )}
-          </div>
-
           {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -268,6 +207,37 @@ export default function UserRegistration() {
             {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
           </div>
 
+          {/* Invitation Code */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Code d'invitation *
+            </label>
+            <div className="relative">
+              <KeyIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                name="invitationCode"
+                value={form.invitationCode}
+                onChange={handleChange}
+                className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  errors.invitationCode ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="Entrez votre code d'invitation"
+              />
+            </div>
+            {errors.invitationCode && <p className="text-red-500 text-sm mt-1">{errors.invitationCode}</p>}
+          </div>
+
+          {/* Validate Button */}
+          <button
+            type="button"
+            onClick={validateInvitation}
+            disabled={loading || !form.email || !form.invitationCode}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Validation...' : 'Valider le code d\'invitation'}
+          </button>
+
           {/* Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -284,21 +254,6 @@ export default function UserRegistration() {
                 placeholder="Votre nom complet"
               />
             </div>
-          </div>
-
-          {/* Department */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Département
-            </label>
-            <input
-              type="text"
-              name="department"
-              value={form.department}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Votre département"
-            />
           </div>
 
           {/* Password */}
@@ -344,47 +299,22 @@ export default function UserRegistration() {
             {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
           </div>
 
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => navigate('/login')}
-              className="text-blue-600 hover:text-blue-800 font-medium"
-            >
-              Déjà un compte ? Se connecter
-            </button>
-            
-            <button
-              type="submit"
-              disabled={loading || !invitationValid}
-              className={`px-6 py-2 rounded-lg focus:ring-2 focus:ring-offset-2 flex items-center ${
-                loading || !invitationValid
-                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500'
-              }`}
-            >
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Création en cours...
-                </>
-              ) : !invitationValid ? (
-                'Validez d\'abord votre invitation'
-              ) : (
-                'Créer le compte'
-              )}
-            </button>
-          </div>
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading || !invitationValid}
+            className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium"
+          >
+            {loading ? 'Création du compte...' : 'Créer le compte'}
+          </button>
         </form>
 
         <div className="mt-6 text-center">
-          <p className="text-gray-600 text-sm">
-            Vous n'avez pas de code d'invitation ?{' '}
-            <button
-              onClick={() => navigate('/register-organization')}
-              className="text-blue-600 hover:text-blue-800 font-medium"
-            >
-              Créer une organisation
-            </button>
+          <p className="text-gray-600">
+            Déjà un compte ?{' '}
+            <a href="/login" className="text-blue-600 hover:text-blue-800 font-medium">
+              Se connecter
+            </a>
           </p>
         </div>
       </div>

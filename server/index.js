@@ -1351,14 +1351,18 @@ app.post('/api/invitations/validate', (req, res) => {
   try {
     const { email, invitationCode } = req.body;
     
+    console.log('Validating invitation:', { email, invitationCode });
+    
     if (!email || !invitationCode) {
       return res.status(400).json({ error: 'Email et code d\'invitation requis' });
     }
 
     const invitations = readInvitations();
+    console.log('Available invitations:', invitations);
     
     // Find invitation by email and code
     const invitation = invitations.find(inv => inv.email === email && inv.code === invitationCode);
+    console.log('Found invitation:', invitation);
 
     if (!invitation) {
       return res.status(404).json({ error: 'Code d\'invitation invalide ou expiré' });
@@ -1372,6 +1376,7 @@ app.post('/api/invitations/validate', (req, res) => {
       return res.status(400).json({ error: 'Code d\'invitation expiré' });
     }
 
+    console.log('Invitation is valid!');
     res.json({ 
       success: true,
       message: 'Code d\'invitation valide',
