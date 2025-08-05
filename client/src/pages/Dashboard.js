@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { SparklesIcon, ChartBarIcon, ExclamationTriangleIcon, CheckCircleIcon, DocumentCheckIcon, ShieldCheckIcon, ArrowRightCircleIcon, ArrowPathIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { SparklesIcon, ChartBarIcon, ExclamationTriangleIcon, CheckCircleIcon, DocumentCheckIcon, ShieldCheckIcon, ArrowRightCircleIcon, ArrowPathIcon, DocumentTextIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../App';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -122,9 +122,16 @@ export default function Dashboard() {
             <SparklesIcon className="w-10 h-10 text-yellow-300" /> Tableau de bord conformité
           </h1>
           {organization && (
-            <p className="text-lg md:text-xl font-light mb-2 drop-shadow text-blue-100">
-              {organization.name}
-            </p>
+            <div className="mb-4">
+              <p className="text-lg md:text-xl font-light mb-2 drop-shadow text-blue-100">
+                Organisation: <span className="font-semibold text-yellow-300">{organization.name}</span>
+              </p>
+              {organization.description && (
+                <p className="text-sm text-blue-200 drop-shadow">
+                  {organization.description}
+                </p>
+              )}
+            </div>
           )}
           <p className="text-lg md:text-xl font-light mb-4 drop-shadow">Visualisez votre niveau de conformité Loi 09-08 par domaine clé.</p>
         </div>
@@ -165,6 +172,19 @@ export default function Dashboard() {
         {loading ? <div className="text-blue-700">Chargement...</div> : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {/* Organization Information card */}
+              {organization && (
+                <div className="group border-l-4 border-indigo-500 rounded-xl shadow-lg p-6 flex items-center gap-4 hover:scale-105 hover:shadow-2xl transition">
+                  <BuildingOfficeIcon className="w-10 h-10 text-indigo-500 group-hover:text-yellow-500 transition" />
+                  <div>
+                    <div className="text-lg font-bold text-blue-900 group-hover:text-yellow-700 transition">{organization.name}</div>
+                    <div className="font-semibold text-blue-900">Organisation</div>
+                    <div className="text-gray-700 text-xs">
+                      {organization.description || 'Organisation active'}
+                    </div>
+                  </div>
+                </div>
+              )}
               {/* Auto-évaluation card */}
               <div className="group border-l-4 border-green-500 rounded-xl shadow-lg p-6 flex items-center gap-4 hover:scale-105 hover:shadow-2xl transition">
                 <ChartBarIcon className="w-10 h-10 text-green-500 group-hover:text-yellow-500 transition" />

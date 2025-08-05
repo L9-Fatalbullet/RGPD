@@ -151,11 +151,30 @@ function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, set
 }
 
 function Topbar({ user, logout }) {
+  const [organization, setOrganization] = useState(null);
+
+  useEffect(() => {
+    if (user?.organizationId) {
+      // Fetch organization details
+      fetch(`${API_BASE}/api/organization`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` }
+      })
+        .then(res => res.json())
+        .then(data => setOrganization(data))
+        .catch(err => console.error('Error fetching organization:', err));
+    }
+  }, [user]);
+
   return (
     <header className="z-[100] bg-white/80 backdrop-blur-lg shadow flex items-center justify-between px-4 py-3 border-b border-yellow-400 sticky top-0">
       <span className="flex items-center gap-4">
         <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className="w-8 h-8 object-contain" />
         <span className="text-lg font-bold tracking-tight text-blue-900">RGPD Compliance Maroc</span>
+        {organization && (
+          <span className="text-sm text-blue-700 bg-blue-50 px-2 py-1 rounded-full border border-blue-200">
+            {organization.name}
+          </span>
+        )}
       </span>
       <div className="flex items-center gap-4">
         {user && (
@@ -168,6 +187,11 @@ function Topbar({ user, logout }) {
               <div className="px-4 py-3">
                 <div className="font-semibold text-blue-900">{user.email}</div>
                 <div className="text-xs text-blue-700">{user.role === 'admin' ? 'Administrateur' : user.role === 'dpo' ? 'DPO' : user.role === 'representant' ? 'Représentant légal' : user.role}</div>
+                {organization && (
+                  <div className="text-xs text-blue-600 mt-1">
+                    <span className="font-medium">Organisation:</span> {organization.name}
+                  </div>
+                )}
               </div>
               <Menu.Item>
                 {({ active }) => (

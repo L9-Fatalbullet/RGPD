@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../App';
+
+const API_BASE = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev';
 
 export default function Profile() {
   const { user } = useAuth();
@@ -9,6 +11,19 @@ export default function Profile() {
   const [confirm, setConfirm] = useState('');
   const [avatar, setAvatar] = useState(null);
   const [status, setStatus] = useState('');
+  const [organization, setOrganization] = useState(null);
+
+  useEffect(() => {
+    if (user?.organizationId) {
+      // Fetch organization details
+      fetch(`${API_BASE}/api/organization`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('cndp_token')}` }
+      })
+        .then(res => res.json())
+        .then(data => setOrganization(data))
+        .catch(err => console.error('Error fetching organization:', err));
+    }
+  }, [user]);
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -22,6 +37,23 @@ export default function Profile() {
   return (
     <section className="max-w-lg mx-auto mt-10 bg-white/80 backdrop-blur rounded-2xl shadow-lg p-8 animate-fade-in">
       <h1 className="text-2xl font-bold text-blue-900 mb-6 text-center">Mon profil</h1>
+      
+      {/* Organization Information */}
+      {organization && (
+        <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <h3 className="font-semibold text-blue-900 mb-2">Organisation</h3>
+          <div className="text-blue-700">
+            <p><span className="font-medium">Nom:</span> {organization.name}</p>
+            {organization.description && (
+              <p><span className="font-medium">Description:</span> {organization.description}</p>
+            )}
+            {organization.email && (
+              <p><span className="font-medium">Email:</span> {organization.email}</p>
+            )}
+          </div>
+        </div>
+      )}
+
       <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
         <label className="font-semibold text-blue-900">Nom</label>
         <input type="text" className="rounded border px-3 py-2" value={name} onChange={e => setName(e.target.value)} />
