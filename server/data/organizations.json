@@ -14,7 +14,7 @@
     "logo": "/logo.png"
   },
   {
-    "id": 1754386111004,
+    "id": 1754387991203,
     "name": "RAMAQS",
     "description": "",
     "address": "",
@@ -24,7 +24,7 @@
     "sector": "Technologie",
     "size": "TPE",
     "logo": "/logo.png",
-    "createdAt": "2025-08-05T09:28:31.004Z",
+    "createdAt": "2025-08-05T09:59:51.203Z",
     "isActive": true,
     "adminEmail": "admin@ramaqs.com"
   }
