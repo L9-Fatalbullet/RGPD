@@ -12,5 +12,20 @@
     "createdAt": "2024-01-01T00:00:00.000Z",
     "isActive": true,
     "logo": "/logo.png"
+  },
+  {
+    "id": 1754386111004,
+    "name": "RAMAQS",
+    "description": "",
+    "address": "",
+    "phone": "",
+    "email": "contact@ramaqs.com",
+    "website": "",
+    "sector": "Technologie",
+    "size": "TPE",
+    "logo": "/logo.png",
+    "createdAt": "2025-08-05T09:28:31.004Z",
+    "isActive": true,
+    "adminEmail": "admin@ramaqs.com"
   }
 ] 
