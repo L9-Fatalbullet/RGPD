@@ -178,7 +178,8 @@ function writeInvitations(data) {
 
 // Generate unique organization ID
 function generateOrganizationId() {
-  return crypto.randomBytes(8).toString('hex');
+  // Use timestamp for consistency with existing data
+  return Date.now();
 }
 
 // Generate unique invitation code
