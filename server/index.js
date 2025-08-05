@@ -162,8 +162,14 @@ function readInvitations() {
   if (!fs.existsSync(INVITATIONS_PATH)) {
     return [];
   }
-  const data = JSON.parse(fs.readFileSync(INVITATIONS_PATH, 'utf-8'));
-  return data;
+  try {
+    const content = fs.readFileSync(INVITATIONS_PATH, 'utf-8');
+    const data = JSON.parse(content);
+    return data;
+  } catch (error) {
+    console.error('Error reading invitations:', error);
+    return [];
+  }
 }
 
 function writeInvitations(data) {
