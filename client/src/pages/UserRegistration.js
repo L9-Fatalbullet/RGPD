@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserIcon, EnvelopeIcon, LockClosedIcon, KeyIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../App';
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001';
+const API_BASE = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev';
 
 export default function UserRegistration() {
   const navigate = useNavigate();
