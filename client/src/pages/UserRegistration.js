@@ -124,8 +124,46 @@ export default function UserRegistration() {
     }
     
     // Validate invitation when both email and code are entered
-    if ((name === 'email' || name === 'invitationCode') && form.email && form.invitationCode) {
-      setTimeout(validateInvitation, 500); // Debounce
+    if (name === 'email' || name === 'invitationCode') {
+      const newForm = { ...form, [name]: value };
+      if (newForm.email && newForm.invitationCode) {
+        setTimeout(() => {
+          // Use the updated form values
+          validateInvitationWithData(newForm.email, newForm.invitationCode);
+        }, 500); // Debounce
+      } else {
+        // Clear validation if either field is empty
+        setInvitationValid(null);
+        setError(null);
+      }
+    }
+  };
+
+  const validateInvitationWithData = async (email, invitationCode) => {
+    if (!email || !invitationCode) return;
+    
+    try {
+      const response = await fetch(`${API_BASE}/api/invitations/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email,
+          invitationCode: invitationCode
+        })
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setInvitationValid(data);
+        setError(null);
+      } else {
+        setInvitationValid(null);
+        setError(data.error);
+      }
+    } catch (err) {
+      setInvitationValid(null);
+      setError('Erreur lors de la validation du code d\'invitation');
     }
   };
 
@@ -161,16 +199,20 @@ export default function UserRegistration() {
           </p>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-600">{error}</p>
-          </div>
-        )}
+
 
         {invitationValid && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-green-600">✓ Code d'invitation valide</p>
+            <p className="text-green-600 font-medium">✓ Code d'invitation valide</p>
             <p className="text-green-600 text-sm">Rôle: {invitationValid.role}</p>
+            <p className="text-green-600 text-sm">Expire le: {new Date(invitationValid.expiresAt).toLocaleDateString('fr-FR')}</p>
+          </div>
+        )}
+
+        {error && !invitationValid && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600">{error}</p>
+            <p className="text-red-600 text-sm mt-1">Vérifiez votre code d'invitation et réessayez.</p>
           </div>
         )}
 
@@ -194,6 +236,15 @@ export default function UserRegistration() {
               />
             </div>
             {errors.invitationCode && <p className="text-red-500 text-sm mt-1">{errors.invitationCode}</p>}
+            {form.email && form.invitationCode && !invitationValid && !error && (
+              <button
+                type="button"
+                onClick={() => validateInvitationWithData(form.email, form.invitationCode)}
+                className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Valider le code d'invitation
+              </button>
+            )}
           </div>
 
           {/* Email */}
@@ -305,13 +356,19 @@ export default function UserRegistration() {
             <button
               type="submit"
               disabled={loading || !invitationValid}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              className={`px-6 py-2 rounded-lg focus:ring-2 focus:ring-offset-2 flex items-center ${
+                loading || !invitationValid
+                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500'
+              }`}
             >
               {loading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   Création en cours...
                 </>
+              ) : !invitationValid ? (
+                'Validez d\'abord votre invitation'
               ) : (
                 'Créer le compte'
               )}
