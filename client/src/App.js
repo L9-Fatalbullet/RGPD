@@ -87,69 +87,6 @@ const adminNav = [
   { to: '/organization', label: 'Organisation', icon: <BuildingOfficeIcon className="w-6 h-6" /> },
 ];
 
-function Sidebar({ token, logout, user, collapsed, setCollapsed, activePath, setEditProfileOpen }) {
-  const [hovered, setHovered] = React.useState(false);
-  const isExpanded = hovered;
-  return (
-    <aside
-      aria-label="Navigation principale"
-      className={`relative overflow-hidden backdrop-blur-lg bg-gradient-to-br from-blue-900 via-blue-700 to-yellow-400 shadow-xl border-r-4 border-yellow-400 ${isExpanded ? 'w-64' : 'w-20'} min-h-screen flex flex-col fixed z-40 left-0 top-0 transition-all duration-300 rounded-tr-3xl rounded-br-3xl`}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      {/* Moroccan Pattern Overlay */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{zIndex:0}} viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <pattern id="moroccan" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M20 0 L40 20 L20 40 L0 20 Z" fill="#fff" fillOpacity="0.02" />
-            <circle cx="20" cy="20" r="6" fill="#facc15" fillOpacity="0.025" />
-          </pattern>
-        </defs>
-        <rect width="120" height="120" fill="url(#moroccan)" />
-      </svg>
-      {/* Soft border glow */}
-      <div className="absolute inset-0 rounded-tr-3xl rounded-br-3xl border-2 border-yellow-400/20 pointer-events-none" style={{boxShadow:'0 0 32px 0 #facc1540, 0 2px 16px 0 #1e293b40'}}></div>
-      {/* Sidebar content */}
-      <div className={`relative flex flex-col items-center ${isExpanded ? 'gap-3 px-6 py-6' : 'py-4'} border-b border-blue-100`} style={{zIndex:1}}>
-        <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className={`transition-transform duration-300 ${isExpanded ? 'w-16 h-16' : 'w-10 h-10'} object-contain rounded-full shadow-lg hover:scale-110`} />
-        {isExpanded && <span className="text-lg font-bold text-white text-center leading-tight mt-2">RGPD Compliance<br />Maroc</span>}
-      </div>
-      <nav className="relative flex-1 px-2 py-6 flex flex-col gap-2" role="navigation" style={{zIndex:1}}>
-        {nav.map(item => (
-          <Link key={item.to} to={item.to} aria-label={item.label} tabIndex={0}
-            className={`group flex items-center gap-3 px-3 py-2 my-1 rounded-full font-medium transition-all duration-200 outline-none focus:ring-2 focus:ring-yellow-400
-              ${activePath === item.to ? 'bg-yellow-400/80 text-blue-900 shadow-lg border-l-4 border-yellow-500' : 'hover:bg-yellow-100/80 hover:text-yellow-300 text-white'}`}
-          >
-            <span className="transition-transform group-hover:scale-110 text-white">{item.icon}</span>
-            {isExpanded && item.label}
-          </Link>
-        ))}
-        {/* Admin navigation items */}
-        {user && user.role === 'admin' && (
-          <>
-            {isExpanded && (
-              <div className="mt-4 pt-4 border-t border-yellow-400/30">
-                <div className="text-xs font-semibold text-yellow-200 uppercase tracking-wider px-3 mb-2">
-                  Administration
-                </div>
-              </div>
-            )}
-            {adminNav.map(item => (
-              <Link key={item.to} to={item.to} aria-label={item.label} tabIndex={0}
-                className={`group flex items-center gap-3 px-3 py-2 my-1 rounded-full font-medium transition-all duration-200 outline-none focus:ring-2 focus:ring-yellow-400
-                  ${activePath === item.to ? 'bg-yellow-400/80 text-blue-900 shadow-lg border-l-4 border-yellow-400' : 'hover:bg-yellow-100/80 hover:text-yellow-300 text-white'}`}
-              >
-                <span className="transition-transform group-hover:scale-110 text-white">{item.icon}</span>
-                {isExpanded && item.label}
-              </Link>
-            ))}
-          </>
-        )}
-      </nav>
-    </aside>
-  );
-}
-
 function Topbar({ user, logout }) {
   const [organization, setOrganization] = useState(null);
 
@@ -259,40 +196,87 @@ function App() {
           onMouseEnter={() => setSidebarHovered(true)}
           onMouseLeave={() => setSidebarHovered(false)}
         >
-          {/* Only show collapsed content when not hovered */}
-          {!sidebarHovered && (
-            <div className="h-full flex flex-col items-center justify-between py-4">
-              {/* Logo */}
-              <div className="flex flex-col items-center justify-center w-full mb-2">
-                <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className="w-10 h-10 object-contain rounded-full shadow-lg" />
-              </div>
-              {/* Icons */}
-              <nav className="flex flex-col gap-4 flex-1 justify-center items-center">
-                {nav.map(item => (
-                  <Link key={item.to} to={item.to} aria-label={item.label} tabIndex={0}
-                    className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 outline-none focus:ring-2 focus:ring-yellow-400 text-white hover:bg-yellow-400/30 ${location === item.to ? 'bg-yellow-400/80 text-white shadow-lg' : ''}`}
+          {/* Logo Section */}
+          <div className={`flex flex-col items-center justify-center w-full py-4 border-b border-blue-100/20 ${sidebarHovered ? 'px-6' : 'px-2'}`}>
+            <img src="/logo.png" alt="RGPD Compliance Maroc Logo" className={`transition-all duration-300 ${sidebarHovered ? 'w-16 h-16' : 'w-10 h-10'} object-contain rounded-full shadow-lg`} />
+            {sidebarHovered && (
+              <span className="text-lg font-bold text-white text-center leading-tight mt-2 animate-fade-in">
+                RGPD Compliance<br />Maroc
+              </span>
+            )}
+          </div>
+
+          {/* Navigation Items */}
+          <nav className={`flex-1 px-2 py-6 flex flex-col gap-2 ${sidebarHovered ? 'items-start' : 'items-center'}`} role="navigation">
+            {nav.map(item => (
+              <Link 
+                key={item.to} 
+                to={item.to} 
+                aria-label={item.label} 
+                tabIndex={0}
+                className={`group flex items-center gap-3 px-3 py-2 my-1 rounded-full font-medium transition-all duration-200 outline-none focus:ring-2 focus:ring-yellow-400 w-full
+                  ${location === item.to 
+                    ? 'bg-yellow-400/80 text-blue-900 shadow-lg border-l-4 border-yellow-500' 
+                    : 'hover:bg-yellow-100/80 hover:text-yellow-300 text-white'
+                  }
+                  ${!sidebarHovered ? 'justify-center' : ''}
+                `}
+              >
+                <span className="transition-transform group-hover:scale-110 text-white">{item.icon}</span>
+                {sidebarHovered && (
+                  <span className="animate-fade-in">{item.label}</span>
+                )}
+              </Link>
+            ))}
+
+            {/* Admin Navigation Items */}
+            {user && user.role === 'admin' && (
+              <>
+                {sidebarHovered && (
+                  <div className="mt-4 pt-4 border-t border-yellow-400/30 w-full">
+                    <div className="text-xs font-semibold text-yellow-200 uppercase tracking-wider px-3 mb-2">
+                      Administration
+                    </div>
+                  </div>
+                )}
+                {adminNav.map(item => (
+                  <Link 
+                    key={item.to} 
+                    to={item.to} 
+                    aria-label={item.label} 
+                    tabIndex={0}
+                    className={`group flex items-center gap-3 px-3 py-2 my-1 rounded-full font-medium transition-all duration-200 outline-none focus:ring-2 focus:ring-yellow-400 w-full
+                      ${location === item.to 
+                        ? 'bg-yellow-400/80 text-blue-900 shadow-lg border-l-4 border-yellow-400' 
+                        : 'hover:bg-yellow-100/80 hover:text-yellow-300 text-white'
+                      }
+                      ${!sidebarHovered ? 'justify-center' : ''}
+                    `}
                   >
-                    {item.icon}
+                    <span className="transition-transform group-hover:scale-110 text-white">{item.icon}</span>
+                    {sidebarHovered && (
+                      <span className="animate-fade-in">{item.label}</span>
+                    )}
                   </Link>
                 ))}
-              </nav>
-            </div>
-          )}
-          {/* Only show expanded content when hovered */}
-          {sidebarHovered && (
-            <div
-              className="absolute inset-0 transition-opacity duration-200 opacity-100 pointer-events-auto"
-              style={{ width: '16rem' }}
-            >
-              <Sidebar
-                token={token}
-                logout={logout}
-                user={user}
-                collapsed={!sidebarHovered}
-                setCollapsed={() => {}}
-                activePath={location}
-                setEditProfileOpen={setEditProfileOpen}
-              />
+              </>
+            )}
+          </nav>
+
+          {/* User Profile Section */}
+          {sidebarHovered && user && (
+            <div className="px-4 py-4 border-t border-blue-100/20">
+              <div className="flex items-center gap-3">
+                <img 
+                  src={user.avatar || '/default-avatar.png'} 
+                  alt="Avatar" 
+                  className="w-10 h-10 rounded-full border-2 border-yellow-400 shadow object-cover bg-white" 
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-white truncate">{user.name || user.email}</div>
+                  <div className="text-xs text-yellow-200 capitalize">{user.role}</div>
+                </div>
+              </div>
             </div>
           )}
         </aside>
