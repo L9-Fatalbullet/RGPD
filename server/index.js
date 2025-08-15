@@ -114,6 +114,104 @@ function writeProgression(data) {
   fs.writeFileSync(PROGRESSION_PATH, JSON.stringify(data, null, 2));
 }
 
+// Automated progression tracking system
+function updateUserProgression(userId, organizationId, action, data = {}) {
+  try {
+    let progression = readProgression();
+    let userProg = progression.find(p => p.userId === userId && p.organizationId === organizationId);
+    
+    if (!userProg) {
+      userProg = { userId, organizationId, steps: JSON.parse(JSON.stringify(DEFAULT_STEPS)) };
+      progression.push(userProg);
+    }
+
+    // Auto-complete steps based on user actions
+    switch (action) {
+      case 'dpia_created':
+        // Step 4: DPIA creation
+        const dpiaStep = userProg.steps.find(s => s.step === 4);
+        if (dpiaStep) {
+          dpiaStep.subTasks[1].completed = true; // "Compléter la DPIA"
+          dpiaStep.completed = dpiaStep.subTasks.every(st => st.completed);
+          dpiaStep.completedAt = dpiaStep.completed ? new Date().toISOString() : null;
+        }
+        break;
+
+      case 'dpia_uploaded':
+        // Step 4: DPIA upload
+        const dpiaUploadStep = userProg.steps.find(s => s.step === 4);
+        if (dpiaUploadStep) {
+          dpiaUploadStep.subTasks[2].completed = true; // "Téléverser la DPIA"
+          dpiaUploadStep.completed = dpiaUploadStep.subTasks.every(st => st.completed);
+          dpiaUploadStep.completedAt = dpiaUploadStep.completed ? new Date().toISOString() : null;
+        }
+        break;
+
+      case 'assessment_submitted':
+        // Step 1: Assessment completion helps identify activities
+        const assessmentStep = userProg.steps.find(s => s.step === 1);
+        if (assessmentStep) {
+          assessmentStep.subTasks[0].completed = true; // "Lister toutes les activités"
+          assessmentStep.subTasks[1].completed = true; // "Décrire chaque activité"
+          assessmentStep.completed = assessmentStep.subTasks.every(st => st.completed);
+          assessmentStep.completedAt = assessmentStep.completed ? new Date().toISOString() : null;
+        }
+        break;
+
+      case 'register_created':
+        // Step 2: Register creation
+        const registerStep = userProg.steps.find(s => s.step === 2);
+        if (registerStep) {
+          registerStep.subTasks[0].completed = true; // "Compléter le registre pour chaque activité"
+          registerStep.completed = registerStep.subTasks.every(st => st.completed);
+          registerStep.completedAt = registerStep.completed ? new Date().toISOString() : null;
+        }
+        break;
+
+      case 'iso27001_evaluated':
+        // Step 5: Security measures (ISO 27001 is a security framework)
+        const securityStep = userProg.steps.find(s => s.step === 5);
+        if (securityStep) {
+          securityStep.subTasks[0].completed = true; // "Documenter les mesures techniques/organisationnelles"
+          securityStep.completed = securityStep.subTasks.every(st => st.completed);
+          securityStep.completedAt = securityStep.completed ? new Date().toISOString() : null;
+        }
+        break;
+
+      case 'user_registered':
+        // Step 6: Personnel training (new users need to be informed)
+        const trainingStep = userProg.steps.find(s => s.step === 6);
+        if (trainingStep) {
+          trainingStep.subTasks[0].completed = true; // "Former le personnel"
+          trainingStep.completed = trainingStep.subTasks.every(st => st.completed);
+          trainingStep.completedAt = trainingStep.completed ? new Date().toISOString() : null;
+        }
+        break;
+
+      case 'document_uploaded':
+        // Step 3: CNDP declaration (when documents are uploaded)
+        const declarationStep = userProg.steps.find(s => s.step === 3);
+        if (declarationStep) {
+          declarationStep.subTasks[0].completed = true; // "Préparer la déclaration"
+          declarationStep.subTasks[1].completed = true; // "Téléverser la preuve"
+          declarationStep.completed = declarationStep.subTasks.every(st => st.completed);
+          declarationStep.completedAt = declarationStep.completed ? new Date().toISOString() : null;
+        }
+        break;
+    }
+
+    // Recalculate overall completion
+    userProg.overallProgress = Math.round((userProg.steps.filter(s => s.completed).length / userProg.steps.length) * 100);
+    userProg.lastUpdated = new Date().toISOString();
+
+    writeProgression(progression);
+    return userProg;
+  } catch (error) {
+    console.error('Error updating progression:', error);
+    return null;
+  }
+}
+
 // Helper to read ISO27001 data
 function readISO27001() {
   try {
@@ -467,6 +565,9 @@ app.post('/api/auth/admin-register', auth, isAdmin, (req, res) => {
     users.push(newUser);
     fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
     
+    // Automatically update progression for personnel training
+    updateUserProgression(req.user.id, req.user.organizationId, 'user_registered', newUser);
+    
     logAudit({ 
       user: req.user, 
       action: 'create', 
@@ -546,6 +647,10 @@ app.post('/api/assessments', auth, (req, res) => {
   assessment.organizationId = req.user.organizationId; // Add organization isolation
   data.push(assessment);
   fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2));
+  
+  // Automatically update progression
+  updateUserProgression(req.user.id, req.user.organizationId, 'assessment_submitted', assessment);
+  
   logAudit({ user: req.user, action: 'create', type: 'assessment', itemId: assessment.id, details: assessment });
   res.json({ success: true, id: assessment.id });
 });
@@ -618,6 +723,10 @@ app.post('/api/registers', auth, (req, res) => {
   reg.date = new Date().toISOString();
   data.push(reg);
   fs.writeFileSync(REGISTERS_PATH, JSON.stringify(data, null, 2));
+  
+  // Automatically update progression
+  updateUserProgression(req.user.id, req.user.organizationId, 'register_created', reg);
+  
   logAudit({ user: req.user, action: 'create', type: 'register', itemId: reg.id, details: reg });
   res.json({ success: true, id: reg.id });
 });
@@ -665,6 +774,10 @@ app.post('/api/dpias', auth, (req, res) => {
   dpia.date = new Date().toISOString();
   data.push(dpia);
   fs.writeFileSync(DPIAS_PATH, JSON.stringify(data, null, 2));
+  
+  // Automatically update progression
+  updateUserProgression(req.user.id, req.user.organizationId, 'dpia_created', dpia);
+  
   logAudit({ user: req.user, action: 'create', type: 'dpia', itemId: dpia.id, details: dpia });
   res.json({ success: true, id: dpia.id });
 });
@@ -674,7 +787,15 @@ app.put('/api/dpias/:id', auth, (req, res) => {
   let data = JSON.parse(fs.readFileSync(DPIAS_PATH, 'utf-8'));
   const idx = data.findIndex(d => d.id === Number(req.params.id) && d.organizationId === req.user.organizationId);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  
+  const oldDpia = data[idx];
   data[idx] = { ...data[idx], ...req.body };
+  
+  // Check if DPIA was completed/uploaded
+  if (req.body.status === 'approved' && oldDpia.status !== 'approved') {
+    updateUserProgression(req.user.id, req.user.organizationId, 'dpia_uploaded', data[idx]);
+  }
+  
   fs.writeFileSync(DPIAS_PATH, JSON.stringify(data, null, 2));
   logAudit({ user: req.user, action: 'update', type: 'dpia', itemId: req.params.id, details: req.body });
   res.json({ success: true });
@@ -703,7 +824,68 @@ app.get('/api/progression', auth, (req, res) => {
     progression.push(userProg);
     writeProgression(progression);
   }
-  res.json(userProg.steps);
+  
+  // Calculate overall statistics
+  const completedSteps = userProg.steps.filter(s => s.completed).length;
+  const totalSteps = userProg.steps.length;
+  const overallProgress = Math.round((completedSteps / totalSteps) * 100);
+  
+  // Add progression statistics
+  const progressionStats = {
+    steps: userProg.steps,
+    overallProgress,
+    completedSteps,
+    totalSteps,
+    lastUpdated: userProg.lastUpdated || new Date().toISOString(),
+    nextSteps: userProg.steps.filter(s => !s.completed).slice(0, 3), // Next 3 incomplete steps
+    recentActivity: userProg.steps.filter(s => s.completedAt).sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt)).slice(0, 5)
+  };
+  
+  res.json(progressionStats);
+});
+
+// GET /api/progression/stats - get detailed progression statistics
+app.get('/api/progression/stats', auth, (req, res) => {
+  const userId = req.user.id;
+  const organizationId = req.user.organizationId;
+  let progression = readProgression();
+  let userProg = progression.find(p => p.userId === userId && p.organizationId === organizationId);
+  
+  if (!userProg) {
+    userProg = { userId, organizationId, steps: JSON.parse(JSON.stringify(DEFAULT_STEPS)) };
+    progression.push(userProg);
+    writeProgression(progression);
+  }
+  
+  // Calculate detailed statistics
+  const stats = {
+    overall: {
+      progress: Math.round((userProg.steps.filter(s => s.completed).length / userProg.steps.length) * 100),
+      completedSteps: userProg.steps.filter(s => s.completed).length,
+      totalSteps: userProg.steps.length,
+      remainingSteps: userProg.steps.filter(s => !s.completed).length
+    },
+    byCategory: {
+      identification: userProg.steps.find(s => s.step === 1)?.completed || false,
+      registry: userProg.steps.find(s => s.step === 2)?.completed || false,
+      declaration: userProg.steps.find(s => s.step === 3)?.completed || false,
+      dpia: userProg.steps.find(s => s.step === 4)?.completed || false,
+      security: userProg.steps.find(s => s.step === 5)?.completed || false,
+      training: userProg.steps.find(s => s.step === 6)?.completed || false,
+      rights: userProg.steps.find(s => s.step === 7)?.completed || false
+    },
+    timeline: userProg.steps
+      .filter(s => s.completedAt)
+      .map(s => ({
+        step: s.step,
+        title: s.title,
+        completedAt: s.completedAt
+      }))
+      .sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt)),
+    lastUpdated: userProg.lastUpdated || new Date().toISOString()
+  };
+  
+  res.json(stats);
 });
 
 // PUT /api/progression - update a sub-task
@@ -1048,6 +1230,9 @@ app.post('/api/iso27001', auth, (req, res) => {
     assessments.push(newAssessment);
     writeISO27001(assessments);
     
+    // Automatically update progression
+    updateUserProgression(req.user.id, req.user.organizationId, 'iso27001_evaluated', newAssessment);
+    
     logAudit({ 
       user: req.user, 
       action: 'create', 
@@ -1094,6 +1279,11 @@ app.put('/api/iso27001/:id', auth, (req, res) => {
     assessment.updatedAt = new Date().toISOString();
     
     writeISO27001(assessments);
+    
+    // Automatically update progression if this is a significant update
+    if (totalScore > 70) { // High compliance score
+      updateUserProgression(req.user.id, req.user.organizationId, 'iso27001_evaluated', assessment);
+    }
     
     logAudit({ 
       user: req.user, 

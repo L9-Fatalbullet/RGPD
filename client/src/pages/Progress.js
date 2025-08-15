@@ -7,12 +7,12 @@ const API_BASE = 'https://psychic-giggle-j7g46xjg9r52gr7-4000.app.github.dev';
 
 export default function Progress() {
   const { token, user, logout } = useAuth();
-  const [steps, setSteps] = useState([]);
+  const [progressionData, setProgressionData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expanded, setExpanded] = useState(null);
 
-  // Fetch progression steps from backend
+  // Fetch progression data from backend
   useEffect(() => {
     if (!token) return;
     setLoading(true);
@@ -26,7 +26,7 @@ export default function Progress() {
         return r.json();
       })
       .then(data => {
-        setSteps(data);
+        setProgressionData(data);
         setLoading(false);
       })
       .catch(e => {
@@ -35,10 +35,12 @@ export default function Progress() {
       });
   }, [token, logout]);
 
-  // Progress calculation
-  const completed = steps.filter(s => s.completed).length;
-  const percent = steps.length ? Math.round((completed / steps.length) * 100) : 0;
-  const nextStep = steps.find(s => !s.completed);
+  // Progress calculation from enhanced data
+  const steps = progressionData?.steps || [];
+  const completed = progressionData?.completedSteps || 0;
+  const percent = progressionData?.overallProgress || 0;
+  const nextSteps = progressionData?.nextSteps || [];
+  const recentActivity = progressionData?.recentActivity || [];
   const allComplete = steps.length > 0 && completed === steps.length;
 
   // Confetti animation effect
@@ -72,7 +74,7 @@ export default function Progress() {
       if (res.status === 401 || res.status === 403) { logout(); throw new Error('Session expirée, veuillez vous reconnecter.'); }
       if (!res.ok) throw new Error('Erreur serveur');
       const updated = await res.json();
-      setSteps(updated);
+      setProgressionData(updated); // Update the state with the new data
     } catch (e) {
       setError(e.message || 'Erreur lors de la mise à jour.');
     }
@@ -103,14 +105,111 @@ export default function Progress() {
           </svg>
         </div>
       </div>
-      {/* Next Recommended Action Card */}
-      {!allComplete && nextStep && (
+        {/* Progress Overview Cards */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white/90 backdrop-blur rounded-xl shadow-lg p-6 text-center">
+            <div className="text-3xl font-bold text-blue-900 mb-2">{percent}%</div>
+            <div className="text-gray-600 text-sm">Progression globale</div>
+          </div>
+          <div className="bg-white/90 backdrop-blur rounded-xl shadow-lg p-6 text-center">
+            <div className="text-3xl font-bold text-green-600 mb-2">{completed}</div>
+            <div className="text-gray-600 text-sm">Étapes terminées</div>
+          </div>
+          <div className="bg-white/90 backdrop-blur rounded-xl shadow-lg p-6 text-center">
+            <div className="text-3xl font-bold text-yellow-600 mb-2">{steps.length - completed}</div>
+            <div className="text-gray-600 text-sm">Étapes restantes</div>
+          </div>
+          <div className="bg-white/90 backdrop-blur rounded-xl shadow-lg p-6 text-center">
+            <div className="text-3xl font-bold text-purple-600 mb-2">{recentActivity.length}</div>
+            <div className="text-gray-600 text-sm">Actions récentes</div>
+          </div>
+        </div>
+
+        {/* Automated Progression Guide */}
+        <div className="mb-8 animate-fade-in">
+          <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
+            <SparklesIcon className="w-6 h-6 text-yellow-500" />
+            Comment la progression s'actualise automatiquement
+          </h3>
+          <div className="bg-white/90 backdrop-blur rounded-xl shadow-lg p-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="font-semibold text-blue-900 mb-3">Actions qui débloquent automatiquement :</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <CheckCircleIcon className="w-4 h-4 text-green-600" />
+                    <span><strong>Créer une DPIA</strong> → Étape 4 "Réaliser la DPIA"</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircleIcon className="w-4 h-4 text-green-600" />
+                    <span><strong>Soumettre une évaluation</strong> → Étape 1 "Identifier les activités"</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircleIcon className="w-4 h-4 text-green-600" />
+                    <span><strong>Ajouter un traitement</strong> → Étape 2 "Créer le registre"</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircleIcon className="w-4 h-4 text-green-600" />
+                    <span><strong>Évaluer ISO 27001</strong> → Étape 5 "Mesures de sécurité"</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircleIcon className="w-4 h-4 text-green-600" />
+                    <span><strong>Ajouter un utilisateur</strong> → Étape 6 "Former le personnel"</span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h4 className="font-semibold text-blue-900 mb-3">Avantages du système automatique :</h4>
+                <div className="space-y-2 text-sm text-gray-700">
+                  <div>✅ <strong>Pas de saisie manuelle</strong> - La progression se met à jour en temps réel</div>
+                  <div>✅ <strong>Traçabilité complète</strong> - Historique automatique des actions</div>
+                  <div>✅ <strong>Motivation continue</strong> - Voir sa progression s'améliorer</div>
+                  <div>✅ <strong>Conformité facilitée</strong> - Suivi automatique des obligations</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Activity Section */}
+        {recentActivity.length > 0 && (
+          <div className="mb-8 animate-fade-in">
+            <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
+              <SparklesIcon className="w-6 h-6 text-yellow-500" />
+              Activité récente (Progression automatique)
+            </h3>
+            <div className="bg-white/90 backdrop-blur rounded-xl shadow-lg p-6">
+              <div className="space-y-3">
+                {recentActivity.map((activity, idx) => (
+                  <div key={idx} className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                    <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <div className="flex-1">
+                      <div className="font-medium text-green-800">{activity.title}</div>
+                      <div className="text-sm text-green-600">
+                        Terminé le {new Date(activity.completedAt).toLocaleDateString('fr-FR')}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="text-sm text-blue-800">
+                  <strong>💡 Progression automatique :</strong> Votre progression est mise à jour automatiquement 
+                  lorsque vous créez des DPIAs, soumettez des évaluations, ou ajoutez des utilisateurs.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Next Recommended Action Card */}
+      {!allComplete && nextSteps.length > 0 && (
         <div className="mb-6 animate-fade-in">
           <div className="bg-white/90 backdrop-blur rounded-xl shadow-lg p-6 flex items-center gap-4 border-l-4 border-yellow-400">
             <ArrowRightCircleIcon className="w-8 h-8 text-yellow-400 animate-bounce" />
             <div className="flex-1">
               <div className="font-bold text-blue-900 text-lg mb-1">Prochaine étape recommandée</div>
-              <div className="text-gray-700 text-sm mb-2">{nextStep.title}</div>
+              <div className="text-gray-700 text-sm mb-2">{nextSteps[0].title}</div>
               <div className="text-gray-600 text-xs mb-2">Complétez toutes les sous-tâches pour débloquer l'étape suivante.</div>
             </div>
           </div>
